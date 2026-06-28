@@ -1,24 +1,45 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap");
 
-/* Lumen design tokens — lumen_style_guide.md */
+/* ============================================================
+   Lumen — Diffuse design system (extension surfaces)
+   Near-white lavender base · Plus Jakarta Sans · signal colours
+   do all chromatic work · mirror, not nanny.
+   ============================================================ */
 #lumen-root {
-  --lm-void: #080808;
-  --lm-surface: #0f0f0f;
-  --lm-raised: #161616;
-  --lm-border: #222222;
-  --lm-muted: #3a3a3a;
-  --lm-secondary: #6a6a6a;
-  --lm-primary: #c8c8c8;
-  --lm-bright: #f0f0f0;
-  --lm-white: #ffffff;
-  --lm-loop: #4caf50;
-  --lm-drift: #f0a500;
-  --lm-mismatch: #8040c0;
-  --lm-depth: #4a9fd4;
-  --lm-font: "Inter", -apple-system, sans-serif;
-  --lm-radius-sm: 6px;
-  --lm-radius-lg: 12px;
-  --lm-radius-pill: 24px;
+  /* Surfaces */
+  --lm-cloud: #fafafc;
+  --lm-surface: #ffffff;
+  --lm-mist: #e8e7f0;
+  --lm-mist-lt: #f0eff5;
+
+  /* Text */
+  --lm-dusk: #1a1825;
+  --lm-slate: #7b7a8a;
+  --lm-haze: #9896a8;
+  --lm-ghost: #b8b6c4;
+
+  /* Borders */
+  --lm-border: #e2e1ea;
+  --lm-border-strong: #c8c7d5;
+
+  /* Signals */
+  --lm-loop: #2d9e4e;
+  --lm-loop-tint: #e8f7ee;
+  --lm-loop-text: #1a6630;
+  --lm-drift: #d4921a;
+  --lm-drift-tint: #faf0e0;
+  --lm-drift-text: #7a5010;
+  --lm-mismatch: #7b5cbf;
+  --lm-mismatch-tint: #ede9f8;
+  --lm-mismatch-text: #4a3680;
+  --lm-depth: #3478c5;
+  --lm-depth-tint: #e8f0fa;
+  --lm-depth-text: #1a4880;
+
+  --lm-font: "Plus Jakarta Sans", -apple-system, sans-serif;
+  --lm-radius-sm: 8px;
+  --lm-radius-lg: 10px;
+  --lm-radius-pill: 22px;
   --lm-transition-fast: 0.12s ease;
   --lm-transition-base: 0.18s ease;
   --lm-transition-slow: 0.3s ease;
@@ -36,7 +57,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: var(--lm-space-2, 8px);
+  gap: 8px;
   height: 20px;
   padding: 3px 0 10px;
   box-sizing: border-box;
@@ -48,13 +69,14 @@
 #lumen-root .lumen-strip-label {
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.08em;
-  color: var(--lm-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lm-haze);
 }
 
 #lumen-root .lumen-strip-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -68,7 +90,7 @@
   display: flex;
   justify-content: flex-end;
   font-size: 10px;
-  color: #6a6a6a;
+  color: var(--lm-haze, #9896a8);
   padding: 0 0 8px;
   max-width: 300px;
   margin-left: auto;
@@ -76,7 +98,7 @@
   line-height: 1.45;
   pointer-events: none;
   user-select: none;
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
 }
 
 #lumen-root .lumen-popover-check {
@@ -84,25 +106,39 @@
   align-items: flex-start;
   gap: 8px;
   font-size: 12px;
-  color: var(--lm-secondary, #9a9a9a);
+  color: var(--lm-slate);
   margin: 10px 0 4px;
   cursor: pointer;
 }
 
 #lumen-root .lumen-popover-check input {
   margin-top: 2px;
+  accent-color: var(--lm-dusk);
 }
 
 #lumen-root .lumen-popover-hint {
   font-size: 10px;
-  color: #6a6a6a;
+  color: var(--lm-haze);
   margin: 0 0 8px;
   line-height: 1.4;
 }
 
+#lumen-root .lumen-popover-link {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--lm-mismatch);
+  text-decoration: none;
+  margin: 0 0 10px;
+}
+
+#lumen-root .lumen-popover-link:hover {
+  color: var(--lm-mismatch-text);
+}
+
 #lumen-root .lumen-popover-why {
   font-size: 11px;
-  color: var(--lm-secondary, #9a9a9a);
+  color: var(--lm-slate);
   margin: 0 0 4px;
   line-height: 1.45;
 }
@@ -122,7 +158,7 @@
   border: none;
   cursor: pointer;
   font-size: 10px;
-  color: var(--lm-secondary);
+  color: var(--lm-haze);
   padding: 0 4px;
   transition: opacity var(--lm-transition-fast);
   font-family: var(--lm-font);
@@ -134,16 +170,16 @@
 }
 
 #lumen-root .lumen-fb-btn:hover {
-  color: var(--lm-primary);
+  color: var(--lm-dusk);
 }
 
 #lumen-root .lumen-fb-btn:disabled {
-  color: var(--lm-secondary);
+  color: var(--lm-ghost);
   opacity: 0.8;
   cursor: default;
 }
 
-/* ── FAB (bottom-right, above ChatGPT input) ── */
+/* ── FAB (bottom-right, above the AI composer) ── */
 #lumen-root #lumen-fab,
 #lumen-root #lumen-badge {
   position: fixed !important;
@@ -155,9 +191,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
-  background: var(--lm-raised);
-  border: 1px solid #444444;
+  padding: 6px 12px 6px 6px;
+  background: var(--lm-surface);
+  border: 0.5px solid var(--lm-border);
   border-radius: var(--lm-radius-pill);
   cursor: grab;
   pointer-events: auto;
@@ -165,7 +201,7 @@
   touch-action: none;
   transition: border-color var(--lm-transition-fast), box-shadow var(--lm-transition-fast);
   font-family: var(--lm-font);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 2px 10px rgba(26, 24, 37, 0.08), 0 1px 2px rgba(26, 24, 37, 0.06);
 }
 
 #lumen-root #lumen-fab.lumen-fab--dragging {
@@ -175,92 +211,86 @@
 
 #lumen-root #lumen-fab:hover,
 #lumen-root #lumen-badge:hover {
-  border-color: #666666;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  border-color: var(--lm-border-strong);
+  box-shadow: 0 4px 16px rgba(26, 24, 37, 0.12), 0 1px 3px rgba(26, 24, 37, 0.08);
 }
 
-#lumen-root #lumen-fab-wordmark,
-#lumen-root #lumen-badge-wordmark {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--lm-secondary);
+#lumen-root #lumen-fab-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--lm-dusk);
+  flex-shrink: 0;
 }
 
 #lumen-root #lumen-fab-dot,
 #lumen-root #lumen-badge-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   transition: background var(--lm-transition-slow);
 }
 
 #lumen-root #lumen-fab-score,
 #lumen-root #lumen-badge-score {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--lm-dusk);
 }
 
-/* ── Intervention cards ── */
+/* ── Intervention cards (nudge — left accent bar, mirror not nanny) ── */
 #lumen-root .lumen-card {
   box-sizing: border-box;
   margin: 4px 0 12px;
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 11px 14px;
+  border-radius: var(--lm-radius-lg);
+  border: 0.5px solid var(--lm-border);
+  background: var(--lm-surface);
   pointer-events: auto;
   font-family: var(--lm-font);
   max-width: 84%;
   margin-left: auto;
+  position: relative;
+  padding-left: 16px;
 }
 
-#lumen-root .lumen-card--mismatch {
-  background: rgba(128, 64, 192, 0.06);
-  border: 0.5px solid rgba(128, 64, 192, 0.25);
+#lumen-root .lumen-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2.5px;
+  border-radius: 2px;
 }
 
-#lumen-root .lumen-card--loop {
-  background: rgba(240, 165, 0, 0.06);
-  border: 0.5px solid rgba(240, 165, 0, 0.25);
-}
+#lumen-root .lumen-card--mismatch::before { background: var(--lm-mismatch); }
+#lumen-root .lumen-card--loop::before { background: var(--lm-drift); }
+#lumen-root .lumen-card--depth::before { background: var(--lm-depth); }
 
-#lumen-root .lumen-card--depth {
-  background: rgba(74, 159, 212, 0.06);
-  border: 0.5px solid rgba(74, 159, 212, 0.25);
-}
+#lumen-root .lumen-card--mismatch { border-color: #d4d0ed; }
 
-#lumen-root .lumen-card--mismatch .lumen-card-title {
-  color: var(--lm-mismatch);
-}
-
-#lumen-root .lumen-card--loop .lumen-card-title {
-  color: var(--lm-drift);
-}
-
-#lumen-root .lumen-card--depth .lumen-card-title {
-  color: var(--lm-depth);
-}
+#lumen-root .lumen-card--mismatch .lumen-card-title { color: var(--lm-mismatch-text); }
+#lumen-root .lumen-card--loop .lumen-card-title { color: var(--lm-drift-text); }
+#lumen-root .lumen-card--depth .lumen-card-title { color: var(--lm-depth-text); }
 
 #lumen-root .lumen-card-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
 }
 
 #lumen-root .lumen-card-body {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 400;
-  line-height: 1.6;
+  line-height: 1.5;
   margin-bottom: 10px;
-  opacity: 0.85;
-}
-
-#lumen-root .lumen-card--mismatch .lumen-card-body {
-  color: rgba(128, 64, 192, 0.6);
-}
-
-#lumen-root .lumen-card--depth .lumen-card-body {
-  color: rgba(74, 159, 212, 0.6);
+  color: var(--lm-slate);
 }
 
 #lumen-root .lumen-card-reflection {
@@ -270,13 +300,18 @@
   min-height: 56px;
   padding: 8px 10px;
   margin-bottom: 10px;
-  background: var(--lm-void);
+  background: var(--lm-cloud);
   border: 0.5px solid var(--lm-border);
   border-radius: var(--lm-radius-sm);
-  color: var(--lm-primary);
+  color: var(--lm-dusk);
   font-size: 12px;
   font-family: var(--lm-font);
   resize: vertical;
+}
+
+#lumen-root .lumen-card-reflection:focus {
+  outline: none;
+  border-color: var(--lm-border-strong);
 }
 
 #lumen-root .lumen-card-actions {
@@ -288,37 +323,32 @@
 #lumen-root .lumen-card-btn {
   cursor: pointer;
   font-size: 11px;
-  font-weight: 500;
-  padding: 7px 12px;
+  font-weight: 600;
+  padding: 6px 12px;
   border-radius: var(--lm-radius-sm);
-  border: 1px solid rgba(128, 64, 192, 0.3);
-  background: transparent;
-  color: rgba(128, 64, 192, 0.7);
+  border: none;
+  background: var(--lm-dusk);
+  color: #f4f3f8;
   font-family: var(--lm-font);
-  transition: border-color var(--lm-transition-fast);
+  transition: opacity var(--lm-transition-fast);
 }
+
+#lumen-root .lumen-card-btn:hover { opacity: 0.88; }
 
 #lumen-root .lumen-card-btn--secondary {
   background: transparent;
-  color: rgba(128, 64, 192, 0.5);
-}
-
-#lumen-root .lumen-card--depth .lumen-card-btn {
-  border-color: rgba(74, 159, 212, 0.3);
-  color: rgba(74, 159, 212, 0.7);
-}
-
-#lumen-root .lumen-card--depth .lumen-card-btn--secondary {
-  color: rgba(74, 159, 212, 0.5);
+  border: 0.5px solid var(--lm-border-strong);
+  color: var(--lm-slate);
 }
 
 #lumen-root .lumen-exemption-card {
-  background: rgba(128, 64, 192, 0.06);
-  border: 0.5px solid rgba(128, 64, 192, 0.25);
+  background: var(--lm-surface);
+  border: 0.5px solid #d4d0ed;
 }
 
 #lumen-root .lumen-ai-hidden {
-  opacity: 0.12 !important;
+  display: none !important;
+  opacity: 0 !important;
   pointer-events: none !important;
   transition: opacity var(--lm-transition-base);
 }
@@ -332,12 +362,13 @@
   max-height: 480px;
   overflow-y: auto;
   padding: 16px;
-  background: var(--lm-void);
-  border: 1px solid #1a1a1a;
-  border-radius: var(--lm-radius-lg);
+  background: var(--lm-cloud);
+  border: 0.5px solid var(--lm-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(26, 24, 37, 0.14);
   pointer-events: auto;
   font-family: var(--lm-font);
-  color: var(--lm-primary);
+  color: var(--lm-dusk);
   bottom: auto;
 }
 
@@ -347,8 +378,9 @@
 
 #lumen-root .lumen-popover-title {
   font-size: 13px;
-  font-weight: 500;
-  color: var(--lm-bright);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lm-dusk);
   margin-bottom: 10px;
 }
 
@@ -360,13 +392,13 @@
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: var(--lm-secondary);
+  color: var(--lm-slate);
   margin-bottom: 6px;
 }
 
 #lumen-root .lumen-popover-stat-value {
-  color: var(--lm-primary);
-  font-weight: 500;
+  color: var(--lm-dusk);
+  font-weight: 600;
 }
 
 #lumen-root .lumen-popover-label {
@@ -374,8 +406,8 @@
   font-size: 10px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--lm-secondary);
+  letter-spacing: 0.04em;
+  color: var(--lm-haze);
   margin: 12px 0 4px;
 }
 
@@ -385,12 +417,19 @@
   box-sizing: border-box;
   width: 100%;
   font-size: 12px;
-  color: var(--lm-primary);
+  color: var(--lm-dusk);
   background: var(--lm-surface);
   border: 0.5px solid var(--lm-border);
   border-radius: var(--lm-radius-sm);
   padding: 8px 10px;
   font-family: var(--lm-font);
+}
+
+#lumen-root .lumen-popover-select:focus,
+#lumen-root .lumen-popover-goals:focus,
+#lumen-root .lumen-popover-focus:focus {
+  outline: none;
+  border-color: var(--lm-border-strong);
 }
 
 #lumen-root .lumen-popover-goals {
@@ -403,40 +442,38 @@
   display: block;
   margin-top: 12px;
   font-size: 10px;
-  color: var(--lm-secondary);
+  color: var(--lm-haze);
   cursor: pointer;
   text-decoration: underline;
 }
 
 #lumen-root .lumen-popover-divider {
   height: 1px;
-  background: var(--lm-raised);
+  background: var(--lm-mist);
   margin: 12px 0;
 }
 
 #lumen-root .lumen-popover-digest {
   font-size: 11px;
-  color: var(--lm-secondary);
+  color: var(--lm-slate);
   line-height: 1.5;
 }
 
 #lumen-root .lumen-digest-line {
   margin: 0 0 6px;
-  opacity: 0.85;
 }
 
 #lumen-root .lumen-digest-label {
   font-size: 10px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--lm-secondary);
+  letter-spacing: 0.04em;
+  color: var(--lm-haze);
   margin: 8px 0 4px;
 }
 
 #lumen-root .lumen-digest-prompt {
-  color: var(--lm-primary);
-  opacity: 0.85;
+  color: var(--lm-dusk);
 }
 
 /* ── Onboarding ── */
@@ -447,7 +484,7 @@
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(8, 8, 8, 0.92);
+  background: rgba(26, 24, 37, 0.32);
   pointer-events: auto;
 }
 
@@ -459,39 +496,25 @@
   width: min(440px, calc(100vw - 32px));
   padding: 24px;
   background: var(--lm-surface);
-  border: 1px solid #1a1a1a;
-  border-radius: var(--lm-radius-lg);
-  color: var(--lm-primary);
+  border: 0.5px solid var(--lm-border);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(26, 24, 37, 0.18);
+  color: var(--lm-dusk);
   position: relative;
-  overflow: hidden;
-}
-
-#lumen-root .lumen-onboarding-panel::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 60%;
-  height: 40%;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% 100%,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.02) 40%,
-    rgba(255, 255, 255, 0) 70%
-  );
+  overflow: visible;
 }
 
 #lumen-root .lumen-onboarding-panel h2 {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--lm-bright);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lm-dusk);
   margin: 0 0 8px;
 }
 
 #lumen-root .lumen-onboarding-panel p {
-  font-size: 12px;
-  color: var(--lm-secondary);
+  font-size: 13px;
+  color: var(--lm-slate);
   margin: 0 0 14px;
   line-height: 1.5;
 }
@@ -501,25 +524,72 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   font-size: 12px;
-  color: var(--lm-primary);
+  color: var(--lm-dusk);
 }
 
-#lumen-root .lumen-onboarding-options label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+#lumen-root .lumen-onboarding-option {
+  display: block !important;
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  width: auto !important;
+  padding: 8px 10px;
+  border-radius: var(--lm-radius-sm);
+  border: 0.5px solid var(--lm-border);
+  background: var(--lm-cloud);
+  cursor: pointer;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--lm-slate);
+  user-select: none;
+  transition:
+    border-color var(--lm-transition-fast),
+    background var(--lm-transition-fast),
+    color var(--lm-transition-fast);
+}
+
+#lumen-root .lumen-onboarding-option:hover {
+  border-color: var(--lm-border-strong);
+}
+
+#lumen-root .lumen-onboarding-option:has(input:checked) {
+  border-color: var(--lm-dusk);
+  background: var(--lm-mist-lt);
+  color: var(--lm-dusk);
+  font-weight: 600;
+}
+
+#lumen-root .lumen-onboarding-option span {
+  display: block;
+  pointer-events: none;
+}
+
+#lumen-root .lumen-onboarding-option input[type="checkbox"] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  background: transparent !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
 }
 
 #lumen-root .lumen-onboarding-panel textarea,
 #lumen-root .lumen-onboarding-panel select,
-#lumen-root .lumen-onboarding-panel input {
+#lumen-root .lumen-onboarding-panel input:not([type="checkbox"]) {
   box-sizing: border-box;
   width: 100%;
   padding: 8px 10px;
   border-radius: var(--lm-radius-sm);
   border: 0.5px solid var(--lm-border);
-  background: var(--lm-void);
-  color: var(--lm-primary);
+  background: var(--lm-cloud);
+  color: var(--lm-dusk);
   font-size: 12px;
   font-family: var(--lm-font);
 }
@@ -538,31 +608,38 @@
 
 #lumen-root .lumen-onboarding-btn {
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
   border-radius: var(--lm-radius-sm);
-  border: 0.5px solid var(--lm-border);
-  background: var(--lm-raised);
-  color: var(--lm-primary);
+  border: none;
+  background: var(--lm-dusk);
+  color: #f4f3f8;
   font-family: var(--lm-font);
-  transition: border-color var(--lm-transition-fast);
+  transition: opacity var(--lm-transition-fast);
 }
 
 #lumen-root .lumen-onboarding-btn:hover {
-  border-color: #333333;
+  opacity: 0.88;
 }
 
 #lumen-root .lumen-onboarding-btn--ghost {
   background: transparent;
-  color: var(--lm-secondary);
+  border: 0.5px solid var(--lm-border-strong);
+  color: var(--lm-slate);
+}
+
+#lumen-root .lumen-onboarding-btn--ghost:hover {
+  opacity: 1;
+  border-color: var(--lm-dusk);
+  color: var(--lm-dusk);
 }
 
 #lumen-root .lumen-hidden {
   display: none !important;
 }
 
-/* ── Reconsider overlay (strong delegation) ── */
+/* ── Reconsider overlay (depth / hand-off — a calm pause, never an alarm) ── */
 #lumen-root #lumen-reconsider {
   position: fixed;
   inset: 0;
@@ -571,7 +648,7 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(8, 8, 8, 0.72);
+  background: rgba(26, 24, 37, 0.32);
   pointer-events: auto;
 }
 
@@ -580,13 +657,20 @@
 }
 
 #lumen-root .lumen-reconsider-panel {
+  position: relative;
+  overflow: hidden;
   width: min(460px, calc(100vw - 32px));
-  padding: 24px;
+  padding: 26px;
   background: var(--lm-surface);
-  border: 1px solid rgba(240, 165, 0, 0.35);
-  border-radius: var(--lm-radius-lg);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
-  color: var(--lm-primary);
+  border: 0.5px solid var(--lm-border);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(26, 24, 37, 0.18);
+  color: var(--lm-dusk);
+}
+
+#lumen-root .lumen-reconsider-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 #lumen-root .lumen-reconsider-kicker {
@@ -594,22 +678,23 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--lm-drift);
-  margin-bottom: 10px;
+  color: var(--lm-depth);
+  margin-bottom: 12px;
 }
 
 #lumen-root .lumen-reconsider-title {
   font-size: 18px;
-  font-weight: 600;
-  color: var(--lm-bright);
+  font-weight: 700;
+  color: var(--lm-dusk);
   margin: 0 0 10px;
+  letter-spacing: -0.02em;
 }
 
 #lumen-root .lumen-reconsider-body {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--lm-primary);
-  margin: 0 0 18px;
+  color: var(--lm-slate);
+  margin: 0 0 22px;
 }
 
 #lumen-root .lumen-reconsider-actions {
@@ -622,37 +707,36 @@
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  padding: 12px 16px;
+  padding: 11px 16px;
   border-radius: var(--lm-radius-sm);
-  border: 1px solid rgba(240, 165, 0, 0.45);
-  background: rgba(240, 165, 0, 0.14);
-  color: var(--lm-bright);
+  border: none;
+  background: var(--lm-dusk);
+  color: #f4f3f8;
   font-family: var(--lm-font);
   text-align: center;
+  transition: opacity var(--lm-transition-fast);
+}
+
+#lumen-root .lumen-reconsider-btn:hover {
+  opacity: 0.88;
 }
 
 #lumen-root .lumen-reconsider-btn--secondary {
   background: transparent;
-  border-color: var(--lm-border);
-  color: var(--lm-secondary);
+  border: 0.5px solid var(--lm-border-strong);
+  color: var(--lm-slate);
   font-weight: 500;
 }
 
-#lumen-root .lumen-reconsider-btn:hover {
-  border-color: rgba(240, 165, 0, 0.7);
+#lumen-root .lumen-reconsider-btn--secondary:hover {
+  opacity: 1;
+  border-color: var(--lm-dusk);
+  color: var(--lm-dusk);
 }
 
-#lumen-root .lumen-signal-handoff {
-  border-color: rgba(240, 165, 0, 0.35);
-}
-
-#lumen-root .lumen-signal-loop {
-  border-color: rgba(76, 175, 80, 0.35);
-}
-
-#lumen-root .lumen-signal-loop .lumen-reconsider-kicker {
-  color: var(--lm-loop);
-}
+#lumen-root .lumen-signal-handoff .lumen-reconsider-kicker { color: var(--lm-depth); }
+#lumen-root .lumen-signal-loop .lumen-reconsider-kicker { color: var(--lm-loop); }
+#lumen-root .lumen-signal-depth .lumen-reconsider-kicker { color: var(--lm-depth); }
 
 #lumen-root .lumen-reconsider-draft-mode {
   display: flex;
@@ -667,15 +751,26 @@
   padding: 10px 12px;
   border-radius: var(--lm-radius-sm);
   border: 0.5px solid var(--lm-border);
-  background: var(--lm-void);
-  color: var(--lm-primary);
+  background: var(--lm-cloud);
+  color: var(--lm-dusk);
   font-size: 13px;
   line-height: 1.5;
   font-family: var(--lm-font);
   resize: vertical;
+  transition: border-color var(--lm-transition-fast);
 }
 
-/* ── Injected into ChatGPT DOM (outside #lumen-root) ── */
+#lumen-root .lumen-reconsider-textarea:focus {
+  outline: none;
+  border-color: var(--lm-border-strong);
+}
+
+#lumen-root .lumen-reconsider-textarea::placeholder {
+  color: var(--lm-haze);
+}
+
+/* ── Injected into host AI DOM (outside #lumen-root) ──
+   Neutral, near-achromatic so it sits quietly in any host theme. */
 .lumen-strip {
   display: flex;
   justify-content: flex-end;
@@ -686,19 +781,20 @@
   box-sizing: border-box;
   pointer-events: none;
   user-select: none;
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
 }
 
 .lumen-strip-label {
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.08em;
-  color: #3a3a3a;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9896a8;
 }
 
 .lumen-strip-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -718,9 +814,9 @@
   border: none;
   cursor: pointer;
   font-size: 10px;
-  color: #6a6a6a;
+  color: #9896a8;
   padding: 0 4px;
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
   pointer-events: auto;
 }
 
@@ -732,7 +828,7 @@
   display: flex;
   justify-content: flex-end;
   font-size: 10px;
-  color: #6a6a6a;
+  color: #9896a8;
   padding: 0 0 8px;
   max-width: 300px;
   margin-left: auto;
@@ -740,60 +836,57 @@
   line-height: 1.45;
   pointer-events: none;
   user-select: none;
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
 }
 
 .lumen-card {
   box-sizing: border-box;
   margin: 8px 0 14px;
-  padding: 14px 16px;
+  padding: 12px 16px 12px 18px;
   border-radius: 10px;
+  border: 0.5px solid #e2e1ea;
+  background: #ffffff;
   pointer-events: auto;
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
   max-width: 88%;
   margin-left: auto;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(26, 24, 37, 0.05);
 }
 
-.lumen-card--loop {
-  background: rgba(240, 165, 0, 0.08);
-  border: 1px solid rgba(240, 165, 0, 0.35);
+.lumen-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 2.5px;
+  border-radius: 2px;
 }
 
-.lumen-card--mismatch {
-  background: rgba(128, 64, 192, 0.08);
-  border: 1px solid rgba(128, 64, 192, 0.35);
-}
+.lumen-card--loop::before { background: #d4921a; }
+.lumen-card--mismatch::before { background: #7b5cbf; }
+.lumen-card--depth::before { background: #3478c5; }
 
-.lumen-card--depth {
-  background: rgba(74, 159, 212, 0.08);
-  border: 1px solid rgba(74, 159, 212, 0.35);
-}
+.lumen-card--mismatch { border-color: #d4d0ed; }
 
 .lumen-card-title {
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
 }
 
-.lumen-card--loop .lumen-card-title {
-  color: #f0a500;
-}
-
-.lumen-card--mismatch .lumen-card-title {
-  color: #8040c0;
-}
-
-.lumen-card--depth .lumen-card-title {
-  color: #4a9fd4;
-}
+.lumen-card--loop .lumen-card-title { color: #7a5010; }
+.lumen-card--mismatch .lumen-card-title { color: #4a3680; }
+.lumen-card--depth .lumen-card-title { color: #1a4880; }
 
 .lumen-card-body {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
-  line-height: 1.55;
+  line-height: 1.5;
   margin-bottom: 12px;
-  color: #444444;
+  color: #7b7a8a;
 }
 
 .lumen-card-actions {
@@ -806,31 +899,19 @@
 .lumen-card-btn {
   cursor: pointer;
   font-size: 12px;
-  font-weight: 500;
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: 1px solid rgba(240, 165, 0, 0.45);
-  background: rgba(240, 165, 0, 0.12);
-  color: #8a5a00;
-  font-family: "Inter", -apple-system, sans-serif;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #1a1825;
+  color: #f4f3f8;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
 }
 
 .lumen-card-btn--secondary {
   background: transparent;
-  border-color: #cccccc;
-  color: #666666;
-}
-
-.lumen-card--loop .lumen-card-btn {
-  border-color: rgba(240, 165, 0, 0.45);
-  background: rgba(240, 165, 0, 0.12);
-  color: #8a5a00;
-}
-
-.lumen-card--loop .lumen-card-btn--secondary {
-  background: transparent;
-  border-color: #cccccc;
-  color: #666666;
+  border: 0.5px solid #c8c7d5;
+  color: #7b7a8a;
 }
 
 .lumen-card-reflection {
@@ -840,12 +921,12 @@
   min-height: 56px;
   padding: 8px 10px;
   margin-bottom: 10px;
-  background: #fafafa;
-  border: 1px solid #dddddd;
-  border-radius: 6px;
-  color: #333333;
+  background: #fafafc;
+  border: 0.5px solid #e2e1ea;
+  border-radius: 8px;
+  color: #1a1825;
   font-size: 12px;
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
   resize: vertical;
 }
 

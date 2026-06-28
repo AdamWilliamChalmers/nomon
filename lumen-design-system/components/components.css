@@ -1,0 +1,288 @@
+/* ============================================================
+   Lumen Design System — components.css
+   Requires tokens.css to be loaded first.
+   ============================================================ */
+
+/* ────────────────────────────────────────────
+   LOGO MARK
+   ──────────────────────────────────────────── */
+.lumen-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lumen-dusk);
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+.lumen-mark--sm  { width: 20px; height: 20px; border-radius: 5px; }
+.lumen-mark--md  { width: 28px; height: 28px; border-radius: 7px; }
+.lumen-mark--lg  { width: 36px; height: 36px; border-radius: 9px; }
+.lumen-mark--xl  { width: 44px; height: 44px; border-radius: 11px; }
+
+.lumen-lockup {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.lumen-lockup__word {
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--lumen-dusk);
+  letter-spacing: -0.02em;
+}
+
+/* Ghost mode — apply to entire lockup */
+.lumen-lockup.is-ghost { opacity: 0.3; transition: opacity 0.2s ease; }
+
+
+/* ────────────────────────────────────────────
+   SIGNAL STAT CARD
+   ──────────────────────────────────────────── */
+.signal-card {
+  border-radius: var(--r-lg);
+  padding: 12px 14px;
+  border: 0.5px solid var(--lumen-border);
+  background: white;
+}
+.signal-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.signal-card__dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.signal-card__name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.signal-card__value {
+  font-size: 24px; font-weight: 700;
+  letter-spacing: -0.03em; line-height: 1;
+  margin-bottom: 4px;
+}
+.signal-card__unit {
+  font-size: 14px; font-weight: 500;
+}
+.signal-card__desc {
+  font-size: 11px;
+  color: var(--lumen-haze);
+  line-height: 1.4;
+}
+.signal-card.is-null { opacity: 0.4; }
+
+/* Variants */
+.signal-card[data-signal="loop"]     { }
+.signal-card[data-signal="loop"]     .signal-card__dot   { background: var(--lumen-loop); }
+.signal-card[data-signal="loop"]     .signal-card__name  { color: var(--lumen-loop-text); }
+.signal-card[data-signal="loop"]     .signal-card__value { color: var(--lumen-loop); }
+
+.signal-card[data-signal="drift"]    .signal-card__dot   { background: var(--lumen-drift); }
+.signal-card[data-signal="drift"]    .signal-card__name  { color: var(--lumen-drift-text); }
+.signal-card[data-signal="drift"]    .signal-card__value { color: var(--lumen-drift); }
+
+.signal-card[data-signal="mismatch"] { border-color: #d4d0ed; }
+.signal-card[data-signal="mismatch"] .signal-card__dot   { background: var(--lumen-mismatch); }
+.signal-card[data-signal="mismatch"] .signal-card__name  { color: var(--lumen-mismatch-text); }
+.signal-card[data-signal="mismatch"] .signal-card__value { color: var(--lumen-mismatch); }
+
+.signal-card[data-signal="depth"]    .signal-card__dot   { background: var(--lumen-depth); }
+.signal-card[data-signal="depth"]    .signal-card__name  { color: var(--lumen-depth-text); }
+.signal-card[data-signal="depth"]    .signal-card__value { color: var(--lumen-depth); }
+
+
+/* ────────────────────────────────────────────
+   SIGNAL PILL / BADGE
+   ──────────────────────────────────────────── */
+.signal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.signal-pill__dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+}
+
+.signal-pill[data-signal="loop"]     { background: var(--lumen-loop-tint);     color: var(--lumen-loop-text); }
+.signal-pill[data-signal="loop"]     .signal-pill__dot { background: var(--lumen-loop); }
+.signal-pill[data-signal="drift"]    { background: var(--lumen-drift-tint);    color: var(--lumen-drift-text); }
+.signal-pill[data-signal="drift"]    .signal-pill__dot { background: var(--lumen-drift); }
+.signal-pill[data-signal="mismatch"] { background: var(--lumen-mismatch-tint); color: var(--lumen-mismatch-text); }
+.signal-pill[data-signal="mismatch"] .signal-pill__dot { background: var(--lumen-mismatch); }
+.signal-pill[data-signal="depth"]    { background: var(--lumen-depth-tint);    color: var(--lumen-depth-text); }
+.signal-pill[data-signal="depth"]    .signal-pill__dot { background: var(--lumen-depth); }
+
+
+/* ────────────────────────────────────────────
+   NUDGE (mirror, not nanny)
+   ──────────────────────────────────────────── */
+.nudge {
+  border-radius: var(--r-lg);
+  padding: 11px 14px;
+  border: 0.5px solid var(--lumen-border);
+  background: white;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.nudge__bar {
+  width: 2.5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  align-self: stretch;
+  min-height: 40px;
+}
+.nudge__body { flex: 1; min-width: 0; }
+.nudge__title {
+  font-size: 12px; font-weight: 600;
+  color: var(--lumen-dusk);
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+.nudge__text {
+  font-size: 11px;
+  color: var(--lumen-slate);
+  line-height: 1.45;
+}
+.nudge__action {
+  font-size: 11px; font-weight: 600;
+  background: none; border: none;
+  cursor: pointer; padding: 0;
+  margin-top: 5px;
+  display: block;
+}
+
+/* Variants */
+.nudge[data-signal="loop"]     .nudge__bar    { background: var(--lumen-loop); }
+.nudge[data-signal="loop"]     .nudge__action { color: var(--lumen-loop); }
+.nudge[data-signal="drift"]    .nudge__bar    { background: var(--lumen-drift); }
+.nudge[data-signal="drift"]    .nudge__action { color: var(--lumen-drift); }
+.nudge[data-signal="mismatch"] .nudge__bar    { background: var(--lumen-mismatch); }
+.nudge[data-signal="mismatch"] .nudge__action { color: var(--lumen-mismatch); }
+.nudge[data-signal="depth"]    .nudge__bar    { background: var(--lumen-depth); }
+.nudge[data-signal="depth"]    .nudge__action { color: var(--lumen-depth); }
+
+
+/* ────────────────────────────────────────────
+   GHOST BUTTON
+   ──────────────────────────────────────────── */
+.btn-ghost {
+  font-family: var(--font);
+  font-size: 11px; font-weight: 500;
+  color: var(--lumen-haze);
+  background: none;
+  border: 0.5px solid var(--lumen-border);
+  border-radius: var(--r-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.btn-ghost:hover { border-color: var(--lumen-border-strong); }
+
+.btn-primary {
+  font-family: var(--font);
+  font-size: 13px; font-weight: 600;
+  color: #f4f3f8;
+  background: var(--lumen-dusk);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+}
+.btn-outline {
+  font-family: var(--font);
+  font-size: 13px; font-weight: 500;
+  color: var(--lumen-dusk);
+  background: none;
+  border: 0.5px solid var(--lumen-border-strong);
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+
+/* ────────────────────────────────────────────
+   ICON UTILITIES
+   ──────────────────────────────────────────── */
+.icon-loop     { color: var(--lumen-loop); }
+.icon-drift    { color: var(--lumen-drift); }
+.icon-mismatch { color: var(--lumen-mismatch); }
+.icon-depth    { color: var(--lumen-depth); }
+.icon-muted    { color: var(--lumen-haze); }
+
+
+/* ────────────────────────────────────────────
+   POPUP SHELL (320px)
+   ──────────────────────────────────────────── */
+.popup {
+  width: 320px;
+  background: var(--lumen-cloud);
+  border-radius: var(--r-xl);
+  border: 0.5px solid var(--lumen-border);
+  overflow: hidden;
+  font-family: var(--font);
+}
+.popup__header {
+  padding: 12px 14px;
+  border-bottom: 0.5px solid var(--lumen-mist);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.popup__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 0.5px solid var(--lumen-mist);
+}
+.popup__stat {
+  padding: 10px 10px 8px;
+  border-right: 0.5px solid var(--lumen-mist);
+}
+.popup__stat:last-child { border-right: none; }
+.popup__stat-label {
+  font-size: 9px; font-weight: 500;
+  color: var(--lumen-haze);
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.popup__stat-val {
+  font-size: 17px; font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1;
+}
+.popup__stat-sub {
+  font-size: 9px; font-weight: 600;
+  margin-top: 2px;
+}
+.popup__nudge {
+  padding: 10px 14px;
+  background: white;
+  border-bottom: 0.5px solid var(--lumen-mist);
+}
+.popup__footer {
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.popup__session {
+  font-size: 9px;
+  color: var(--lumen-ghost-text);
+}
+.popup__digest-btn {
+  font-size: 9px; font-weight: 600;
+  color: var(--lumen-haze);
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font);
+}

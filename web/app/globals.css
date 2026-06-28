@@ -1,257 +1,348 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* ============================================================
+   Lumen — Diffuse design system (lumen.so)
+   Near-white lavender base · Plus Jakarta Sans · signal colours
+   do all chromatic work.
+   Legacy --lm-* token names are remapped to light values so
+   existing pages stay readable.
+   ============================================================ */
 :root {
-  --lm-void: #080808;
-  --lm-surface: #0f0f0f;
-  --lm-raised: #161616;
-  --lm-border: #222222;
-  --lm-muted: #3a3a3a;
-  --lm-secondary: #6a6a6a;
-  --lm-primary: #c8c8c8;
-  --lm-bright: #f0f0f0;
-  --lm-loop: #4caf50;
-  --lm-drift: #f0a500;
-  --lm-mismatch: #8040c0;
-  --lm-depth: #4a9fd4;
-  --lm-aurora-void: #07070f;
-  --lm-aurora-navy: #0d0d20;
-  --lm-aurora-violet: #2d1060;
-  --lm-aurora-rose: #c8386a;
-  --lm-aurora-pink: #e86090;
-  --lm-aurora-star: #e8e8ff;
-  --lm-font: "Inter", -apple-system, sans-serif;
-  --lm-radius-sm: 6px;
+  /* Surfaces (legacy names → light values) */
+  --lm-void: #fafafc;       /* page background */
+  --lm-surface: #ffffff;    /* card / panel bg */
+  --lm-raised: #f0eff5;     /* raised / hover tint */
+  --lm-border: #e2e1ea;
+  --lm-border-strong: #c8c7d5;
+
+  /* Text (legacy names → dusk scale) */
+  --lm-muted: #9896a8;      /* muted / labels */
+  --lm-secondary: #7b7a8a;  /* secondary text */
+  --lm-primary: #1a1825;    /* primary text */
+  --lm-bright: #1a1825;     /* emphasis text (was near-white) */
+
+  /* New semantic aliases */
+  --lm-cloud: #fafafc;
+  --lm-mist: #e8e7f0;
+  --lm-mist-lt: #f0eff5;
+  --lm-dusk: #1a1825;
+  --lm-slate: #7b7a8a;
+  --lm-haze: #9896a8;
+  --lm-ghost: #b8b6c4;
+
+  /* Signals */
+  --lm-loop: #2d9e4e;
+  --lm-loop-tint: #e8f7ee;
+  --lm-loop-text: #1a6630;
+  --lm-drift: #d4921a;
+  --lm-drift-tint: #faf0e0;
+  --lm-drift-text: #7a5010;
+  --lm-mismatch: #7b5cbf;
+  --lm-mismatch-tint: #ede9f8;
+  --lm-mismatch-text: #4a3680;
+  --lm-depth: #3478c5;
+  --lm-depth-tint: #e8f0fa;
+  --lm-depth-text: #1a4880;
+  --lm-illumination: #7b5cbf;
+  --lm-handoff: #3478c5;
+
+  --lm-font: "Plus Jakarta Sans", -apple-system, sans-serif;
+  --lm-radius-sm: 8px;
   --lm-radius-md: 8px;
-  --lm-radius-lg: 12px;
-  --lm-radius-xl: 16px;
-  --lm-radius-pill: 24px;
+  --lm-radius-lg: 10px;
+  --lm-radius-xl: 12px;
+  --lm-radius-pill: 22px;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   font-family: var(--lm-font);
-  background: #0a0a0a;
-  color: var(--lm-primary);
+  background: var(--lm-cloud);
+  color: var(--lm-dusk);
   -webkit-font-smoothing: antialiased;
 }
 
 .lm-app-shell {
   min-height: 100vh;
-  background: #0a0a0a;
-  color: var(--lm-primary);
+  background: var(--lm-cloud);
+  color: var(--lm-dusk);
 }
 
 .lm-page-title {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 600;
-  color: var(--lm-bright);
-  letter-spacing: 0;
+  color: var(--lm-dusk);
+  letter-spacing: -0.02em;
 }
 
 .lm-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--lm-secondary);
+  letter-spacing: 0.04em;
+  color: var(--lm-haze);
 }
 
 .lm-surface {
   background: var(--lm-surface);
-  border: 1px solid #1a1a1a;
+  border: 0.5px solid var(--lm-border);
   border-radius: var(--lm-radius-lg);
 }
 
 .lm-btn {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 10px 16px;
+  padding: 10px 18px;
   border-radius: var(--lm-radius-sm);
-  border: 0.5px solid var(--lm-border);
-  background: var(--lm-raised);
-  color: var(--lm-primary);
+  border: 0.5px solid var(--lm-border-strong);
+  background: var(--lm-surface);
+  color: var(--lm-dusk);
   transition: border-color 0.12s ease;
 }
 
 .lm-btn:hover {
-  border-color: #333333;
+  border-color: var(--lm-dusk);
 }
 
 .lm-btn-primary {
-  background: var(--lm-raised);
-  color: var(--lm-bright);
+  background: var(--lm-dusk);
+  color: #f4f3f8;
+  border-color: var(--lm-dusk);
+}
+
+.lm-btn-primary:hover {
+  opacity: 0.9;
+  border-color: var(--lm-dusk);
 }
 
 .lm-input {
-  font-size: 12px;
-  padding: 8px 10px;
+  font-size: 13px;
+  padding: 9px 12px;
   border-radius: var(--lm-radius-sm);
   border: 0.5px solid var(--lm-border);
   background: var(--lm-surface);
-  color: var(--lm-primary);
+  color: var(--lm-dusk);
   width: 100%;
 }
 
 .lm-input:focus {
   outline: none;
-  border-color: #333333;
+  border-color: var(--lm-border-strong);
 }
 
 .lm-link {
-  color: var(--lm-primary);
+  color: var(--lm-mismatch);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.lm-link:hover {
+  color: var(--lm-mismatch-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
+/* ── Hero ── */
 .lm-hero {
   position: relative;
   overflow: hidden;
-  background: #0a0a0a;
-}
-
-.lm-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse at 50% 42%,
-    rgba(201, 168, 76, 0.08) 0%,
-    rgba(201, 168, 76, 0.03) 40%,
-    transparent 72%
-  );
-  pointer-events: none;
+  background: var(--lm-mist-lt);
 }
 
 .lm-wordmark-marketing {
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #c9a84c;
+  color: var(--lm-mismatch);
 }
 
 .lm-landing-h1 {
-  color: #f5f5f5;
-  font-size: clamp(28px, 5vw, 40px);
+  color: var(--lm-dusk);
+  font-size: clamp(32px, 5vw, 44px);
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.lm-landing-h1 em {
+  font-style: normal;
+  color: var(--lm-mismatch);
 }
 
 .lm-landing-subhead {
-  color: #888888;
-  font-size: 15px;
+  color: var(--lm-slate);
+  font-size: 16px;
   line-height: 1.65;
 }
 
 .lm-landing-cta {
   display: inline-block;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 10px 18px;
-  border-radius: 4px;
-  border: 1px solid #c9a84c;
-  background: transparent;
-  color: #c9a84c;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: var(--lm-radius-sm);
+  border: none;
+  background: var(--lm-dusk);
+  color: #f4f3f8;
   text-decoration: none;
-  box-shadow: none;
-  transition: background 0.12s ease, color 0.12s ease;
+  letter-spacing: -0.01em;
+  transition: opacity 0.12s ease;
 }
 
 .lm-landing-cta:hover {
-  background: #c9a84c;
-  color: #0a0a0a;
+  opacity: 0.9;
 }
 
+/* Eyebrow + signal chips */
+.lm-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lm-mismatch);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lm-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lm-mismatch);
+}
+
+.lm-sig-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--lm-surface);
+  border: 0.5px solid var(--lm-border);
+  border-radius: 20px;
+  padding: 5px 12px;
+}
+
+.lm-sig-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.lm-sig-chip-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lm-dusk);
+  letter-spacing: 0.01em;
+}
+
+.lm-sig-chip-desc {
+  font-size: 11px;
+  color: var(--lm-haze);
+}
+
+/* ── How it works ── */
 .lm-how-section {
-  background: #0a0a0a;
+  background: var(--lm-cloud);
 }
 
 .lm-how-divider {
   height: 1px;
   border: none;
-  background: rgba(201, 168, 76, 0.15);
+  background: var(--lm-mist);
   margin: 0 auto 2.5rem;
   max-width: 100%;
 }
 
 .lm-how-title {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 600;
-  color: #f5f5f5;
-  letter-spacing: 0;
+  color: var(--lm-dusk);
+  letter-spacing: -0.02em;
 }
 
 .lm-step-ring {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid #c9a84c;
-  background: transparent;
-  color: #c9a84c;
+  border: 0.5px solid var(--lm-border-strong);
+  background: var(--lm-surface);
+  color: var(--lm-mismatch);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 12px;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .lm-step-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: #f5f5f5;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lm-dusk);
   margin-bottom: 8px;
+  letter-spacing: -0.01em;
 }
 
 .lm-step-body {
-  font-size: 12px;
-  color: #888888;
-  line-height: 1.65;
+  font-size: 13px;
+  color: var(--lm-slate);
+  line-height: 1.6;
 }
 
 .lm-wordmark-product {
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: var(--lm-bright);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--lm-dusk);
 }
 
 .lm-divider {
   height: 1px;
-  background: var(--lm-raised);
+  background: var(--lm-mist);
 }
 
+/* ── Signal explain cards ── */
+.lm-signal-explain {
+  border-radius: var(--lm-radius-lg);
+  padding: 16px;
+  border: 0.5px solid var(--lm-border);
+  background: var(--lm-surface);
+}
+
+.lm-signal-explain__name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+
+.lm-signal-explain__desc {
+  font-size: 12px;
+  color: var(--lm-slate);
+  line-height: 1.5;
+}
+
+/* ── Weekly card ── */
 .lm-weekly-card {
   width: 380px;
   max-width: 100%;
   background: var(--lm-surface);
-  border: 1px solid #1a1a1a;
+  border: 0.5px solid var(--lm-border);
   border-radius: var(--lm-radius-xl);
   padding: 24px;
   position: relative;
   overflow: hidden;
 }
 
-.lm-weekly-card::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 55%;
-  height: 45%;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% 100%,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.01) 40%,
-    rgba(255, 255, 255, 0) 70%
-  );
-}
-
 .lm-bar-track {
   height: 4px;
-  background: #1a1a1a;
+  background: var(--lm-mist);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -269,5 +360,5 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
 }

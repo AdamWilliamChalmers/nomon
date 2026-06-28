@@ -1,0 +1,101 @@
+/* ============================================================
+   Lumen Design System — tokens.css
+   Import this first in every Lumen surface.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* ── Surfaces ── */
+  --lumen-cloud:        #fafafc;   /* page background */
+  --lumen-surface:      #ffffff;   /* card / popup bg */
+  --lumen-mist:         #e8e7f0;   /* border, divider */
+  --lumen-mist-lt:      #f0eff5;   /* hero / section iris tint */
+
+  /* ── Text ── */
+  --lumen-dusk:         #1a1825;   /* primary text, logo mark */
+  --lumen-slate:        #7b7a8a;   /* secondary text */
+  --lumen-haze:         #9896a8;   /* muted / labels */
+  --lumen-ghost-text:   #b8b6c4;   /* ghost mode, timestamps */
+
+  /* ── Borders ── */
+  --lumen-border:       #e2e1ea;
+  --lumen-border-strong:#c8c7d5;
+
+  /* ── Signals ── */
+  --lumen-loop:         #2d9e4e;
+  --lumen-loop-tint:    #e8f7ee;
+  --lumen-loop-text:    #1a6630;
+
+  --lumen-drift:        #d4921a;
+  --lumen-drift-tint:   #faf0e0;
+  --lumen-drift-text:   #7a5010;
+
+  --lumen-mismatch:     #7b5cbf;
+  --lumen-mismatch-tint:#ede9f8;
+  --lumen-mismatch-text:#4a3680;
+
+  --lumen-depth:        #3478c5;
+  --lumen-depth-tint:   #e8f0fa;
+  --lumen-depth-text:   #1a4880;
+
+  /* ── Spacing ── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-8: 48px;
+
+  /* ── Radius ── */
+  --r-sm:  6px;   /* buttons, inputs */
+  --r-md:  8px;   /* controls */
+  --r-lg:  10px;  /* cards, nudges */
+  --r-xl:  12px;  /* popup shell, modals */
+
+  /* ── Typography ── */
+  --font: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* ── Base reset ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--lumen-dusk);
+  background: var(--lumen-cloud);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Type scale ── */
+.t-display {
+  font-size: 40px; font-weight: 700;
+  letter-spacing: -0.03em; line-height: 1.05;
+}
+.t-h1 {
+  font-size: 24px; font-weight: 600;
+  letter-spacing: -0.02em; line-height: 1.2;
+}
+.t-h2 {
+  font-size: 17px; font-weight: 600;
+  letter-spacing: -0.01em; line-height: 1.3;
+}
+.t-body {
+  font-size: 14px; font-weight: 400; line-height: 1.6;
+  color: var(--lumen-slate);
+}
+.t-signal-val {
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.03em; line-height: 1;
+}
+.t-label {
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--lumen-haze);
+}
+.t-caption {
+  font-size: 10px; font-weight: 400;
+  letter-spacing: 0.03em; color: var(--lumen-ghost-text);
+}

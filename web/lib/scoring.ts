@@ -1,6 +1,8 @@
 export const INSIGHT_TEMPLATES = {
-  thinker_high: "Mostly a thinker week — more depth moments than usual.",
-  explorer_high: "Explorer mode all week. More questions than any week this month.",
+  thinker_high: "High engagement week — more evaluation moments than usual.",
+  explorer_high: "Questioning mode all week — more pushback and follow-up than usual.",
+  delegator:
+    "Mostly acceptance mode this week. Worth checking a few of those responses still sound like your thinking.",
   maker: "Maker week — high conscious delegation. Intentionality held steady.",
   overwhelmed: "Heavy session mid-week flagged as overwhelmed. You kept going.",
   ordinary: "Consistent with your baseline. A steady week.",
@@ -17,6 +19,9 @@ export interface WeekMetrics {
   total_messages: number;
   intentional_pct: number;
   human_states: string[];
+  avgDwellRatio: number | null;
+  lowDwellSessions: number;
+  dominantTier: string | null;
 }
 
 export function pickInsight(thisWeek: WeekMetrics, lastWeek?: WeekMetrics | null): string {
@@ -39,6 +44,9 @@ export function pickInsight(thisWeek: WeekMetrics, lastWeek?: WeekMetrics | null
   if (thisWeek.conscious_delegates > 2 && thisWeek.intentional_pct >= 70) {
     return INSIGHT_TEMPLATES.maker;
   }
+  if (thisWeek.intentional_pct < 45) {
+    return INSIGHT_TEMPLATES.delegator;
+  }
   if (thisWeek.depth_moments > lastWeek.depth_moments && lastWeek.depth_moments < 2) {
     return INSIGHT_TEMPLATES.recovery;
   }
@@ -57,6 +65,9 @@ export function aggregateSessions(
     conscious_delegates?: number | null;
     composite_score?: number | null;
     human_state?: string | null;
+    avg_dwell_ratio?: number | null;
+    low_dwell_count?: number | null;
+    dominant_load_tier?: Record<string, number> | null;
   }>
 ): WeekMetrics {
   let depth = 0;
@@ -65,6 +76,9 @@ export function aggregateSessions(
   let messages = 0;
   let compositeSum = 0;
   const human_states: string[] = [];
+  const dwellRatios: number[] = [];
+  let lowDwellSessions = 0;
+  const tierTotals: Record<string, number> = {};
 
   for (const s of sessions) {
     depth += s.depth_moments ?? 0;
@@ -73,10 +87,22 @@ export function aggregateSessions(
     messages += s.message_count ?? 0;
     compositeSum += (s.composite_score ?? 0) * (s.message_count ?? 1);
     if (s.human_state && s.human_state !== "none") human_states.push(s.human_state);
+    if (s.avg_dwell_ratio != null) dwellRatios.push(s.avg_dwell_ratio);
+    if ((s.low_dwell_count ?? 0) > 0) lowDwellSessions += 1;
+    if (s.dominant_load_tier) {
+      for (const [tier, count] of Object.entries(s.dominant_load_tier)) {
+        tierTotals[tier] = (tierTotals[tier] || 0) + count;
+      }
+    }
   }
 
   const intentional_pct =
     messages > 0 ? Math.round(100 - compositeSum / Math.max(messages, 1)) : 50;
+
+  const dominantTier =
+    Object.keys(tierTotals).length > 0
+      ? Object.entries(tierTotals).sort((a, b) => b[1] - a[1])[0][0]
+      : null;
 
   return {
     depth_moments: depth,
@@ -85,6 +111,11 @@ export function aggregateSessions(
     total_messages: messages,
     intentional_pct: Math.max(0, Math.min(100, intentional_pct)),
     human_states,
+    avgDwellRatio: dwellRatios.length
+      ? dwellRatios.reduce((a, b) => a + b, 0) / dwellRatios.length
+      : null,
+    lowDwellSessions,
+    dominantTier,
   };
 }
 

@@ -1,19 +1,57 @@
 {
   "manifest_version": 3,
   "name": "Lumen",
-  "version": "3.5.0",
-  "description": "Cognitive fitness layer for AI — Loop, Drift, Mismatch, and Depth signals without judgment.",
+  "version": "3.5.1",
+  "description": "Metacognitive engagement layer for AI — five signals (Hand-off, Loop, Drift, Mismatch, Depth) that notice when you stop evaluating, not how much you use AI.",
   "permissions": ["storage"],
   "host_permissions": ["http://localhost:3000/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://grok.com/*",
+        "https://x.com/*",
+        "https://copilot.microsoft.com/*",
+        "https://www.perplexity.ai/*",
+        "https://perplexity.ai/*"
+      ]
+    }
+  ],
   "content_scripts": [
     {
       "matches": [
         "https://chat.openai.com/*",
-        "https://chatgpt.com/*"
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://grok.com/*",
+        "https://x.com/i/grok*",
+        "https://copilot.microsoft.com/*",
+        "https://www.perplexity.ai/*",
+        "https://perplexity.ai/*"
       ],
       "js": [
         "adapters/chatgpt.js",
+        "adapters/base.js",
+        "adapters/claude.js",
+        "adapters/gemini.js",
+        "adapters/grok.js",
+        "adapters/copilot.js",
+        "adapters/perplexity.js",
         "rules.js",
+        "net.js",
         "nudges.js",
         "engine.js",
         "goals.js",

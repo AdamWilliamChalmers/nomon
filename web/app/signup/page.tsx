@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -39,6 +40,7 @@ export default function SignupPage() {
 
   return (
     <main className="max-w-md mx-auto px-6 py-12">
+      <BrandLogo variant="full" height={56} className="mb-6" />
       <h1 className="text-2xl font-bold mb-2">Create your Lumen account</h1>
       <p className="text-sm text-gray-600 mb-8">
         Minimum age 13. Ages 13–17 require a parent/guardian to confirm before activation.
@@ -110,14 +112,20 @@ export default function SignupPage() {
       {result && (
         <div className="mt-4 text-sm bg-green-50 border border-green-100 rounded-lg p-4">
           <p>{String(result.message || "Account created.")}</p>
-          {result.consentUrl && (
+          {result.apiToken ? (
+            <p className="mt-2 text-xs break-all">
+              API token (paste into extension settings):{" "}
+              <code className="font-mono">{String(result.apiToken)}</code>
+            </p>
+          ) : null}
+          {result.consentUrl ? (
             <p className="mt-2">
               Parent consent link:{" "}
               <Link href={String(result.consentUrl)} className="text-sky-600 underline">
                 {String(result.consentUrl)}
               </Link>
             </p>
-          )}
+          ) : null}
         </div>
       )}
 

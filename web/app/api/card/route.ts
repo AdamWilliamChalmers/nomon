@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { getLearnedMoment } from "@/lib/lumiMemory";
 import { aggregateSessions, pickInsight } from "@/lib/scoring";
 import { classifyShape } from "@/lib/shapes";
+import { getUserById } from "@/lib/auth";
 
 function weekStart(date = new Date()) {
   const d = new Date(date);
@@ -21,13 +23,21 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabase();
   if (!supabase) {
+    const learnedMoment = getLearnedMoment(userId, week)?.text || null;
     return NextResponse.json({
       userId,
       weekStart: week,
       shape: "Balanced",
       insightLine: "Connect Supabase to load real card data.",
+      learnedMoment,
+      lumiMode: Boolean(learnedMoment),
       demo: true,
     });
+  }
+
+  const user = await getUserById(userId);
+  if (!user?.pro) {
+    return NextResponse.json({ error: "Pro required" }, { status: 403 });
   }
 
   const weekEnd = new Date(week);
@@ -58,12 +68,15 @@ export async function GET(req: NextRequest) {
 
   const lastMetrics = aggregateSessions(prevSessions || []);
   const insightLine = pickInsight(metrics, lastMetrics);
+  const learnedMoment = getLearnedMoment(userId, week)?.text || null;
 
   return NextResponse.json({
     userId,
     weekStart: week,
     shape,
     insightLine,
+    learnedMoment,
+    lumiMode: Boolean(learnedMoment),
     ...metrics,
     session_count: sessions?.length || 0,
     questionCommandRatio:

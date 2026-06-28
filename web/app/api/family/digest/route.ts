@@ -1,5 +1,6 @@
 import { buildParentWeeklyEmailHtml } from "@/lib/familyEmail";
 import { getAllActiveShares } from "@/lib/familyMemory";
+import { getLearnedMoment } from "@/lib/lumiMemory";
 import { getFamilyConversationStarter } from "@/lib/familyQuestions";
 import type { Shape } from "@/lib/shapes";
 import { NextRequest, NextResponse } from "next/server";
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
     });
     const card = await cardRes.json();
     const shape = (card.shape as Shape) || "Balanced";
+    const learned = getLearnedMoment(share.childUserId)?.text || null;
     const html = buildParentWeeklyEmailHtml({
       childName: share.childDisplayName,
       shape,
@@ -34,6 +36,7 @@ export async function POST(req: NextRequest) {
       loopBreaks: Number(card.loop_breaks_taken) || 0,
       intentionalPct: Number(card.intentional_pct) || 50,
       conversationStarter: getFamilyConversationStarter(shape),
+      learnedMoment: learned,
     });
 
     const subject = `${share.childDisplayName}'s Lumen week — ${shape}`;

@@ -20,10 +20,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Share not found" }, { status: 404 });
     }
     if (share.status === "pending") {
-      share = activateShare(shareId, token);
-      if (!share) {
+      const activated = activateShare(shareId, token);
+      if (!activated) {
         return NextResponse.json({ error: "Invalid invitation" }, { status: 403 });
       }
+      share = activated;
     } else if (share.inviteToken !== token && share.status !== "active") {
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
     }

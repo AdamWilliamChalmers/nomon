@@ -10,7 +10,15 @@ const LumenGoals = (() => {
     focusGoal: null,
     llmJudgeEnabled: false,
     judgeApiUrl: "http://localhost:3000/api/judge",
+    webAppUrl: "http://localhost:3000",
+    studyParticipant: false,
+    // Privacy-by-default: no session data leaves the device unless the user
+    // explicitly opts in. Gates postSessionSummary egress (see session.js).
+    shareAnonymisedData: false,
+    crowdCalibration: null,
     fabPosition: null,
+    // Runtime-only: set by fetchJudgeCapability(), never persisted.
+    judgeAvailable: false,
   };
 
   let cache = { ...DEFAULTS };
@@ -127,6 +135,75 @@ const LumenGoals = (() => {
     return LumenRules.checkMismatchGoals(text, cache.protectedGoals);
   }
 
+  function setStudyParticipant(enabled) {
+    cache.studyParticipant = Boolean(enabled);
+    save({ studyParticipant: cache.studyParticipant });
+    if (chrome?.storage?.sync?.set) {
+      chrome.storage.sync.set({ studyParticipant: cache.studyParticipant }, () => void chrome.runtime?.lastError);
+    }
+  }
+
+  async function loadStudyParticipant() {
+    return new Promise((resolve) => {
+      if (!chrome?.storage?.sync?.get) {
+        resolve(cache.studyParticipant);
+        return;
+      }
+      chrome.storage.sync.get("studyParticipant", (result) => {
+        if (typeof result?.studyParticipant === "boolean") {
+          cache.studyParticipant = result.studyParticipant;
+        }
+        resolve(cache.studyParticipant);
+      });
+    });
+  }
+
+  async function fetchCrowdCalibration() {
+    const base = (cache.webAppUrl || "http://localhost:3000").replace(/\/$/, "");
+    try {
+      const res = await globalThis.LumenNet.fetch(`${base}/api/calibration/weights`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return cache.crowdCalibration;
+      const data = await res.json();
+      if (data?.ok) {
+        cache.crowdCalibration = {
+          taskTypeModifiers: data.taskTypeModifiers || {},
+          loopThreshold: data.loopThreshold,
+          sampleCount: data.sampleCount,
+          updatedAt: data.updatedAt,
+        };
+      }
+    } catch (_) {
+      // web app may be offline during normal use
+    }
+    return cache.crowdCalibration;
+  }
+
+  function getCrowdCalibration() {
+    return cache.crowdCalibration;
+  }
+
+  // Probe the backend for a configured LLM key and auto-enable the judge when
+  // present. Runtime-only (not persisted) so it never clobbers an explicit
+  // user choice in settings. Best-effort: web app may be offline.
+  async function fetchJudgeCapability() {
+    const base = (cache.webAppUrl || "http://localhost:3000").replace(/\/$/, "");
+    try {
+      const res = await globalThis.LumenNet.fetch(`${base}/api/judge`, { cache: "no-store" });
+      if (!res.ok) return false;
+      const data = await res.json();
+      cache.judgeAvailable = Boolean(data?.llm);
+    } catch (_) {
+      cache.judgeAvailable = false;
+    }
+    return cache.judgeAvailable;
+  }
+
+  function isJudgeAvailable() {
+    return Boolean(cache.judgeAvailable);
+  }
+
   return {
     get,
     load,
@@ -140,6 +217,12 @@ const LumenGoals = (() => {
     isGhost,
     isActive,
     checkMismatch,
+    setStudyParticipant,
+    loadStudyParticipant,
+    fetchCrowdCalibration,
+    getCrowdCalibration,
+    fetchJudgeCapability,
+    isJudgeAvailable,
   };
 })();
 

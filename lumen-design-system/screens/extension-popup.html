@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumen — Extension Popup</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="../tokens/tokens.css">
+  <link rel="stylesheet" href="../components/components.css">
+  <style>
+    body {
+      background: #e8e7f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- The actual extension popup is 320px wide -->
+  <div class="popup">
+
+    <!-- Header -->
+    <div class="popup__header">
+      <div class="lumen-lockup">
+        <div class="lumen-mark lumen-mark--sm">
+          <svg width="10" height="10" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="3" fill="white" opacity="0.95"/>
+            <circle cx="9" cy="9" r="6" stroke="white" stroke-width="1.2" opacity="0.35"/>
+            <circle cx="9" cy="9" r="8.5" stroke="white" stroke-width="0.6" opacity="0.15"/>
+          </svg>
+        </div>
+        <span class="lumen-lockup__word" style="font-size:13px;">lumen</span>
+      </div>
+      <button class="btn-ghost">
+        <i class="ti ti-eye-off" aria-hidden="true" style="font-size:12px;margin-right:4px;vertical-align:-1px;"></i>Ghost mode
+      </button>
+    </div>
+
+    <!-- Signal stats row -->
+    <div class="popup__stats">
+      <div class="popup__stat">
+        <div class="popup__stat-label">Loop</div>
+        <div class="popup__stat-val" style="color:var(--lumen-loop);">2.1<span style="font-size:10px;font-weight:400;color:var(--lumen-haze);">×</span></div>
+        <div class="popup__stat-sub" style="color:var(--lumen-loop);">low</div>
+      </div>
+      <div class="popup__stat" style="opacity:0.4;">
+        <div class="popup__stat-label">Drift</div>
+        <div class="popup__stat-val" style="color:var(--lumen-haze);">—</div>
+        <div class="popup__stat-sub" style="color:var(--lumen-ghost-text);font-size:9px;">none</div>
+      </div>
+      <div class="popup__stat">
+        <div class="popup__stat-label">Mismatch</div>
+        <div class="popup__stat-val" style="color:var(--lumen-mismatch);">1</div>
+        <div class="popup__stat-sub" style="color:var(--lumen-mismatch);">flagged</div>
+      </div>
+      <div class="popup__stat" style="opacity:0.4;">
+        <div class="popup__stat-label">Depth</div>
+        <div class="popup__stat-val" style="color:var(--lumen-haze);">—</div>
+        <div class="popup__stat-sub" style="color:var(--lumen-ghost-text);font-size:9px;">clear</div>
+      </div>
+    </div>
+
+    <!-- Active nudge -->
+    <div class="popup__nudge">
+      <div class="nudge" data-signal="mismatch" style="border:none;padding:0;border-radius:0;background:transparent;">
+        <div class="nudge__bar"></div>
+        <div class="nudge__body">
+          <div class="nudge__title">Goal mismatch detected</div>
+          <div class="nudge__text">This session conflicts with "think independently on strategic questions." Still your call.</div>
+          <button class="nudge__action">Reflect ↗</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="popup__footer">
+      <div class="popup__session">
+        <i class="ti ti-clock-hour-4" aria-hidden="true" style="font-size:11px;vertical-align:-1px;margin-right:3px;"></i>
+        Session 04 · 28 min · claude.ai
+      </div>
+      <button class="popup__digest-btn">
+        Weekly digest <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:10px;vertical-align:-1px;"></i>
+      </button>
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumen — Component kitchen sink</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="../tokens/tokens.css">
+  <link rel="stylesheet" href="../components/components.css">
+  <style>
+    body { padding: 40px; max-width: 900px; margin: 0 auto; }
+    .ks-section { margin-bottom: 48px; }
+    .ks-label {
+      font-size: 10px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--lumen-haze);
+      padding-bottom: 10px; margin-bottom: 16px;
+      border-bottom: 0.5px solid var(--lumen-mist);
+    }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+    .col { display: flex; flex-direction: column; gap: 12px; }
+    .signal-grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+  </style>
+</head>
+<body>
+
+  <!-- LOGO -->
+  <div class="ks-section">
+    <div class="ks-label">Logo system</div>
+    <div class="row" style="align-items:center;">
+      <div class="lumen-lockup">
+        <div class="lumen-mark lumen-mark--lg">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="3" fill="white" opacity="0.95"/>
+            <circle cx="9" cy="9" r="6" stroke="white" stroke-width="1" opacity="0.3"/>
+            <circle cx="9" cy="9" r="8.5" stroke="white" stroke-width="0.5" opacity="0.15"/>
+          </svg>
+        </div>
+        <span class="lumen-lockup__word">lumen</span>
+      </div>
+
+      <div class="lumen-lockup">
+        <div class="lumen-mark lumen-mark--md">
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="3" fill="white" opacity="0.95"/>
+            <circle cx="9" cy="9" r="6" stroke="white" stroke-width="1" opacity="0.3"/>
+            <circle cx="9" cy="9" r="8.5" stroke="white" stroke-width="0.5" opacity="0.15"/>
+          </svg>
+        </div>
+        <span class="lumen-lockup__word" style="font-size:15px;">lumen</span>
+      </div>
+
+      <div class="lumen-lockup is-ghost">
+        <div class="lumen-mark lumen-mark--md">
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="3" fill="white" opacity="0.95"/>
+            <circle cx="9" cy="9" r="6" stroke="white" stroke-width="1" opacity="0.3"/>
+          </svg>
+        </div>
+        <span class="lumen-lockup__word" style="font-size:15px;">lumen</span>
+      </div>
+      <div style="font-size:11px;color:var(--lumen-haze);">← ghost mode (opacity 0.3)</div>
+    </div>
+  </div>
+
+  <!-- COLOUR TOKENS -->
+  <div class="ks-section">
+    <div class="ks-label">Colour tokens</div>
+    <div class="row">
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+        <div style="width:48px;height:48px;background:var(--lumen-cloud);border:0.5px solid var(--lumen-mist);border-radius:6px;"></div>
+        <span style="font-size:9px;color:var(--lumen-haze);">Cloud</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+        <div style="width:48px;height:48px;background:white;border:0.5px solid var(--lumen-mist);border-radius:6px;"></div>
+        <span style="font-size:9px;color:var(--lumen-haze);">Surface</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+        <div style="width:48px;height:48px;background:var(--lumen-mist-lt);border-radius:6px;"></div>
+        <span style="font-size:9px;color:var(--lumen-haze);">Iris tint</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+        <div style="width:48px;height:48px;background:var(--lumen-dusk);border-radius:6px;"></div>
+        <span style="font-size:9px;color:var(--lumen-haze);">Dusk</span>
+      </div>
+      <div style="width:1px;background:var(--lumen-mist);align-self:stretch;margin:0 4px;"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+        <div style="width:48px;height:48px;background:var(--lumen-loop);border-radius:6px;"></div>
+        <span style="font-size:9px;color:var(--lumen-haze);">Loop</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+        <div style="width:48px;height:48px;background:var(--lumen-drift);border-radius:6px;"></div>
+        <span style="font-size:9px;color:var(--lumen-haze);">Drift</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+        <div style="width:48px;height:48px;background:var(--lumen-mismatch);border-radius:6px;"></div>
+        <span style="font-size:9px;color:var(--lumen-haze);">Mismatch</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+        <div style="width:48px;height:48px;background:var(--lumen-depth);border-radius:6px;"></div>
+        <span style="font-size:9px;color:var(--lumen-haze);">Depth</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNAL CARDS -->
+  <div class="ks-section">
+    <div class="ks-label">Signal stat cards</div>
+    <div class="signal-grid-4">
+      <div class="signal-card" data-signal="loop">
+        <div class="signal-card__header">
+          <div class="signal-card__dot"></div>
+          <span class="signal-card__name">Loop</span>
+        </div>
+        <div class="signal-card__value">2.1<span class="signal-card__unit">×</span></div>
+        <div class="signal-card__desc">4 consecutive accepts</div>
+      </div>
+      <div class="signal-card is-null" data-signal="drift">
+        <div class="signal-card__header">
+          <div class="signal-card__dot"></div>
+          <span class="signal-card__name">Drift</span>
+        </div>
+        <div class="signal-card__value">—</div>
+        <div class="signal-card__desc">No pattern yet</div>
+      </div>
+      <div class="signal-card" data-signal="mismatch">
+        <div class="signal-card__header">
+          <div class="signal-card__dot"></div>
+          <span class="signal-card__name">Mismatch</span>
+        </div>
+        <div class="signal-card__value">1</div>
+        <div class="signal-card__desc">Goal conflict found</div>
+      </div>
+      <div class="signal-card is-null" data-signal="depth">
+        <div class="signal-card__header">
+          <div class="signal-card__dot"></div>
+          <span class="signal-card__name">Depth</span>
+        </div>
+        <div class="signal-card__value">—</div>
+        <div class="signal-card__desc">No flags</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNAL PILLS -->
+  <div class="ks-section">
+    <div class="ks-label">Signal pills</div>
+    <div class="row">
+      <div class="signal-pill" data-signal="loop">
+        <div class="signal-pill__dot"></div>Loop active
+      </div>
+      <div class="signal-pill" data-signal="drift">
+        <div class="signal-pill__dot"></div>Drift detected
+      </div>
+      <div class="signal-pill" data-signal="mismatch">
+        <div class="signal-pill__dot"></div>Mismatch
+      </div>
+      <div class="signal-pill" data-signal="depth">
+        <div class="signal-pill__dot"></div>Depth prompt
+      </div>
+    </div>
+  </div>
+
+  <!-- NUDGES -->
+  <div class="ks-section">
+    <div class="ks-label">Nudge components (mirror, not nanny)</div>
+    <div class="col" style="max-width:480px;">
+      <div class="nudge" data-signal="mismatch">
+        <div class="nudge__bar"></div>
+        <div class="nudge__body">
+          <div class="nudge__title">Goal mismatch</div>
+          <div class="nudge__text">This session conflicts with "think independently on strategy." Still your call.</div>
+          <button class="nudge__action">Reflect ↗</button>
+        </div>
+      </div>
+      <div class="nudge" data-signal="depth">
+        <div class="nudge__bar"></div>
+        <div class="nudge__body">
+          <div class="nudge__title">Worth a moment</div>
+          <div class="nudge__text">That's a high-stakes question. What's your own answer before you read this?</div>
+          <button class="nudge__action">Take 30 sec ↗</button>
+        </div>
+      </div>
+      <div class="nudge" data-signal="loop">
+        <div class="nudge__bar"></div>
+        <div class="nudge__body">
+          <div class="nudge__title">Loop signal</div>
+          <div class="nudge__text">4 outputs accepted without edits. Noticing, not judging.</div>
+          <button class="nudge__action">Dismiss</button>
+        </div>
+      </div>
+      <div class="nudge" data-signal="drift">
+        <div class="nudge__bar"></div>
+        <div class="nudge__body">
+          <div class="nudge__title">Drift pattern</div>
+          <div class="nudge__text">This week you've been less engaged with AI output than last week. Worth knowing.</div>
+          <button class="nudge__action">See digest ↗</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="ks-section">
+    <div class="ks-label">Buttons</div>
+    <div class="row" style="align-items:center;">
+      <button class="btn-primary">Add to Chrome — free</button>
+      <button class="btn-outline">See how it works</button>
+      <button class="btn-ghost">
+        <i class="ti ti-eye-off" aria-hidden="true" style="font-size:12px;margin-right:4px;vertical-align:-1px;"></i>
+        Ghost mode
+      </button>
+    </div>
+  </div>
+
+  <!-- ICONS -->
+  <div class="ks-section">
+    <div class="ks-label">Icon set (Tabler outline, 20px)</div>
+    <div class="row">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-refresh icon-loop" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Loop</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-trending-down icon-drift" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Drift</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-arrows-diff icon-mismatch" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Mismatch</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-brain icon-depth" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Depth</span>
+      </div>
+      <div style="width:1px;background:var(--lumen-mist);align-self:stretch;margin:0 8px;"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-eye-off icon-muted" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Ghost</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-chart-line icon-muted" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Digest</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-target icon-muted" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Goal</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-sparkles icon-muted" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Reflect</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-settings-2 icon-muted" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Settings</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-clock-hour-4 icon-muted" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Session</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-bell-off icon-muted" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Mute</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <i class="ti ti-x icon-muted" style="font-size:20px;" aria-hidden="true"></i>
+        <span style="font-size:9px;color:var(--lumen-haze);">Dismiss</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TYPE SCALE -->
+  <div class="ks-section">
+    <div class="ks-label">Type scale — Plus Jakarta Sans</div>
+    <div class="col" style="gap:16px;">
+      <div class="t-display" style="color:var(--lumen-dusk);">Think for yourself</div>
+      <div class="t-h1" style="color:var(--lumen-dusk);">Your cognitive mirror</div>
+      <div class="t-h2" style="color:var(--lumen-dusk);">Session summary</div>
+      <div class="t-body">Lumen watches how you use AI so you don't have to.</div>
+      <div class="t-signal-val" style="color:var(--lumen-loop);">2.1×</div>
+      <div class="t-label">Loop · in-session</div>
+      <div class="t-caption">Session 04 · 28 min · claude.ai</div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,10 +1,10 @@
 const LumenNudges = (() => {
-  const HANDOFF_LABEL = "hand-off · start with your own draft?";
+  const HANDOFF_LABEL = "hand-off · what do you already know?";
 
   const LOOP_NUDGES = {
-    default: "loop · still with it?",
-    mid: "loop · what do you already know about this?",
-    high: "loop · what would you change about that answer?",
+    default: "loop · still reading?",
+    mid: "loop · what would you change here?",
+    high: "loop · reading this, or moving on?",
     passive: (count) => `loop · ${count} messages, mostly passive`,
     promptLength: "loop · what do you already know?",
     velocity: "loop · what's the core question?",
@@ -71,10 +71,10 @@ const LumenNudges = (() => {
   function getHandOffOverlayCopy(taskType) {
     return {
       kicker: "Lumen · hand-off",
-      title: "Start with your own version?",
-      body: `You're asking for ${taskTypePhrase(taskType)} in one go. Even a rough paragraph changes how you use the answer.`,
-      draftLabel: "I'll draft something first",
-      continueLabel: "Continue — show AI answer",
+      title: "Before you hand this over",
+      body: `You're asking for ${taskTypePhrase(taskType)} in one go — which is fine. Even a rough paragraph first changes what you get back.`,
+      draftLabel: "I'll draft something",
+      continueLabel: "Continue — show answer",
       draftPlaceholder: "Your rough draft — even one sentence…",
       submitLabel: "Submit my draft + ask AI",
     };
@@ -83,10 +83,10 @@ const LumenNudges = (() => {
   function getLoopOverlayCopy() {
     return {
       kicker: "Lumen · loop",
-      title: "Still with it?",
-      body: "You've been in a mostly passive pattern for a few messages. Worth checking in before you continue.",
-      draftLabel: "Let me engage first",
-      continueLabel: "Continue — show AI answer",
+      title: "Still evaluating?",
+      body: "Last few messages: short requests, long responses, no questions back. Not a problem — just worth noticing. Still tracking the reasoning?",
+      draftLabel: "Let me think first",
+      continueLabel: "Continue — show answer",
       draftPlaceholder: "What's your take so far — even one sentence…",
       submitLabel: "Submit my thoughts + continue",
     };
@@ -98,42 +98,54 @@ const LumenNudges = (() => {
 
   function getMismatchLabel(goal) {
     const short = goal.length > 22 ? goal.slice(0, 19) + "…" : goal;
-    return truncate(`mismatch · you said you'd ${short.toLowerCase().replace(/^i want to /i, "")}`);
+    return truncate(`mismatch · this conflicts with your goal`);
   }
 
   function getMismatchCardCopy(goal, mismatchCount) {
     if (mismatchCount >= 3) {
       return {
-        title: "When you set up Lumen, you said:",
-        body: `"${goal}" — you've checked this intention ${mismatchCount} times today.`,
-        pauseLabel: "Pause and draft myself",
-        continueLabel: "My goal changed — continue",
+        title: "You said something different",
+        body: `When you set up Lumen, you said: "${goal}". You've handed this over ${mismatchCount} times today. Still the plan?`,
+        keepLabel: "Still my goal",
+        continueLabel: "My goal changed — stop flagging",
       };
     }
     return {
-      title: "When you set up Lumen, you said:",
-      body: `"${goal}"`,
-      pauseLabel: "Pause and draft myself",
-      continueLabel: "My goal changed — continue",
+      title: "You said something different",
+      body: `When you set up Lumen, you said: "${goal}". This prompt hands that over. Still the plan?`,
+      keepLabel: "Still my goal",
+      continueLabel: "My goal changed — stop flagging",
     };
   }
 
   function getDepthCardCopy(taskType, warm) {
     if (warm) {
       return {
-        title: "This one matters to you",
-        body: "Before you read what the AI says — what's already true for you here?",
+        title: "This one might be worth thinking through",
+        body: "This is the kind of question where your instinct matters. Worth a thought before you read the answer?",
         placeholder: DEPTH_PLACEHOLDERS[taskType] || DEPTH_PLACEHOLDERS.default,
         thinkLabel: "Let me think first",
-        skipLabel: "Skip — just ask",
+        skipLabel: "Skip",
       };
     }
     return {
-      title: "Worth thinking first?",
-      body: "This looks like a moment where the thinking is the point. A beat before you read the answer can help.",
+      title: "This one might be worth thinking through",
+      body: "This is the kind of question where your instinct matters. Worth a thought before you read the answer?",
       placeholder: DEPTH_PLACEHOLDERS[taskType] || DEPTH_PLACEHOLDERS.default,
       thinkLabel: "Let me think first",
-      skipLabel: "Skip — just ask",
+      skipLabel: "Skip",
+    };
+  }
+
+  function getDepthOverlayCopy(taskType) {
+    return {
+      kicker: "Lumen · depth",
+      title: "This one might be worth thinking through",
+      body: "This is the kind of question where your instinct matters. Worth a thought before you read the answer?",
+      draftLabel: "Let me think first",
+      continueLabel: "Skip — show answer",
+      draftPlaceholder: DEPTH_PLACEHOLDERS[taskType] || DEPTH_PLACEHOLDERS.default,
+      submitLabel: "Done thinking — show answer",
     };
   }
 
@@ -146,6 +158,35 @@ const LumenNudges = (() => {
 
   function isHighStakesDepth(text) {
     return /should i|what career|how do i decide|write my|create my/i.test(text);
+  }
+
+  // Efficacy = did a nudge change the next action? We count the concrete
+  // engaged responses the user already logged (drafted first / reflected /
+  // paused) against the times they skipped or bypassed.
+  function summariseResponses(digestLog = {}) {
+    const breaks = digestLog.loopBreaks || [];
+    const depthLog = digestLog.depthMoments || [];
+    const mismatchLog = digestLog.mismatchEvents || [];
+    const overlayLog = digestLog.overlayEvents || [];
+
+    const drafted = breaks.filter(
+      (b) => b.action === "draft-first" || b.action === "draft-submitted"
+    ).length;
+    const reflected = depthLog.filter((d) => d.action === "reflected").length;
+    const paused = mismatchLog.filter((m) => m.choice === "kept" || m.choice === "pause").length;
+    const engaged = drafted + reflected + paused;
+
+    const skipped =
+      depthLog.filter((d) => d.action === "skip").length +
+      overlayLog.filter((o) => o.overlayBypassed).length;
+
+    const total = engaged + skipped;
+    const rate = total ? Math.round((engaged / total) * 100) : 0;
+    const line = total
+      ? `You engaged on ${engaged} of ${total} nudges (${rate}%) — drafted ${drafted}, reflected ${reflected}, reaffirmed ${paused}.`
+      : "No nudges to respond to yet — keep going.";
+
+    return { engaged, skipped, total, rate, drafted, reflected, paused, line };
   }
 
   function buildDigest({ history, session, digestLog }) {
@@ -175,6 +216,7 @@ const LumenNudges = (() => {
       driftLines,
       depthMoments: (digestLog.depthMoments || []).slice(-3),
       mismatchSummary: `${session.mismatchCount || 0} intention checks this session`,
+      responses: summariseResponses(digestLog),
       prompt: pickRandom(DIGEST_PROMPTS),
     };
   }
@@ -189,8 +231,10 @@ const LumenNudges = (() => {
     getMismatchLabel,
     getMismatchCardCopy,
     getDepthCardCopy,
+    getDepthOverlayCopy,
     detectDepthTaskType,
     isHighStakesDepth,
+    summariseResponses,
     buildDigest,
   };
 })();

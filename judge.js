@@ -8,15 +8,18 @@ const LumenJudge = (() => {
 
   async function classify(text, evaluation) {
     const goals = globalThis.LumenGoals?.get?.() || {};
-    if (!goals.llmJudgeEnabled) return null;
-    if (evaluation.confidence !== "gray") return null;
+    // Run when the user explicitly opted in, or when the backend reports a
+    // configured LLM key (auto-enabled). content.js decides *which* messages
+    // are worth a call via LumenRules.shouldConsultJudge.
+    if (!goals.llmJudgeEnabled && !goals.judgeAvailable) return null;
 
     const key = cacheKey(text, evaluation.messageIndex);
     if (cache.has(key)) return cache.get(key);
 
-    const apiUrl = goals.judgeApiUrl || DEFAULT_API;
+    const base = (goals.webAppUrl || "").replace(/\/$/, "");
+    const apiUrl = goals.judgeApiUrl || (base ? `${base}/api/judge` : DEFAULT_API);
     try {
-      const res = await fetch(apiUrl, {
+      const res = await globalThis.LumenNet.fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -45,15 +48,16 @@ const LumenJudge = (() => {
     merged.reasons.push(`Judge: ${verdict.rationale || verdict.signal}`);
 
     if (verdict.confidence === "high" || verdict.confidence === "medium") {
-      if (verdict.signal === "handoff" && evaluation.messageIndex <= 2) {
+      if (verdict.signal === "handoff") {
         merged.primary = "handoff";
         merged.handoff = {
           active: true,
           label: globalThis.LumenNudges.getHandOffLabel(),
-          stripOnly: false,
+          stripOnly: true,
         };
-        merged.overlayType = "handoff";
-        merged.confidence = "high";
+        // Hand-off never gates the answer — surface as a strip, not the overlay.
+        merged.overlayType = null;
+        merged.confidence = verdict.confidence === "high" ? "high" : "medium";
       } else if (verdict.signal === "engaged" || verdict.signal === "none") {
         merged.primary = null;
         merged.handoff = { active: false };

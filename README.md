@@ -8,14 +8,20 @@ Cognitive fitness layer for AI — four signals, no red, no judgment.
 2. Open [chatgpt.com](https://chatgpt.com)
 3. Complete onboarding (optional — **Skip** → Ambient mode: Loop + Drift only)
 
-## The four signals
+## The signals
+
+The four named signals (Loop, Drift, Mismatch, Depth) plus **Hand-off**, the
+first-message delegation cue. None of them ever hide or delay the AI response;
+only the Loop *reconsider* overlay (Active/Focus mode, sustained passivity) is a
+heavier interrupt.
 
 | Signal | Colour | In-session |
 |--------|--------|------------|
-| **Loop** | Green | Strip + contextual nudge from dominant sub-signal |
+| **Hand-off** | Light blue | Strip only — "what do you already know?" on early full-task delegation |
+| **Loop** | Green | Strip + contextual nudge; reconsider overlay only in Active/Focus at high intensity |
 | **Drift** | Amber | Strip label only (full analysis in popover digest) |
 | **Mismatch** | Purple | Strip + card quoting *your* protected goals |
-| **Depth** | Blue | Strip + invitation card (never blocks AI response) |
+| **Depth** | Blue | Strip + additive invitation card (never blocks AI response) |
 
 ## Visibility modes
 
@@ -29,7 +35,13 @@ Cognitive fitness layer for AI — four signals, no red, no judgment.
 ## Architecture
 
 ```
-adapters/chatgpt.js   — platform adapter (standard interface)
+adapters/chatgpt.js   — ChatGPT adapter (role-attribute DOM)
+adapters/base.js      — shared adapter factory (no-role-attribute sites)
+adapters/claude.js    — Claude adapter (factory config)
+adapters/gemini.js    — Gemini adapter (factory config, best-effort selectors)
+adapters/grok.js      — Grok adapter (grok.com + x.com/i/grok, best-effort)
+adapters/copilot.js   — Microsoft Copilot adapter (best-effort selectors)
+adapters/perplexity.js— Perplexity adapter (best-effort selectors)
 engine.js             — Loop scoring + four-signal evaluation
 goals.js              — onboarding, protected goals, modes
 session.js            — lumen_session_{date} + drift history + digest log
@@ -53,5 +65,39 @@ content.js            — adapter bootstrap
 ## Not yet built (spec)
 
 - Pro weekly email digest
-- Phase 2 adapters: Claude, Gemini, Grok
-- Phase 3: Copilot, Perplexity
+- Phase 2 adapters: ~~Claude, Gemini, Grok~~ (done)
+- Phase 3 adapters: ~~Copilot, Perplexity~~ (done)
+
+> Adapters for Gemini, Grok, Copilot, and Perplexity use **best-effort
+> selectors** validated against synthetic DOM fixtures; they may need live
+> tuning against the real sites. The fail-soft guard in `content.js` means a
+> selector mismatch shows nothing rather than breaking the page.
+
+## Tests
+
+```
+cd scripts && npm install   # one-time: jsdom (dev-only, gitignored)
+cd scripts && npm test      # all suites: engine + adapter wiring + real-DOM parsing
+```
+
+Individually from the repo root:
+
+```
+node scripts/smoke-test-shipped.mjs    # shipped engine + nudge-efficacy
+node scripts/smoke-test-adapters.mjs   # adapter host matching + interface conformance
+node scripts/test-adapter-dom.mjs      # real-DOM adapter parsing (jsdom)
+node scripts/test-e2e-chatgpt.mjs      # full pipeline rendered into a mock ChatGPT DOM
+```
+
+`test-e2e-chatgpt.mjs` is the closest automated substitute for a live test: it
+runs the real shipped modules against a simulated ChatGPT DOM and asserts the
+rendered badge, strips, mismatch card, feedback button, and that no signal hides
+the answer. It prints a **manual QA checklist** for the browser-only parts
+(visual styling, real selectors, overlay click flows).
+
+CI runs all of the above on push/PR (`.github/workflows/test.yml`). To run them
+automatically before each commit, enable the bundled hook once:
+
+```
+git config core.hooksPath .githooks
+```

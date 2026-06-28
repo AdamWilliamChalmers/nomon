@@ -3,6 +3,7 @@
 import { INSIGHT_TEMPLATES } from "@/lib/scoring";
 import type { Shape } from "@/lib/shapes";
 import { SHAPE_DESCRIPTIONS } from "@/lib/shapes";
+import BrandLogo from "@/components/BrandLogo";
 
 const SHAPE_TINT: Record<Shape, { color: string; bg: string }> = {
   Explorer: { color: "#4a9fd4", bg: "rgba(74, 159, 212, 0.08)" },
@@ -54,7 +55,7 @@ export default function WeeklyCard({
     <div className="lm-weekly-card">
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div>
-          <p className="lm-label">Lumen</p>
+          <BrandLogo variant="icon" height={14} className="mb-1" />
           <h2 className="text-[15px] font-medium text-[var(--lm-bright)] mt-1">{weekLabel}</h2>
           <p className="text-[12px] text-[var(--lm-secondary)] mt-0.5">{displayName}</p>
         </div>

@@ -10,12 +10,22 @@ export function buildParentWeeklyEmailHtml(input: {
   loopBreaks: number;
   intentionalPct: number;
   conversationStarter: string;
+  learnedMoment?: string | null;
 }): string {
+  const learnedBlock = input.learnedMoment
+    ? `
+      <div style="background: #faf5ff; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #e9d5ff;">
+        <p style="font-size: 12px; font-weight: 600; color: #7c3aed; margin: 0 0 8px;">One thing they learned</p>
+        <p style="font-size: 14px; color: #374151; margin: 0; font-style: italic;">&ldquo;${input.learnedMoment}&rdquo;</p>
+      </div>
+    `
+    : "";
   return `
     <div style="font-family: system-ui, sans-serif; max-width: 480px; color: #111;">
       <p style="font-size: 12px; color: #666; text-transform: uppercase;">Lumen Family</p>
       <h1 style="font-size: 20px;">${input.childName}'s week — ${input.shape}</h1>
       <p style="font-size: 14px; color: #444; font-style: italic;">${input.insightLine}</p>
+      ${learnedBlock}
       <table style="width: 100%; margin: 16px 0; font-size: 14px;">
         <tr><td>Depth moments</td><td align="right"><strong>${input.depthMoments}</strong></td></tr>
         <tr><td>Questions asked</td><td align="right"><strong>${input.questionsAsked}</strong></td></tr>

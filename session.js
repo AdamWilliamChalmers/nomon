@@ -312,14 +312,19 @@ const LumenSession = (() => {
   }
 
   function postSessionSummary() {
+    // Egress is opt-in only. With consent off, scoring stays entirely local.
+    const goals = globalThis.LumenGoals?.get?.() || {};
+    if (!goals.shareAnonymisedData) return;
+
     const payload = buildSessionPayload();
     if (!payload.messageCount && !(payload.feedback?.length)) return;
 
     const userId = localStorage.getItem("lumenUserId") || "anonymous";
     const body = JSON.stringify({ userId, ...payload });
+    const base = (globalThis.LumenGoals?.get?.().webAppUrl || "http://localhost:3000").replace(/\/$/, "");
 
     try {
-      fetch("http://localhost:3000/api/session", {
+      globalThis.LumenNet.fetch(`${base}/api/session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,
@@ -331,16 +336,21 @@ const LumenSession = (() => {
   }
 
   function triggerPostSessionSurvey() {
-    if (!chrome?.storage?.sync?.get) return;
-    chrome.storage.sync.get("studyParticipant", (r) => {
-      if (!r?.studyParticipant) return;
-      const url = `https://lumen.so/survey?date=${session.sessionDate}&platform=${session.platform}`;
-      try {
-        window.open(url, "_blank", "noopener");
-      } catch (_) {
-        // ignore
-      }
+    const goals = globalThis.LumenGoals?.get?.() || {};
+    if (!goals.studyParticipant) return;
+
+    const base = (goals.webAppUrl || "http://localhost:3000").replace(/\/$/, "");
+    const params = new URLSearchParams({
+      date: session.sessionDate,
+      platform: session.platform,
+      score: String(Math.round(session.sessionScore || 0)),
     });
+    const url = `${base}/survey?${params.toString()}`;
+    try {
+      window.open(url, "_blank", "noopener");
+    } catch (_) {
+      // ignore
+    }
   }
 
   function reset() {

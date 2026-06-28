@@ -3,9 +3,20 @@
 
   const g = globalThis;
 
+  function adapterRegistry() {
+    return [
+      g.LumenAdapterChatGPT,
+      g.LumenAdapterClaude,
+      g.LumenAdapterGemini,
+      g.LumenAdapterGrok,
+      g.LumenAdapterCopilot,
+      g.LumenAdapterPerplexity,
+    ].filter(Boolean);
+  }
+
   function deps() {
     return {
-      adapter: g.LumenAdapterChatGPT,
+      adapter: adapterRegistry()[0],
       session: g.LumenSession,
       goals: g.LumenGoals,
       engine: g.LumenEngine,
@@ -14,9 +25,7 @@
   }
 
   function getAdapter() {
-    const { adapter } = deps();
-    if (adapter?.matches?.()) return adapter;
-    return null;
+    return adapterRegistry().find((a) => a?.matches?.()) || null;
   }
 
   function logMissingModules() {
@@ -37,13 +46,61 @@
   let messages = [];
   let history = [];
   let debounceTimer = null;
+  let lastSendAt = 0;
+
+  // Capture the real moment the user sends a prompt so live messages get an
+  // accurate timestamp (the MutationObserver fires slightly later). Historical
+  // messages have no real send time and are left as null — the engine skips
+  // velocity/dwell scoring when a timestamp is absent, rather than inventing one.
+  function bindSendCapture() {
+    const stamp = () => {
+      lastSendAt = Date.now();
+    };
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key !== "Enter" || event.shiftKey) return;
+        const input = adapter.findChatInput?.();
+        const active = document.activeElement;
+        if (input && (input === active || input.contains?.(active))) stamp();
+      },
+      true
+    );
+    document.addEventListener(
+      "click",
+      (event) => {
+        if (
+          event.target?.closest?.(
+            'button[data-testid="send-button"], button[aria-label*="Send" i], button[aria-label*="send" i]'
+          )
+        ) {
+          stamp();
+        }
+      },
+      true
+    );
+  }
+
+  let domBreakWarned = false;
 
   function syncMessagesFromDom() {
-    const domMessages = adapter.buildMessageList();
+    let domMessages;
+    try {
+      domMessages = adapter.buildMessageList();
+    } catch (err) {
+      // A site DOM change can break selectors — fail soft, keep the last known
+      // state rather than throwing and killing the processing loop.
+      if (!domBreakWarned) {
+        console.warn("[Lumen] adapter.buildMessageList failed — DOM may have changed:", err?.message);
+        domBreakWarned = true;
+      }
+      return messages;
+    }
+    if (!Array.isArray(domMessages)) return messages;
     const existingById = new Map(messages.map((m) => [m.id, m]));
     const now = Date.now();
-    const baseTime = now - domMessages.length * 1000;
     const isInitialBulk = domMessages.length > 1 && existingById.size === 0;
+    const freshSend = lastSendAt && now - lastSendAt < 10000 ? lastSendAt : now;
 
     messages = domMessages.map((msg, index) => {
       const prevByIndex = messages[index];
@@ -51,7 +108,9 @@
         existingById.get(msg.id) ||
         (prevByIndex?.role === msg.role && prevByIndex?.text === msg.text ? prevByIndex : null);
       if (existing) return { ...msg, id: existing.id, timestamp: existing.timestamp };
-      return { ...msg, timestamp: isInitialBulk ? baseTime + msg.order * 1000 : now };
+      // Historical bulk load: real send time is unknown → null (no fake timing).
+      // Live new message: use the captured send moment.
+      return { ...msg, timestamp: isInitialBulk ? null : freshSend };
     });
 
     return messages;
@@ -82,20 +141,25 @@
         priorLoopScores: session.loopScores,
         sessionSensitivity: LumenSession.getSessionSensitivity(),
         taskTypeExempt: LumenGoals.getTaskTypeExemptions(),
+        crowdCalibration: LumenGoals.getCrowdCalibration(),
       });
 
       const alreadyScored = session.scoredMessageIds.includes(msg.id);
       if (!alreadyScored) {
-        msg.timestamp = msg.timestamp || Date.now();
+        // Don't fabricate a time: live messages already carry the real send
+        // moment; historical messages stay null so timing signals are skipped
+        // and old messages are never treated as "fresh" (no overlay on load).
         LumenSession.recordMessage(msg.id, evaluation.loopScore, evaluation.primary);
       }
 
       LumenWidget.injectMessageUI(msg, evaluation, adapter, { isNewMessage: !alreadyScored });
 
+      const judgeOn = LumenGoals.get().llmJudgeEnabled || LumenGoals.isJudgeAvailable();
+      const passiveLater = index > 2 && Boolean(LumenEngine.isPassiveContinuation?.(msg.text));
       if (
-        evaluation.confidence === "gray" &&
-        LumenGoals.get().llmJudgeEnabled &&
-        !alreadyScored
+        judgeOn &&
+        !alreadyScored &&
+        g.LumenRules?.shouldConsultJudge?.(evaluation, msg.text, { passiveLater })
       ) {
         g.LumenJudge?.classify(msg.text, evaluation).then((verdict) => {
           if (!verdict) return;
@@ -138,12 +202,31 @@
     // Show badge + onboarding immediately — don't wait on storage
     LumenWidget.init();
 
-    await LumenGoals.load();
-    await LumenSession.load();
-    history = await LumenSession.loadHistory();
+    // Wire up message detection FIRST so prompts always register, even if the
+    // async loads below are slow, blocked, or throw (e.g. the localhost web
+    // app is offline and a best-effort fetch rejects).
+    bindSendCapture();
+    adapter.onNewMessage(debouncedProcess);
+    debouncedProcess();
+
+    try {
+      await LumenGoals.load();
+      await LumenGoals.loadStudyParticipant();
+      await LumenSession.load();
+      history = await LumenSession.loadHistory();
+    } catch (err) {
+      console.warn("[Lumen] init load step failed — continuing with defaults:", err?.message);
+    }
+
+    // Crowd calibration + judge-capability probe are best-effort and
+    // network-bound; never let them block or abort init (the web app may be
+    // offline during normal use).
+    Promise.resolve(LumenGoals.fetchCrowdCalibration()).catch(() => {});
+    Promise.resolve(LumenGoals.fetchJudgeCapability())
+      .then(() => LumenWidget.updateBadge())
+      .catch(() => {});
 
     LumenWidget.updateBadge();
-    adapter.onNewMessage(debouncedProcess);
     debouncedProcess();
 
     window.addEventListener("beforeunload", () => {

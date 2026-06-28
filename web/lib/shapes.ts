@@ -6,13 +6,31 @@ export interface WeeklySummary {
   depth_moments: number;
   conscious_delegates: number;
   total_messages: number;
+  avgDwellRatio?: number | null;
+  lowDwellSessions?: number;
+  dominantTier?: string | null;
 }
 
 export function classifyShape(summary: WeeklySummary): Shape {
-  const { intentional_pct, questions_asked, depth_moments, conscious_delegates, total_messages } =
-    summary;
+  const {
+    intentional_pct,
+    questions_asked,
+    depth_moments,
+    conscious_delegates,
+    total_messages,
+    avgDwellRatio,
+    dominantTier,
+  } = summary;
 
   if (total_messages === 0) return "Balanced";
+
+  if (
+    avgDwellRatio != null &&
+    avgDwellRatio < 0.25 &&
+    dominantTier === "germane"
+  ) {
+    return "Delegator";
+  }
 
   const questionRate = questions_asked / total_messages;
   const depthRate = depth_moments / total_messages;
@@ -29,6 +47,6 @@ export const SHAPE_DESCRIPTIONS: Record<Shape, string> = {
   Explorer: "More questions than commands this week",
   Thinker: "Depth moments dominated your sessions",
   Maker: "High conscious delegation, steady intent",
-  Delegator: "Mostly handing tasks to AI",
-  Balanced: "A mix of thinking and delegating",
+  Delegator: "Mostly acceptance mode — worth checking responses still sound like your thinking",
+  Balanced: "A mix of thinking and accepting",
 };

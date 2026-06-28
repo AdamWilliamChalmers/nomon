@@ -11,7 +11,11 @@ create table users (
   is_family_plan boolean default false,
   share_card_public boolean default false,
   onboarding_goals jsonb,
-  exemptions jsonb default '[]'
+  exemptions jsonb default '[]',
+  pro boolean default false,
+  pro_activated_at timestamptz,
+  polar_order_id text unique,
+  api_token text unique
 );
 
 -- Child-initiated family sharing (weekly card only — no session logs)
@@ -73,3 +77,43 @@ create table weekly_summaries (
 
 create index sessions_user_date on sessions(user_id, session_date);
 create index weekly_user_week on weekly_summaries(user_id, week_start);
+
+-- Individual signal feedback events (flywheel training data)
+create table signal_feedback (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  session_date date,
+  platform text,
+  signal_type text,
+  task_type text,
+  verdict text not null,
+  score integer,
+  prompt_snippet text,
+  created_at timestamptz default now()
+);
+
+create index signal_feedback_task on signal_feedback(task_type, verdict);
+create index signal_feedback_signal on signal_feedback(signal_type, verdict);
+
+-- Calibration study self-report (Route 3)
+create table survey_responses (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  session_date date,
+  platform text,
+  composite_score integer,
+  q1 integer not null check (q1 between 1 and 7),
+  q2 integer not null check (q2 between 1 and 7),
+  q3 integer not null check (q3 between 1 and 7),
+  q4 integer not null check (q4 between 1 and 7),
+  q5 integer not null check (q5 between 1 and 7),
+  created_at timestamptz default now()
+);
+
+create index survey_responses_user on survey_responses(user_id, session_date);
+
+-- Pro tier (migration-safe)
+alter table users add column if not exists pro boolean default false;
+alter table users add column if not exists pro_activated_at timestamptz;
+alter table users add column if not exists polar_order_id text unique;
+alter table users add column if not exists api_token text unique;

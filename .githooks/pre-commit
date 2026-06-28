@@ -1,0 +1,15 @@
+#!/bin/sh
+# Lumen pre-commit hook: run the test suites before every commit.
+# Enable once with:  git config core.hooksPath .githooks
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT/scripts"
+
+if [ ! -d node_modules ]; then
+  echo "[lumen] installing test deps (first run)…"
+  npm install --no-audit --no-fund --silent
+fi
+
+echo "[lumen] running test suites…"
+npm test --silent

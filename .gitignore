@@ -10,6 +10,8 @@
 web/node_modules/
 web/.next/
 web/out/
+scripts/node_modules/
+scripts/package-lock.json
 
 # Python
 __pycache__/

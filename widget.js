@@ -1,10 +1,10 @@
 const LumenWidget = (() => {
   const SIGNAL_COLORS = {
-    handoff: "#f0a500",
-    loop: "#4caf50",
-    drift: "#f0a500",
-    mismatch: "#8040c0",
-    depth: "#4a9fd4",
+    handoff: "#3478c5",
+    loop: "#2d9e4e",
+    drift: "#d4921a",
+    mismatch: "#7b5cbf",
+    depth: "#3478c5",
   };
 
   let popoverOpen = false;
@@ -30,7 +30,31 @@ const LumenWidget = (() => {
         </div>
       </div>`;
 
+  function ensureHideStyles() {
+    if (document.getElementById("lumen-hide-styles")) return;
+    const style = document.createElement("style");
+    style.id = "lumen-hide-styles";
+    style.textContent = `
+      .lumen-ai-hidden,
+      [data-message-author-role="assistant"].lumen-ai-hidden,
+      .agent-turn.lumen-ai-hidden,
+      article.lumen-ai-hidden {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   function ensureRoot() {
+    ensureHideStyles();
     if (document.getElementById("lumen-root")) {
       ensureReconsiderShell();
       return;
@@ -39,16 +63,22 @@ const LumenWidget = (() => {
     root.id = "lumen-root";
     root.innerHTML = `
       <div id="lumen-fab">
+        <span id="lumen-fab-mark" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="3" fill="white" opacity="0.95"/>
+            <circle cx="9" cy="9" r="6" stroke="white" stroke-width="1.2" opacity="0.35"/>
+            <circle cx="9" cy="9" r="8.5" stroke="white" stroke-width="0.6" opacity="0.15"/>
+          </svg>
+        </span>
         <span id="lumen-fab-dot"></span>
-        <span id="lumen-fab-wordmark">Lumen</span>
         <span id="lumen-fab-score">0</span>
       </div>
       <div id="lumen-popover">
-        <div class="lumen-popover-title">Session score</div>
+        <div class="lumen-popover-title">Engagement this session</div>
         <div class="lumen-popover-sparkline" id="lumen-sparkline"></div>
         <div class="lumen-popover-stat"><span>Messages</span><span class="lumen-popover-stat-value" id="lumen-stat-messages">0</span></div>
-        <div class="lumen-popover-stat"><span>Hand-off</span><span class="lumen-popover-stat-value" id="lumen-stat-handoff">0</span></div>
-        <div class="lumen-popover-stat"><span>Loop</span><span class="lumen-popover-stat-value" id="lumen-stat-loop">0</span></div>
+        <div class="lumen-popover-stat"><span>Check-ins</span><span class="lumen-popover-stat-value" id="lumen-stat-handoff">0</span></div>
+        <div class="lumen-popover-stat"><span>Pause moments</span><span class="lumen-popover-stat-value" id="lumen-stat-loop">0</span></div>
         <div class="lumen-popover-stat"><span>Drift</span><span class="lumen-popover-stat-value" id="lumen-stat-drift">0</span></div>
         <div class="lumen-popover-stat"><span>Mismatch</span><span class="lumen-popover-stat-value" id="lumen-stat-mismatch">0</span></div>
         <div class="lumen-popover-stat"><span>Depth</span><span class="lumen-popover-stat-value" id="lumen-stat-depth">0</span></div>
@@ -65,9 +95,20 @@ const LumenWidget = (() => {
         <input id="lumen-focus-input" class="lumen-popover-focus" type="text" placeholder="Today I'm trying to…" />
         <label class="lumen-popover-check">
           <input type="checkbox" id="lumen-llm-judge" />
-          LLM second opinion (gray cases)
+          LLM second opinion (subtle cases)
         </label>
-        <p class="lumen-popover-hint" id="lumen-judge-hint">Runs when rules are uncertain · needs web app at localhost:3000</p>
+        <label class="lumen-popover-check">
+          <input type="checkbox" id="lumen-study-participant" />
+          Calibration study — post-session survey
+        </label>
+        <label class="lumen-popover-check">
+          <input type="checkbox" id="lumen-share-data" />
+          Share anonymised session summary (off by default)
+        </label>
+        <label class="lumen-popover-label">Backend URL (for judge / calibration / sharing)</label>
+        <input id="lumen-backend-input" class="lumen-popover-focus" type="text" placeholder="http://localhost:3000" />
+        <p class="lumen-popover-hint" id="lumen-judge-hint">Catches subtle hand-offs the rules miss · auto-on when the backend has a model key · cheap model, cached per message</p>
+        <a id="lumen-calibration-link" class="lumen-popover-link" href="http://localhost:3000/calibration" target="_blank" rel="noopener">Signal calibration dashboard ↗</a>
         <p class="lumen-popover-hint">Drag the Lumen pill to move it out of the way.</p>
         <button class="lumen-popover-reset" id="lumen-reset-session">Reset session</button>
         <div class="lumen-popover-divider"></div>
@@ -84,19 +125,28 @@ const LumenWidget = (() => {
             <h2>Set up Lumen</h2>
             <p>What do you mainly use AI for?</p>
             <div class="lumen-onboarding-options" id="lumen-use-cases">
-              <label><input type="checkbox" value="Research" /> Research</label>
-              <label><input type="checkbox" value="Writing" /> Writing</label>
-              <label><input type="checkbox" value="Coding" /> Coding</label>
-              <label><input type="checkbox" value="Learning" /> Learning</label>
-              <label><input type="checkbox" value="Admin" /> Admin</label>
-              <label><input type="checkbox" value="Creative work" /> Creative work</label>
-              <label><input type="checkbox" value="Work tasks" /> Work tasks</label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Research" /><span>Research</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Writing" /><span>Writing</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Coding" /><span>Coding</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Learning" /><span>Learning</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Admin" /><span>Admin</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Creative work" /><span>Creative work</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Work tasks" /><span>Work tasks</span></label>
             </div>
           </div>
           <div class="lumen-onboarding-step lumen-hidden" data-step="2">
             <h2>Anything to protect?</h2>
-            <p>Optional. Lumen only flags mismatch against goals you set yourself.</p>
-            <textarea id="lumen-onboarding-goals" placeholder="I want to write my own first drafts.&#10;I want to understand the code, not just copy it."></textarea>
+            <p>Optional. Pick any that apply — or add your own. Lumen only flags mismatch against goals you set yourself.</p>
+            <div class="lumen-onboarding-options" id="lumen-goal-presets">
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Write my own first drafts" /><span>Write my own first drafts</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Make my own decisions" /><span>Make my own decisions</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Understand the code, not just copy it" /><span>Understand my code</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Do my own analysis and reasoning" /><span>Do my own analysis</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Think independently on strategy" /><span>Think independently on strategy</span></label>
+              <label class="lumen-onboarding-option"><input type="checkbox" value="Form my own arguments before asking" /><span>Form my own arguments first</span></label>
+            </div>
+            <label class="lumen-popover-label" style="margin-top:14px;">Add your own</label>
+            <textarea id="lumen-onboarding-goals" placeholder="One goal per line — e.g. I want to write my own first drafts."></textarea>
           </div>
           <div class="lumen-onboarding-step lumen-hidden" data-step="3">
             <h2>How visible should Lumen be?</h2>
@@ -169,6 +219,23 @@ const LumenWidget = (() => {
 
     document.getElementById("lumen-llm-judge")?.addEventListener("change", (event) => {
       LumenGoals.save({ llmJudgeEnabled: event.target.checked });
+    });
+
+    document.getElementById("lumen-study-participant")?.addEventListener("change", (event) => {
+      LumenGoals.setStudyParticipant(event.target.checked);
+    });
+
+    document.getElementById("lumen-share-data")?.addEventListener("change", (event) => {
+      LumenGoals.save({ shareAnonymisedData: event.target.checked });
+    });
+
+    document.getElementById("lumen-backend-input")?.addEventListener("change", (event) => {
+      const url = event.target.value.trim().replace(/\/$/, "");
+      LumenGoals.save({
+        webAppUrl: url || "http://localhost:3000",
+        judgeApiUrl: `${url || "http://localhost:3000"}/api/judge`,
+      });
+      syncSettingsUI();
     });
 
     document.addEventListener("mousedown", (event) => {
@@ -313,6 +380,11 @@ const LumenWidget = (() => {
   function submitOverlayDraft() {
     if (!activeReconsider) return;
     const draft = document.getElementById("lumen-reconsider-textarea")?.value.trim();
+    if (activeReconsider.overlayType === "depth") {
+      if (draft) LumenSession.logDepthMoment(draft, "reflected");
+      closeSignalOverlay(true, "reflected");
+      return;
+    }
     if (!draft) return;
     const combined = LumenNudges.buildCombinedPrompt(draft, activeReconsider.originalPrompt);
     activeReconsider.adapter.setChatInputText(combined);
@@ -325,6 +397,9 @@ const LumenWidget = (() => {
     dismissedReconsider.add(activeReconsider.msgId);
     if (action === "continue") {
       LumenSession.logOverlayBypassed(activeReconsider.overlayType);
+      if (activeReconsider.overlayType === "depth") {
+        LumenSession.logDepthMoment(activeReconsider.originalPrompt || "", "skip");
+      }
     }
     if (showAi) activeReconsider.hidden.show();
     else activeReconsider.hidden.stop();
@@ -344,11 +419,14 @@ const LumenWidget = (() => {
     const copy =
       evaluation.overlayType === "handoff"
         ? LumenNudges.getHandOffOverlayCopy(evaluation.taskType || "general")
-        : LumenNudges.getLoopOverlayCopy();
+        : evaluation.overlayType === "depth"
+          ? LumenNudges.getDepthOverlayCopy(evaluation.depth?.taskType || "default")
+          : LumenNudges.getLoopOverlayCopy();
 
     const panel = document.querySelector(".lumen-reconsider-panel");
     panel?.classList.toggle("lumen-signal-handoff", evaluation.overlayType === "handoff");
     panel?.classList.toggle("lumen-signal-loop", evaluation.overlayType === "loop");
+    panel?.classList.toggle("lumen-signal-depth", evaluation.overlayType === "depth");
 
     document.getElementById("lumen-reconsider-kicker").textContent = copy.kicker;
     document.getElementById("lumen-reconsider-title").textContent = copy.title;
@@ -402,11 +480,15 @@ const LumenWidget = (() => {
       const useCases = Array.from(document.querySelectorAll("#lumen-use-cases input:checked")).map(
         (input) => input.value
       );
-      const protectedGoals = document
+      const presetGoals = Array.from(
+        document.querySelectorAll("#lumen-goal-presets input:checked")
+      ).map((input) => input.value);
+      const typedGoals = document
         .getElementById("lumen-onboarding-goals")
         .value.split("\n")
         .map((line) => line.trim())
         .filter(Boolean);
+      const protectedGoals = Array.from(new Set([...presetGoals, ...typedGoals]));
       const mode = modeSelect.value;
       const focusGoal = mode === "focus" ? focusInput.value.trim() : null;
 
@@ -429,10 +511,19 @@ const LumenWidget = (() => {
     const goalsInput = document.getElementById("lumen-goals-input");
     const focusInput = document.getElementById("lumen-focus-input");
     const judgeToggle = document.getElementById("lumen-llm-judge");
+    const studyToggle = document.getElementById("lumen-study-participant");
+    const shareToggle = document.getElementById("lumen-share-data");
+    const backendInput = document.getElementById("lumen-backend-input");
+    const calibrationLink = document.getElementById("lumen-calibration-link");
+    const base = (goals.webAppUrl || "http://localhost:3000").replace(/\/$/, "");
     if (modeSelect) modeSelect.value = goals.mode;
     if (goalsInput) goalsInput.value = goals.protectedGoals.join("\n");
     if (focusInput) focusInput.value = goals.focusGoal || "";
     if (judgeToggle) judgeToggle.checked = Boolean(goals.llmJudgeEnabled);
+    if (studyToggle) studyToggle.checked = Boolean(goals.studyParticipant);
+    if (shareToggle) shareToggle.checked = Boolean(goals.shareAnonymisedData);
+    if (backendInput) backendInput.value = base;
+    if (calibrationLink) calibrationLink.href = `${base}/calibration`;
     renderLastWhyPopover();
   }
 
@@ -446,6 +537,12 @@ const LumenWidget = (() => {
     el.textContent = lastEvaluation.evaluation.explanation || "Flagged — no detail available.";
   }
 
+  function engagementColor(engagement) {
+    if (engagement >= 60) return SIGNAL_COLORS.loop;
+    if (engagement >= 35) return SIGNAL_COLORS.handoff;
+    return SIGNAL_COLORS.drift;
+  }
+
   function updateBadge() {
     ensureRoot();
     applyFabPosition();
@@ -453,17 +550,15 @@ const LumenWidget = (() => {
     const fab = document.getElementById("lumen-fab");
     const dot = document.getElementById("lumen-fab-dot");
     const scoreEl = document.getElementById("lumen-fab-score");
-    const score = session.sessionScore || 0;
-    const color =
-      score >= 70
-        ? SIGNAL_COLORS.loop
-        : score >= 45
-          ? SIGNAL_COLORS.handoff
-          : SIGNAL_COLORS.loop;
+    // sessionScore is a passive-acceptance score (higher = more offloading).
+    // Surface the inverse so the badge reads as engagement: higher = better.
+    const engagement = session.messageCount ? 100 - (session.sessionScore || 0) : 0;
+    const color = session.messageCount ? engagementColor(engagement) : SIGNAL_COLORS.loop;
     if (dot) dot.style.background = color;
     if (scoreEl) {
-      scoreEl.textContent = String(score);
+      scoreEl.textContent = String(engagement);
       scoreEl.style.color = color;
+      scoreEl.title = "Engagement this session — higher means more active evaluation";
     }
     if (fab) {
       fab.style.opacity = LumenGoals.isGhost() ? "0.55" : "1";
@@ -483,30 +578,15 @@ const LumenWidget = (() => {
   }
 
   function renderSparkline(scores) {
-    const sparkline = globalThis.LumenSparkline;
-    if (sparkline?.render) return sparkline.render(scores);
-
-    const width = 120;
-    const height = 32;
-    const slots = (scores || []).slice(-10);
-    while (slots.length < 10) slots.unshift(null);
-    const barWidth = width / 10 - 2;
-    const bars = slots
-      .map((score, index) => {
-        const x = index * (barWidth + 2);
-        const barHeight = score == null ? 4 : Math.max(4, Math.round((score / 100) * height));
-        const y = height - barHeight;
-        const color =
-          score == null ? "#3a3a3a" : score <= 39 ? "#4caf50" : score <= 69 ? "#f0a500" : "#4caf50";
-        return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="1" fill="${color}"/>`;
-      })
-      .join("");
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-hidden="true">${bars}</svg>`;
+    // Single implementation lives in sparkline.js (loaded before widget.js).
+    return globalThis.LumenSparkline?.render?.(scores || []) ?? "";
   }
 
   function renderPopover() {
     const session = LumenSession.get();
-    document.getElementById("lumen-sparkline").innerHTML = renderSparkline(session.loopScores);
+    document.getElementById("lumen-sparkline").innerHTML = renderSparkline(
+      (session.loopScores || []).map((s) => 100 - s)
+    );
     document.getElementById("lumen-stat-messages").textContent = String(session.messageCount);
     document.getElementById("lumen-stat-handoff").textContent = String(session.handoffCount || 0);
     document.getElementById("lumen-stat-loop").textContent = String(session.loopCount);
@@ -533,6 +613,8 @@ const LumenWidget = (() => {
       ${digest.driftLines.map((line) => `<p class="lumen-digest-line">${line}</p>`).join("")}
       <p class="lumen-digest-label">Mismatch</p>
       <p class="lumen-digest-line">${digest.mismatchSummary}</p>
+      <p class="lumen-digest-label">Your responses</p>
+      <p class="lumen-digest-line">${digest.responses.line}</p>
       <p class="lumen-digest-label">Sit with</p>
       <p class="lumen-digest-line lumen-digest-prompt">${digest.prompt}</p>
     `;
@@ -637,6 +719,8 @@ const LumenWidget = (() => {
       };
     }
 
+    // Only the loop reconsider overlay reaches here (active/focus mode, sustained
+    // passivity). Hand-off and Depth never gate the answer.
     if (evaluation.overlayType && !dismissedReconsider.has(msg.id)) {
       const isFresh = msg.timestamp && Date.now() - msg.timestamp < 8000;
       const shouldOverlay =
@@ -649,9 +733,23 @@ const LumenWidget = (() => {
 
     if (
       LumenGoals.isActive() &&
-      (evaluation.primary === "mismatch" || evaluation.primary === "depth")
+      evaluation.primary === "mismatch" &&
+      evaluation.mismatch?.active
     ) {
-      renderCard(msg.id, evaluation, strip || bubble, msg.el, adapter);
+      const isFresh = msg.timestamp && Date.now() - msg.timestamp < 8000;
+      renderCard(msg.id, evaluation, strip || bubble, msg.el, adapter, {
+        pauseAi: Boolean(options.isNewMessage || isFresh),
+      });
+    } else if (
+      LumenGoals.isActive() &&
+      evaluation.primary === "depth" &&
+      evaluation.depth?.active &&
+      evaluation.overlayType !== "depth"
+    ) {
+      const isFresh = msg.timestamp && Date.now() - msg.timestamp < 120000;
+      renderCard(msg.id, evaluation, strip || bubble, msg.el, adapter, {
+        pauseAi: Boolean(options.isNewMessage || isFresh),
+      });
     }
   }
 
@@ -761,7 +859,6 @@ const LumenWidget = (() => {
     strip.className = "lumen-strip";
     strip.setAttribute("data-lumen-msg-id", msgId);
     strip.innerHTML = `
-      <span class="lumen-strip-label">Lumen</span>
       <span class="lumen-strip-dot" style="background:${color}"></span>
       <span class="lumen-strip-state" style="color:${color};opacity:0.7">${LumenNudges.truncate(label)}</span>
     `;
@@ -769,7 +866,7 @@ const LumenWidget = (() => {
     return strip;
   }
 
-  function renderCard(msgId, evaluation, anchor, msgEl, adapter) {
+  function renderCard(msgId, evaluation, anchor, msgEl, adapter, cardOptions = {}) {
     if (LumenGoals.isGhost() || !LumenGoals.isActive()) return;
 
     document.querySelector(`.lumen-card[data-lumen-msg-id="${msgId}"]`)?.remove();
@@ -789,13 +886,13 @@ const LumenWidget = (() => {
         <div class="lumen-card-title">${copy.title}</div>
         <div class="lumen-card-body">${copy.body}</div>
         <div class="lumen-card-actions">
-          <button class="lumen-card-btn" data-action="pause">${copy.pauseLabel}</button>
           <button class="lumen-card-btn lumen-card-btn--secondary" data-action="continue">${copy.continueLabel}</button>
+          <button class="lumen-card-btn" data-action="keep">${copy.keepLabel}</button>
         </div>
       `;
-      card.querySelector('[data-action="pause"]')?.addEventListener("click", () => {
-        LumenSession.logMismatchEvent(evaluation.mismatch.goal, "pause");
-        adapter.findChatInput()?.focus();
+      card.querySelector('[data-action="keep"]')?.addEventListener("click", () => {
+        LumenSession.logMismatchEvent(evaluation.mismatch.goal, "kept");
+        card.remove();
       });
       card.querySelector('[data-action="continue"]')?.addEventListener("click", () => {
         LumenGoals.removeProtectedGoal(evaluation.mismatch.goal);
@@ -823,19 +920,20 @@ const LumenWidget = (() => {
           <button class="lumen-card-btn lumen-card-btn--secondary" data-action="skip">${copy.skipLabel}</button>
         </div>
       `;
-      let restoreAi = () => {};
+
+      // Depth is additive — the AI response is never hidden or delayed.
       card.querySelector('[data-action="think"]')?.addEventListener("click", () => {
-        restoreAi = adapter.hideAssistantResponsesAfter(msgEl);
         card.querySelector(".lumen-card-reflection")?.focus();
       });
       card.querySelector('[data-action="skip"]')?.addEventListener("click", () => {
-        restoreAi();
         LumenSession.logDepthMoment(msgEl?.textContent || "", "skip");
         card.remove();
       });
       card.querySelector(".lumen-card-reflection")?.addEventListener("blur", () => {
         const text = card.querySelector(".lumen-card-reflection")?.value.trim();
-        if (text) LumenSession.logDepthMoment(text, "reflected");
+        if (!text) return;
+        LumenSession.logDepthMoment(text, "reflected");
+        card.remove();
       });
       anchor.insertAdjacentElement("afterend", card);
     }

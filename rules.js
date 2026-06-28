@@ -2,6 +2,7 @@ const LumenRules = (() => {
   const TIER1_PATTERNS = [
     { id: "write_me", re: /write me\b/i, label: "write me" },
     { id: "write_my", re: /write my\b/i, label: "write my" },
+    { id: "write_generic", re: /\bwrite (me |us )?(an?|the|some)\b/i, label: "write it for me" },
     { id: "write_entire", re: /write the entire|entire paper|paper for me|write the whole/i, label: "whole task" },
     {
       id: "write_artifact",
@@ -32,6 +33,7 @@ const LumenRules = (() => {
     /write me\b/i,
     /write my\b/i,
     /write the/i,
+    /\bwrite (me |us )?an?\b/i,
     /can you write/i,
     /create a/i,
     /generate a/i,
@@ -60,6 +62,15 @@ const LumenRules = (() => {
   ];
 
   const ENGAGEMENT_WORD_THRESHOLD = 50;
+
+  // Directive / imperative prompts are the classic subtle hand-off the regex
+  // tiers miss ("write a nice email", "summarise this", "just go with yours").
+  // Used only to decide whether to spend a cheap LLM judge call — never to
+  // flag on its own.
+  const INSTRUCTION_VERBS =
+    /\b(write|draft|compose|create|generate|make|build|summari[sz]e|rewrite|rephrase|reword|fix|improve|polish|translate|finish|complete|plan|outline|design|implement|code|solve|answer|respond|reply|decide|choose|pick|optimi[sz]e|refactor|debug|format|edit|expand|shorten|continue|redo|handle|sort)\b/i;
+  const IMPERATIVE_START =
+    /^(please\s+|can you\s+|could you\s+|just\s+)?(write|draft|compose|create|generate|make|build|summari[sz]e|rewrite|fix|improve|polish|translate|finish|complete|plan|outline|design|implement|code|solve|answer|respond|reply|decide|choose|pick|continue|redo|give|tell|show|handle|do)\b/i;
 
   function wordCount(text) {
     return text.trim().split(/\s+/).filter(Boolean).length;
@@ -116,6 +127,30 @@ const LumenRules = (() => {
       words >= ENGAGEMENT_WORD_THRESHOLD + 30;
 
     return { active, reasons };
+  }
+
+  function looksLikeInstruction(text) {
+    const t = (text || "").trim();
+    if (!t) return false;
+    const words = wordCount(t);
+    // Subtle hand-offs are short, directive prompts. Long prompts are handled
+    // by the engagement override (they usually carry the user's own thinking).
+    return words <= 40 && (IMPERATIVE_START.test(t) || INSTRUCTION_VERBS.test(t));
+  }
+
+  // Decide whether a cheap LLM judge call is worth making. We consult the LLM
+  // for borderline ("gray") cases AND for substantive, unflagged directives the
+  // rule tiers missed — but never when the user clearly engaged, and never when
+  // the rules are already confident. opts.passiveLater catches mid-conversation
+  // passive continuations (the subtle "loop" pattern).
+  function shouldConsultJudge(evaluation, text, opts = {}) {
+    if (!text) return false;
+    if (evaluation?.confidence === "gray") return true;
+    if (evaluation?.confidence === "high") return false;
+    if (checkEngagementOverride(text).active) return false;
+    if (looksLikeInstruction(text)) return true;
+    if (opts.passiveLater) return true;
+    return false;
   }
 
   function isStrongDelegation(text, framing) {
@@ -237,6 +272,8 @@ const LumenRules = (() => {
     checkEngagementOverride,
     hasEngagementMarkers,
     hasUserProvidedContext,
+    looksLikeInstruction,
+    shouldConsultJudge,
     isStrongDelegation,
     computeConfidence,
     checkMismatchGoals,

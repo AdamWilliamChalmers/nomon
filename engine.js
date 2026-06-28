@@ -30,19 +30,26 @@ const LumenEngine = (() => {
   ];
 
   const TASK_TYPE_MODIFIERS = {
-    email_drafting: { scoreMultiplier: 0.2, autoExemptAfter: 2 },
+    email_drafting: { scoreMultiplier: 0.15, autoExemptAfter: 2 },
     scheduling: { scoreMultiplier: 0.1, autoExemptAfter: 1 },
-    formatting: { scoreMultiplier: 0.2, autoExemptAfter: 2 },
+    formatting: { scoreMultiplier: 0.15, autoExemptAfter: 2 },
+    conversion: { scoreMultiplier: 0.1, autoExemptAfter: 1 },
+    translation: { scoreMultiplier: 0.2, autoExemptAfter: 3 },
     literature_search: { scoreMultiplier: 0.4, autoExemptAfter: null },
-    fact_checking: { scoreMultiplier: 0.3, autoExemptAfter: null },
-    summarisation: { scoreMultiplier: 0.5, autoExemptAfter: null },
+    fact_checking: { scoreMultiplier: 0.35, autoExemptAfter: null },
+    summarisation: { scoreMultiplier: 0.3, autoExemptAfter: null },
+    data_analysis: { scoreMultiplier: 0.55, autoExemptAfter: null },
+    research: { scoreMultiplier: 0.45, autoExemptAfter: null },
     essay_writing: { scoreMultiplier: 1.0, autoExemptAfter: null },
     argument_building: { scoreMultiplier: 1.0, autoExemptAfter: null },
+    decision_making: { scoreMultiplier: 1.1, autoExemptAfter: null },
     learning_concept: { scoreMultiplier: 1.2, autoExemptAfter: null },
-    code_generation: { scoreMultiplier: 0.7, autoExemptAfter: null },
+    creative_writing: { scoreMultiplier: 0.9, autoExemptAfter: null },
+    reflection: { scoreMultiplier: 1.2, autoExemptAfter: null },
+    code_generation: { scoreMultiplier: 0.65, autoExemptAfter: null },
     debugging: { scoreMultiplier: 0.5, autoExemptAfter: null },
     code_explanation: { scoreMultiplier: 0.9, autoExemptAfter: null },
-    general: { scoreMultiplier: 1.0, autoExemptAfter: null },
+    general: { scoreMultiplier: 0.45, autoExemptAfter: null },
   };
 
   const SPECIFICITY_MARKERS = [
@@ -203,7 +210,9 @@ const LumenEngine = (() => {
 
   function applyTaskTypeModifier(score, taskType, context) {
     const mod = TASK_TYPE_MODIFIERS[taskType] || TASK_TYPE_MODIFIERS.general;
-    let adjusted = Math.round(score * mod.scoreMultiplier);
+    const crowdMod = context?.crowdCalibration?.taskTypeModifiers?.[taskType];
+    const multiplier = crowdMod?.scoreMultiplier ?? mod.scoreMultiplier;
+    let adjusted = Math.round(score * multiplier);
     const sens = context?.sessionSensitivity?.[taskType];
     if (typeof sens === "number") adjusted = Math.round(adjusted * sens);
     if (context?.taskTypeExempt?.includes(taskType)) return Math.min(adjusted, 20);
@@ -311,9 +320,13 @@ const LumenEngine = (() => {
   }
 
   function shouldShowOverlay(messageIndex, framing, loopScore, exempt, mode, confidenceLevel) {
-    if (mode === "ghost" || exempt) return null;
+    // The reconsider overlay is the one heavier interrupt. Per spec it only
+    // belongs in active/focus modes (ambient = strips only, ghost = nothing).
+    // Hand-off and Depth never gate the AI response — they surface as a strip
+    // or an additive card so the experience stays seamless.
+    if (mode !== "active" && mode !== "focus") return null;
+    if (exempt) return null;
     if (confidenceLevel === "gray" || confidenceLevel === "low") return null;
-    if (messageIndex <= 2 && framing.tier === 1 && framing.source === "tier1") return "handoff";
     if (messageIndex > 2 && loopScore >= 70) return "loop";
     return null;
   }
@@ -363,6 +376,7 @@ const LumenEngine = (() => {
     score = applyTaskTypeModifier(score, taskType, {
       sessionSensitivity: context?.sessionSensitivity,
       taskTypeExempt: context?.taskTypeExempt,
+      crowdCalibration: context?.crowdCalibration,
     });
     return { signals, score, calibration, taskType, dwellRatio };
   }
@@ -445,7 +459,7 @@ const LumenEngine = (() => {
       const avgPassiveRate = prior.reduce((sum, entry) => sum + entry.passiveRate, 0) / prior.length;
 
       if (currentMetrics.questionRatio < avgQuestionRatio - 0.12) {
-        return { active: true, label: "drift · fewer questions than last week" };
+        return { active: true, label: "drift · fewer questions this week" };
       }
       if (currentMetrics.avgPromptLength < avgPromptLength * 0.7) {
         return { active: true, label: "drift · shorter prompts than usual" };
@@ -457,7 +471,7 @@ const LumenEngine = (() => {
     }
 
     if (thisWeek.questionRatio < lastWeek.questionRatio - 0.1) {
-      return { active: true, label: "drift · fewer questions than last week" };
+      return { active: true, label: "drift · fewer questions this week" };
     }
     if (thisWeek.avgPromptLength < lastWeek.avgPromptLength * 0.75) {
       return { active: true, label: "drift · shorter prompts than usual" };
@@ -505,6 +519,7 @@ const LumenEngine = (() => {
       priorLoopScores: context.priorLoopScores || [],
       sessionSensitivity: context.sessionSensitivity,
       taskTypeExempt: context.taskTypeExempt,
+      crowdCalibration: context.crowdCalibration,
     };
 
     const { signals, score: loopScoreRaw, calibration, taskType } = computeLoopSignals(
@@ -534,7 +549,8 @@ const LumenEngine = (() => {
       goals.mode === "ghost" ? { active: false } : evaluateDepth(msg.text, messages, index);
     const drift = evaluateDrift(context.history, context.currentMetrics);
 
-    const loopThreshold = calibration.loopThreshold;
+    const loopThreshold =
+      context.crowdCalibration?.loopThreshold ?? calibration.loopThreshold;
     const passiveCount = passiveMessageCount(messages);
 
     const handoffTier1Exact = framing.tier === 1 && framing.source === "tier1";
@@ -578,7 +594,7 @@ const LumenEngine = (() => {
         ? {
             active: true,
             taskType: depth.taskType,
-            label: "depth · worth thinking first?",
+            label: "depth · worth sitting with this?",
             warm: depthWarm,
           }
         : { active: false },
@@ -615,6 +631,8 @@ const LumenEngine = (() => {
       goals.mode,
       confidence.level
     );
+    // Depth is an invitation, never a gate: it renders as an additive card and
+    // must never block the AI response (lumen_v3_design.md, principle #4).
     result.explanation = LumenRules.explainEvaluation(result);
 
     return result;

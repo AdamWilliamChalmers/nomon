@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumen — lumen.so hero</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="../tokens/tokens.css">
+  <link rel="stylesheet" href="../components/components.css">
+  <style>
+    /* Page chrome */
+    body { background: var(--lumen-cloud); margin: 0; }
+
+    /* Nav */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      border-bottom: 0.5px solid var(--lumen-mist);
+      background: white;
+    }
+    .nav__links { display: flex; gap: 24px; align-items: center; }
+    .nav__link {
+      font-size: 13px; color: var(--lumen-slate);
+      text-decoration: none; font-weight: 400;
+    }
+    .nav__link:hover { color: var(--lumen-dusk); }
+    .nav__cta {
+      font-family: var(--font);
+      font-size: 12px; font-weight: 600;
+      color: white; background: var(--lumen-dusk);
+      border: none; border-radius: 6px;
+      padding: 7px 14px; cursor: pointer;
+    }
+
+    /* Hero */
+    .hero {
+      background: var(--lumen-mist-lt);
+      padding: 80px 40px 64px;
+    }
+    .hero__inner { max-width: 680px; }
+    .hero__eyebrow {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600;
+      color: var(--lumen-mismatch);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .hero__eyebrow-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--lumen-mismatch);
+    }
+    .hero__h1 {
+      font-size: 44px; font-weight: 700;
+      color: var(--lumen-dusk);
+      letter-spacing: -0.03em; line-height: 1.08;
+      margin-bottom: 20px;
+    }
+    .hero__h1 em {
+      font-style: normal;
+      color: var(--lumen-mismatch);
+    }
+    .hero__sub {
+      font-size: 16px; font-weight: 400;
+      color: var(--lumen-slate); line-height: 1.65;
+      max-width: 480px; margin-bottom: 32px;
+    }
+    .hero__ctas { display: flex; gap: 10px; margin-bottom: 48px; }
+    .hero__signals { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hero__sig-chip {
+      display: flex; align-items: center; gap: 6px;
+      background: white;
+      border: 0.5px solid var(--lumen-border);
+      border-radius: 20px; padding: 5px 12px;
+    }
+    .hero__sig-chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .hero__sig-chip-name {
+      font-size: 11px; font-weight: 600; color: var(--lumen-dusk);
+      letter-spacing: 0.01em;
+    }
+    .hero__sig-chip-desc { font-size: 11px; color: var(--lumen-haze); }
+
+    /* Signal section */
+    .signals-section { padding: 64px 40px; }
+    .signals-section__label {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--lumen-haze);
+      margin-bottom: 24px;
+    }
+    .signals-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .signal-explain {
+      border-radius: var(--r-lg);
+      padding: 16px;
+      border: 0.5px solid var(--lumen-border);
+      background: white;
+    }
+    .signal-explain__icon {
+      font-size: 20px; margin-bottom: 10px; display: block;
+    }
+    .signal-explain__name {
+      font-size: 13px; font-weight: 600;
+      letter-spacing: -0.01em; margin-bottom: 6px;
+    }
+    .signal-explain__desc {
+      font-size: 12px; color: var(--lumen-slate); line-height: 1.5;
+    }
+
+    /* Social proof strip */
+    .strip {
+      border-top: 0.5px solid var(--lumen-mist);
+      border-bottom: 0.5px solid var(--lumen-mist);
+      padding: 16px 40px;
+      background: white;
+      display: flex; align-items: center; gap: 32px;
+    }
+    .strip__item { font-size: 12px; color: var(--lumen-haze); }
+    .strip__item strong { color: var(--lumen-dusk); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="lumen-lockup">
+      <div class="lumen-mark lumen-mark--md">
+        <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="3" fill="white" opacity="0.95"/>
+          <circle cx="9" cy="9" r="6" stroke="white" stroke-width="1" opacity="0.3"/>
+          <circle cx="9" cy="9" r="8.5" stroke="white" stroke-width="0.5" opacity="0.15"/>
+        </svg>
+      </div>
+      <span class="lumen-lockup__word">lumen</span>
+    </div>
+    <div class="nav__links">
+      <a href="#" class="nav__link">How it works</a>
+      <a href="#" class="nav__link">Research</a>
+      <a href="#" class="nav__link">Pro</a>
+      <button class="nav__cta">Add to Chrome — free</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero__inner">
+      <div class="hero__eyebrow">
+        <div class="hero__eyebrow-dot"></div>
+        Cognitive mirror for AI users
+      </div>
+      <h1 class="hero__h1">
+        AI should sharpen<br>
+        your thinking,<br>
+        not <em>replace</em> it.
+      </h1>
+      <p class="hero__sub">
+        Lumen watches how you use AI — passivity, drift, goal conflicts —
+        and quietly holds up a mirror. No nannying. No red alerts. Just signal.
+      </p>
+      <div class="hero__ctas">
+        <button class="btn-primary">Add to Chrome — free</button>
+        <button class="btn-outline">See how it works</button>
+      </div>
+      <div class="hero__signals">
+        <div class="hero__sig-chip">
+          <div class="hero__sig-chip-dot" style="background:var(--lumen-loop);"></div>
+          <span class="hero__sig-chip-name">Loop</span>
+          <span class="hero__sig-chip-desc">in-session passivity</span>
+        </div>
+        <div class="hero__sig-chip">
+          <div class="hero__sig-chip-dot" style="background:var(--lumen-drift);"></div>
+          <span class="hero__sig-chip-name">Drift</span>
+          <span class="hero__sig-chip-desc">cross-session decline</span>
+        </div>
+        <div class="hero__sig-chip">
+          <div class="hero__sig-chip-dot" style="background:var(--lumen-mismatch);"></div>
+          <span class="hero__sig-chip-name">Mismatch</span>
+          <span class="hero__sig-chip-desc">goal conflict</span>
+        </div>
+        <div class="hero__sig-chip">
+          <div class="hero__sig-chip-dot" style="background:var(--lumen-depth);"></div>
+          <span class="hero__sig-chip-name">Depth</span>
+          <span class="hero__sig-chip-desc">worth thinking first</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Strip -->
+  <div class="strip">
+    <div class="strip__item"><strong>Mirror, not nanny</strong> — no red, no blocked responses</div>
+    <div class="strip__item"><strong>Ghost mode</strong> — go invisible any time</div>
+    <div class="strip__item"><strong>Weekly digest</strong> — longitudinal patterns over time</div>
+    <div class="strip__item"><strong>Open research</strong> — opt into the calibration study</div>
+  </div>
+
+  <!-- Signals explained -->
+  <section class="signals-section">
+    <div class="signals-section__label">The four signals</div>
+    <div class="signals-grid">
+      <div class="signal-explain">
+        <i class="ti ti-refresh signal-explain__icon icon-loop" aria-hidden="true"></i>
+        <div class="signal-explain__name" style="color:var(--lumen-loop-text);">Loop</div>
+        <div class="signal-explain__desc">
+          You've accepted several AI outputs in a row without editing or pushing back. Lumen notices — it doesn't judge.
+        </div>
+      </div>
+      <div class="signal-explain">
+        <i class="ti ti-trending-down signal-explain__icon icon-drift" aria-hidden="true"></i>
+        <div class="signal-explain__name" style="color:var(--lumen-drift-text);">Drift</div>
+        <div class="signal-explain__desc">
+          Over multiple sessions, your active engagement with AI output is trending down. A longer-term pattern.
+        </div>
+      </div>
+      <div class="signal-explain">
+        <i class="ti ti-arrows-diff signal-explain__icon icon-mismatch" aria-hidden="true"></i>
+        <div class="signal-explain__name" style="color:var(--lumen-mismatch-text);">Mismatch</div>
+        <div class="signal-explain__desc">
+          This conversation conflicts with a goal you've set — like "think independently on strategic questions."
+        </div>
+      </div>
+      <div class="signal-explain">
+        <i class="ti ti-brain signal-explain__icon icon-depth" aria-hidden="true"></i>
+        <div class="signal-explain__name" style="color:var(--lumen-depth-text);">Depth</div>
+        <div class="signal-explain__desc">
+          That's a high-stakes question. Lumen gently asks if you want 30 seconds to form your own answer first.
+        </div>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

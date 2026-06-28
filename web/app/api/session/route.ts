@@ -1,26 +1,74 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { extensionJsonResponse, handleExtensionOptions } from "@/lib/extensionCors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
-import { pushFeedback } from "@/lib/feedbackMemory";
+import { pushFeedback, listFeedbackRows, type FeedbackRow } from "@/lib/feedbackMemory";
 
 const memoryStore: Array<Record<string, unknown>> = [];
+
+function normalizeFeedbackRows(
+  userId: string,
+  feedback: unknown[],
+  platform: string,
+  sessionDate: string
+): FeedbackRow[] {
+  if (!Array.isArray(feedback)) return [];
+  return feedback.map((f) => {
+    const row = f as Record<string, unknown>;
+    return {
+      userId,
+      signalType: String(row.signalType || "unknown"),
+      taskType: String(row.taskType || "general"),
+      verdict: String(row.verdict || "wrong"),
+      score: typeof row.score === "number" ? row.score : undefined,
+      promptSnippet: typeof row.promptSnippet === "string" ? row.promptSnippet : undefined,
+      platform,
+      sessionDate,
+    };
+  });
+}
+
+async function persistFeedbackToSupabase(rows: FeedbackRow[]) {
+  const supabase = getSupabase();
+  if (!supabase || !rows.length) return;
+
+  await supabase.from("signal_feedback").insert(
+    rows.map((row) => ({
+      user_id: row.userId,
+      session_date: row.sessionDate,
+      platform: row.platform,
+      signal_type: row.signalType,
+      task_type: row.taskType,
+      verdict: row.verdict,
+      score: row.score ?? null,
+      prompt_snippet: row.promptSnippet ?? null,
+    }))
+  );
+}
+
+export async function OPTIONS(request: Request) {
+  return handleExtensionOptions(request);
+}
 
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return extensionJsonResponse(req, { error: "Invalid JSON" }, { status: 400 });
   }
 
   const userId = String(body.userId || "");
   if (!userId) {
-    return NextResponse.json({ error: "userId required" }, { status: 400 });
+    return extensionJsonResponse(req, { error: "userId required" }, { status: 400 });
   }
+
+  const sessionDate = String(body.sessionDate || new Date().toISOString().slice(0, 10));
+  const platform = String(body.platform || "unknown");
 
   const sessionRow = {
     user_id: userId,
-    session_date: body.sessionDate || new Date().toISOString().slice(0, 10),
-    platform: body.platform || "unknown",
+    session_date: sessionDate,
+    platform,
     duration_minutes: Number(body.durationMinutes) || 0,
     message_count: Number(body.messageCount) || 0,
     composite_score: Number(body.compositeScore) || 0,
@@ -32,23 +80,32 @@ export async function POST(req: NextRequest) {
     interventions_fired: Number(body.interventionsFired) || 0,
     interventions_bypassed: Number(body.interventionsBypassed) || 0,
     reflections_submitted: Number(body.reflectionsSubmitted) || 0,
+    lumi_mode: Boolean(body.lumiMode),
+    lumi_rituals_completed: Number(body.lumiRitualsCompleted) || 0,
+    lumi_homework_suggested: Number(body.lumiHomeworkSuggested) || 0,
     signals: body.signals || {},
     feedback: body.feedback || [],
   };
 
+  const feedbackRows = normalizeFeedbackRows(
+    userId,
+    sessionRow.feedback as unknown[],
+    platform,
+    sessionDate
+  );
+  if (feedbackRows.length) {
+    pushFeedback(feedbackRows);
+  }
+
   const supabase = getSupabase();
   if (!supabase || !isSupabaseConfigured()) {
     memoryStore.push({ ...sessionRow, storedAt: Date.now() });
-    if (Array.isArray(body.feedback) && body.feedback.length) {
-      pushFeedback(
-        body.feedback.map((f: unknown) => ({
-          ...(f as object),
-          platform: sessionRow.platform,
-          sessionDate: sessionRow.session_date,
-        }))
-      );
-    }
-    return NextResponse.json({ ok: true, mode: "memory", count: memoryStore.length });
+    return extensionJsonResponse(req, {
+      ok: true,
+      mode: "memory",
+      count: memoryStore.length,
+      feedbackIngested: feedbackRows.length,
+    });
   }
 
   const { data: existingUser } = await supabase.from("users").select("id").eq("id", userId).maybeSingle();
@@ -68,21 +125,25 @@ export async function POST(req: NextRequest) {
     .limit(1);
 
   if (dupes?.length) {
-    return NextResponse.json({ ok: true, duplicate: true });
+    if (feedbackRows.length) await persistFeedbackToSupabase(feedbackRows);
+    return extensionJsonResponse(req, { ok: true, duplicate: true, feedbackIngested: feedbackRows.length });
   }
 
   const { error } = await supabase.from("sessions").insert(sessionRow);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return extensionJsonResponse(req, { error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  if (feedbackRows.length) await persistFeedbackToSupabase(feedbackRows);
+
+  return extensionJsonResponse(req, { ok: true, feedbackIngested: feedbackRows.length });
 }
 
-export async function GET() {
-  return NextResponse.json({
+export async function GET(request: Request) {
+  return extensionJsonResponse(request, {
     ok: true,
     supabase: isSupabaseConfigured(),
     memorySessions: memoryStore.length,
+    memoryFeedback: listFeedbackRows().length,
   });
 }

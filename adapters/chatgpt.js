@@ -81,7 +81,12 @@ const LumenAdapterChatGPT = {
   },
 
   findUserMessageWrapper(el) {
-    return el.closest('[data-message-author-role="user"]') || el.closest(".user-turn") || el;
+    return (
+      el.closest('[data-message-author-role="user"]') ||
+      el.closest(".user-turn") ||
+      el.closest("article") ||
+      el
+    );
   },
 
   findChatInput() {
@@ -107,28 +112,42 @@ const LumenAdapterChatGPT = {
     return true;
   },
 
+  isAssistantNode(el) {
+    if (!el) return false;
+    const role = this.inferRole(el);
+    if (role === "assistant") return true;
+    if (el.querySelector?.('[data-message-author-role="assistant"], .agent-turn, [data-role="assistant"]')) {
+      return true;
+    }
+    return false;
+  },
+
   hideAssistantResponsesAfter(userEl) {
     const wrapper = this.findUserMessageWrapper(userEl);
     if (!wrapper) return () => {};
 
     const hidden = [];
-    const messages = this.buildMessageList();
-    const userIndex = messages.findIndex(
-      (m) =>
-        m.role === "user" &&
-        (m.el === wrapper || m.el.contains(wrapper) || wrapper.contains(m.el))
-    );
-
     const hideEl = (el) => {
       if (!el || hidden.includes(el)) return;
       el.classList.add("lumen-ai-hidden");
       hidden.push(el);
     };
 
+    const messages = this.buildMessageList();
+    const userIndex = messages.findIndex(
+      (m) =>
+        m.role === "user" &&
+        (m.el === wrapper ||
+          m.el.contains(wrapper) ||
+          wrapper.contains(m.el) ||
+          wrapper.contains(m.el.closest("[data-message-author-role]")))
+    );
+
     if (userIndex !== -1) {
       for (let i = userIndex + 1; i < messages.length; i += 1) {
         const msg = messages[i];
         if (msg.role === "user") break;
+        hideEl(msg.el.closest("article"));
         hideEl(msg.el.closest('[data-testid="conversation-turn"]'));
         hideEl(msg.el.closest("[data-message-author-role]"));
         hideEl(msg.el.closest(".agent-turn"));
@@ -136,11 +155,27 @@ const LumenAdapterChatGPT = {
       }
     }
 
-    let node = wrapper.closest('[data-testid="conversation-turn"]') || wrapper;
+    const startNode =
+      wrapper.closest("article") ||
+      wrapper.closest('[data-testid="conversation-turn"]') ||
+      wrapper.closest("[data-message-author-role]") ||
+      wrapper;
+
+    let node = startNode;
     while (node) {
       node = node.nextElementSibling;
       if (!node) break;
-      if (node.querySelector?.('[data-message-author-role="user"], .user-turn')) break;
+      if (
+        node.querySelector?.(
+          '[data-message-author-role="user"], [data-role="user"], .user-turn'
+        )
+      ) {
+        break;
+      }
+      if (this.isAssistantNode(node) || node.querySelector?.('[data-message-author-role="assistant"]')) {
+        hideEl(node);
+        continue;
+      }
       hideEl(node);
     }
 

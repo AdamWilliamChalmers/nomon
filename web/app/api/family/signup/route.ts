@@ -5,6 +5,8 @@ import {
   requiresParentalConsent,
 } from "@/lib/familyQuestions";
 import { createPendingConsent } from "@/lib/familyMemory";
+import { generateApiToken } from "@/lib/auth";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
@@ -37,6 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = crypto.randomUUID();
+  const apiToken = generateApiToken();
   const needsConsent = requiresParentalConsent(birthYear);
 
   if (needsConsent && !parentEmail.includes("@")) {
@@ -49,6 +52,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const supabase = getSupabase();
+  if (supabase && isSupabaseConfigured()) {
+    await supabase.from("users").upsert({
+      id: userId,
+      email,
+      display_name: displayName,
+      birth_year: birthYear,
+      api_token: apiToken,
+      account_status: needsConsent ? "pending_parent_consent" : "active",
+      parent_guardian_email: needsConsent ? parentEmail : null,
+    });
+  }
+
   if (needsConsent) {
     const pending = createPendingConsent({
       childUserId: userId,
@@ -59,6 +75,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       userId,
+      apiToken,
       accountStatus: "pending_parent_consent",
       consentUrl: `/family/consent?token=${pending.consentToken}`,
       message:
@@ -69,6 +86,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     userId,
+    apiToken,
     displayName,
     accountStatus: "active",
   });
