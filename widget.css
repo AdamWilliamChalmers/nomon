@@ -298,10 +298,36 @@
 #lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-inter {
   animation: lumen-fab-inter var(--lm-mark-dur) var(--lm-mark-ease) 1;
 }
+
+/* Mode switch: a quick in-place flip (the "transform" beat of the loop). The
+   new mode colour is swapped in JS at the edge-on midpoint so it reads as the
+   mark morphing into the new mode. */
+@keyframes lumen-fab-morph {
+  0% { transform: scaleX(1) scaleY(1); }
+  45% { transform: scaleX(0.04) scaleY(1.04); }
+  55% { transform: scaleX(0.04) scaleY(1.04); }
+  100% { transform: scaleX(1) scaleY(1); }
+}
+@keyframes lumen-fab-morph-glow {
+  0% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.15); }
+  100% { opacity: 0.2; transform: scale(1); }
+}
+#lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-you,
+#lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-ai {
+  animation: lumen-fab-morph 0.55s var(--lm-mark-ease) 1;
+}
+#lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-inter {
+  animation: lumen-fab-morph-glow 0.55s var(--lm-mark-ease) 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   #lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-you,
   #lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-ai,
-  #lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-inter {
+  #lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-inter,
+  #lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-you,
+  #lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-ai,
+  #lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-inter {
     animation: none;
   }
 }

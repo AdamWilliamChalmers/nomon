@@ -213,7 +213,7 @@ const LumenWidget = (() => {
     document.getElementById("lumen-mode-select")?.addEventListener("change", (event) => {
       LumenGoals.save({ mode: event.target.value });
       updateModeHint();
-      updateBadge();
+      morphFabMark();
     });
 
     document.getElementById("lumen-pause-toggle")?.addEventListener("click", (event) => {
@@ -602,6 +602,32 @@ const LumenWidget = (() => {
     fabPulseTimer = window.setTimeout(
       () => mark.classList.remove("lumen-mark-pulse"),
       3300
+    );
+  }
+
+  // On mode change, play the flip portion of the mark animation and reveal the
+  // new mode colour at the edge-on midpoint — so the mark looks like it morphs
+  // into the new mode rather than just recolouring.
+  let fabMorphTimer = null;
+  let fabMorphColorTimer = null;
+  function morphFabMark() {
+    const mark = document.getElementById("lumen-fab-mark");
+    const reduce =
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!mark || reduce) {
+      updateBadge();
+      return;
+    }
+    mark.classList.remove("lumen-mark-morph");
+    void mark.offsetWidth;
+    mark.classList.add("lumen-mark-morph");
+    window.clearTimeout(fabMorphColorTimer);
+    fabMorphColorTimer = window.setTimeout(updateBadge, 275);
+    window.clearTimeout(fabMorphTimer);
+    fabMorphTimer = window.setTimeout(
+      () => mark.classList.remove("lumen-mark-morph"),
+      620
     );
   }
 
