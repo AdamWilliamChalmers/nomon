@@ -1,5 +1,12 @@
 import { extensionJsonResponse, handleExtensionOptions } from "@/lib/extensionCors";
-import { anthropicJudge, heuristicJudge, openaiJudge, type JudgeRequest, type JudgeVerdict } from "@/lib/judge";
+import {
+  anthropicJudge,
+  geminiJudge,
+  heuristicJudge,
+  openaiJudge,
+  type JudgeRequest,
+  type JudgeVerdict,
+} from "@/lib/judge";
 
 export async function OPTIONS(request: Request) {
   return handleExtensionOptions(request);
@@ -12,7 +19,9 @@ export async function GET(request: Request) {
     ? "anthropic"
     : process.env.OPENAI_API_KEY
       ? "openai"
-      : null;
+      : process.env.GEMINI_API_KEY
+        ? "gemini"
+        : null;
   return extensionJsonResponse(request, { ok: true, llm: Boolean(provider), provider });
 }
 
@@ -30,12 +39,15 @@ export async function POST(request: Request) {
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
 
-  // Ordered LLM cascade: try Anthropic first, fall through to OpenAI on error,
-  // then finally the local heuristic. Each provider only runs if its key exists.
+  // Ordered LLM cascade: Anthropic -> OpenAI -> Gemini, falling through to the
+  // next provider on error, then finally the local heuristic. Each provider
+  // only runs if its key exists.
   const providers: Array<{ name: string; run: () => Promise<JudgeVerdict> }> = [];
   if (anthropicKey) providers.push({ name: "anthropic", run: () => anthropicJudge(body, anthropicKey) });
   if (openaiKey) providers.push({ name: "openai", run: () => openaiJudge(body, openaiKey) });
+  if (geminiKey) providers.push({ name: "gemini", run: () => geminiJudge(body, geminiKey) });
 
   const errors: string[] = [];
   for (const provider of providers) {

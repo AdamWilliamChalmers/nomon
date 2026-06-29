@@ -127,6 +127,33 @@ export async function anthropicJudge(body: JudgeRequest, apiKey: string): Promis
   return parseJudgeJson(content);
 }
 
+export async function geminiJudge(body: JudgeRequest, apiKey: string): Promise<JudgeVerdict> {
+  const model = "gemini-3.1-flash-lite";
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: JUDGE_SYSTEM }] },
+        contents: [{ role: "user", parts: [{ text: judgeUserPayload(body) }] }],
+        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 256 },
+      }),
+    },
+  );
+
+  if (!res.ok) throw new Error(`Gemini ${res.status}`);
+  const data = await res.json();
+  const content = data.candidates?.[0]?.content?.parts
+    ?.map((part: { text?: string }) => part.text ?? "")
+    .join("");
+  if (!content) throw new Error("Gemini empty response");
+  return parseJudgeJson(content);
+}
+
 export async function openaiJudge(body: JudgeRequest, apiKey: string): Promise<JudgeVerdict> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
