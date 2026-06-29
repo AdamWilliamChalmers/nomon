@@ -94,7 +94,13 @@ function judgeUserPayload(body: JudgeRequest) {
 }
 
 function parseJudgeJson(content: string): JudgeVerdict {
-  const parsed = JSON.parse(content) as JudgeVerdict;
+  let raw = content.trim();
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) raw = fenced[1].trim();
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start !== -1 && end !== -1 && end > start) raw = raw.slice(start, end + 1);
+  const parsed = JSON.parse(raw) as JudgeVerdict;
   return { ...parsed, source: "llm" };
 }
 
@@ -107,7 +113,7 @@ export async function anthropicJudge(body: JudgeRequest, apiKey: string): Promis
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 256,
       system: JUDGE_SYSTEM,
       messages: [{ role: "user", content: judgeUserPayload(body) }],
