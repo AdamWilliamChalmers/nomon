@@ -10,12 +10,12 @@ const LumenRules = (() => {
       label: "write essay/paper",
     },
     { id: "can_write", re: /can you write|could you write|please write/i, label: "can you write" },
-    { id: "do_for_me", re: /do this for me|do it for me|complete this for me/i, label: "do for me" },
+    { id: "do_for_me", re: /\bdo (this|it|my|the|all|your)\b[^?]*\bfor me\b|complete this for me/i, label: "do for me" },
     { id: "generate", re: /generate a|create a|produce a|make me|build me|come up with/i, label: "generate/create" },
     { id: "just_do", re: /just do|can you do/i, label: "just do it" },
     { id: "give_full", re: /give me a full|give me all citations|give me a/i, label: "give me full output" },
     { id: "complete", re: /complete this|finish this|turn this into|output a/i, label: "complete/finish" },
-    { id: "draft_for", re: /draft a|draft the/i, label: "draft for me" },
+    { id: "draft_for", re: /\bdraft (a|an|the|my)\b/i, label: "draft for me" },
   ];
 
   const TIER2_PATTERNS = [
@@ -37,9 +37,8 @@ const LumenRules = (() => {
     /can you write/i,
     /create a/i,
     /generate a/i,
-    /draft a/i,
-    /do this for me/i,
-    /do it for me/i,
+    /\bdraft (a|an|the|my)\b/i,
+    /\bdo (this|it|my|the|all|your)\b[^?]*\bfor me\b/i,
     /make me/i,
     /just do/i,
     /can you do/i,
@@ -56,6 +55,7 @@ const LumenRules = (() => {
 
   const USER_CONTEXT_MARKERS = [
     /\bhere('s| is) (my|the) (draft|attempt|version|notes|outline|thinking)\b/i,
+    /\bhere('s| is) what i (tried|did|have|wrote|attempted|came up with)\b/i,
     /\bi wrote\b/i,
     /\bmy current (draft|version|thinking)\b/i,
     /\bwhat i have so far\b/i,
@@ -148,6 +148,9 @@ const LumenRules = (() => {
     if (evaluation?.confidence === "gray") return true;
     if (evaluation?.confidence === "high") return false;
     if (checkEngagementOverride(text).active) return false;
+    // The user showed their own work (draft / attempt / notes) — that's
+    // engagement, not offloading. Don't spend an LLM call second-guessing it.
+    if (hasUserProvidedContext(text)) return false;
     if (looksLikeInstruction(text)) return true;
     if (opts.passiveLater) return true;
     return false;
@@ -179,6 +182,12 @@ const LumenRules = (() => {
         reasons: engagementOverride.reasons,
         overlay: false,
       };
+    }
+
+    // Mismatch is grounded in an explicit goal the user set plus a delegation
+    // match — high precision, so trust it without spending an LLM call.
+    if (primary === "mismatch") {
+      return { level: "high", reasons: ["This conflicts with a goal you set"], overlay: false };
     }
 
     if (primary === "handoff" || (messageIndex <= 2 && framing.tier === 1)) {

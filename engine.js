@@ -18,9 +18,13 @@ const LumenEngine = (() => {
   const ENGAGEMENT_MARKERS = LumenRules.ENGAGEMENT_MARKERS;
   const USER_CONTEXT_MARKERS = LumenRules.USER_CONTEXT_MARKERS;
 
+  // Depth = high-stakes questions worth thinking through first. Note: "write my"
+  // / "create my" are deliberately NOT here — those are hand-offs, and depth
+  // outranks hand-off in primary selection, so including them would mask a clear
+  // delegation behind a "think about it" card.
   const DEPTH_TRIGGERS = [
     /should i\b/i, /what career/i, /how do i decide/i, /is it worth/i,
-    /i want to understand/i, /help me learn/i, /write my\b/i, /create my\b/i,
+    /i want to understand/i, /help me learn/i,
     /what do i really want/i, /who am i\b/i,
   ];
 
