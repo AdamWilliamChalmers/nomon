@@ -156,7 +156,7 @@
         // Don't fabricate a time: live messages already carry the real send
         // moment; historical messages stay null so timing signals are skipped
         // and old messages are never treated as "fresh" (no overlay on load).
-        LumenSession.recordMessage(msg.id, evaluation.loopScore, evaluation.primary);
+        LumenSession.recordMessage(msg.id, evaluation.loopScore, evaluation.primary, evaluation.taskType);
       }
 
       LumenWidget.injectMessageUI(msg, evaluation, adapter, { isNewMessage: !alreadyScored });

@@ -226,6 +226,181 @@ const LumenNudges = (() => {
       .map(([host, count]) => ({ name: prettyPlatform(host), count }));
   }
 
+  // ── AI Profile (lumen-ai-profile.md) ────────────────────────────────────
+  // Characterise how you work in each tool: what you mostly use it for, and
+  // whether you stay hands-on or tend to hand whole tasks off. Per-tool framing,
+  // neutral/descriptive copy, gated on a minimum sample so we never put a
+  // confident-but-wrong sentence in front of the user.
+  const PROFILE_WINDOW_DAYS = 14;
+  const MIN_PROFILE_MESSAGES = 10;
+  const MIN_PROFILE_SESSIONS = 2;
+
+  // Engine task types → the plain-language domain we show the user.
+  const TASK_DOMAIN = {
+    email_drafting: "writing",
+    essay_writing: "writing",
+    argument_building: "writing",
+    creative_writing: "writing",
+    code_generation: "code",
+    debugging: "code",
+    code_explanation: "code",
+    research: "research",
+    literature_search: "research",
+    fact_checking: "research",
+    summarisation: "research",
+    data_analysis: "analysis",
+    decision_making: "decisions",
+    learning_concept: "learning",
+    reflection: "reflection",
+    scheduling: "admin",
+    formatting: "admin",
+    conversion: "admin",
+    translation: "admin",
+    general: null,
+  };
+
+  const POSTURE_COPY = {
+    "hands-on": "You stay hands-on here — lots of questions and your own attempts.",
+    collaborative: "Mostly a back-and-forth here.",
+    mixed: "A mix of hands-on and hand-off here.",
+    "hand-off heavy": "You tend to hand whole tasks off here.",
+  };
+
+  function accumulateByPlatform(week) {
+    const acc = {};
+    (week || []).forEach((entry) => {
+      const platforms =
+        entry.byPlatform && Object.keys(entry.byPlatform).length
+          ? entry.byPlatform
+          : entry.platform
+          ? { [entry.platform]: entry }
+          : {};
+      Object.entries(platforms).forEach(([host, snap]) => {
+        const a =
+          acc[host] ||
+          (acc[host] = { messages: 0, sessions: 0, qSum: 0, plSum: 0, passSum: 0, signal: {}, task: {} });
+        const mc = snap.messageCount || 0;
+        a.messages += mc;
+        a.sessions += 1;
+        a.qSum += (snap.questionRatio || 0) * mc;
+        a.plSum += (snap.avgPromptLength || 0) * mc;
+        a.passSum += (snap.passiveRate || 0) * mc;
+        Object.entries(snap.signalCounts || {}).forEach(([k, v]) => {
+          a.signal[k] = (a.signal[k] || 0) + (v || 0);
+        });
+        Object.entries(snap.taskTypeCounts || {}).forEach(([k, v]) => {
+          a.task[k] = (a.task[k] || 0) + (v || 0);
+        });
+      });
+    });
+    return acc;
+  }
+
+  // 0 = fully hands-on, 100 = hands whole tasks off. Hand-offs dominate;
+  // passive replies, few questions and short prompts push it up; depth pulls down.
+  function postureScore(a) {
+    const m = Math.max(a.messages, 1);
+    const handoffRate = (a.signal.handoff || 0) / m;
+    const mismatchRate = (a.signal.mismatch || 0) / m;
+    const passiveRate = a.passSum / m;
+    const questionRatio = a.qSum / m;
+    const avgPromptLen = a.plSum / m;
+    const depthRate = (a.signal.depth || 0) / m;
+
+    let offload = 0;
+    offload += Math.min(1, handoffRate * 3) * 38;
+    offload += Math.min(1, mismatchRate * 4) * 7;
+    offload += Math.min(1, passiveRate) * 22;
+    offload += (1 - Math.min(1, questionRatio)) * 18;
+    offload += Math.min(1, Math.max(0, (18 - avgPromptLen) / 18)) * 15;
+    offload -= Math.min(1, depthRate * 5) * 10;
+    return Math.max(0, Math.min(100, Math.round(offload)));
+  }
+
+  function postureLabel(score) {
+    if (score < 32) return "hands-on";
+    if (score < 52) return "collaborative";
+    if (score < 70) return "mixed";
+    return "hand-off heavy";
+  }
+
+  // Name a dominant use only on a clear plurality, else "a mix".
+  function dominantUse(task) {
+    const entries = Object.entries(task || {}).sort((a, b) => b[1] - a[1]);
+    const total = entries.reduce((s, [, v]) => s + v, 0);
+    if (!total) return null;
+    const [topKey, topVal] = entries[0];
+    const runnerVal = entries[1]?.[1] || 0;
+    if (topVal / total >= 0.4 && topVal >= runnerVal * 1.5) return TASK_DOMAIN[topKey] || null;
+    return null;
+  }
+
+  // Cross-cutting insight: which kind of work you stay most hands-on with vs.
+  // hand off most — across every tool. We don't store task×signal crosses, so we
+  // attribute each tool's posture to the domains it's used for, weighted by how
+  // much of that tool's activity each domain represents.
+  function buildProfileContrast(history, opts = {}) {
+    const windowDays = opts.windowDays || PROFILE_WINDOW_DAYS;
+    const minMessages = opts.minMessages ?? MIN_PROFILE_MESSAGES;
+    const spread = opts.minSpread ?? 18;
+    const acc = accumulateByPlatform((history || []).slice(-windowDays));
+
+    const offload = {};
+    const weight = {};
+    Object.values(acc).forEach((a) => {
+      if (a.messages < 3) return;
+      const score = postureScore(a);
+      Object.entries(a.task || {}).forEach(([taskType, count]) => {
+        const domain = TASK_DOMAIN[taskType];
+        if (!domain || !count) return;
+        offload[domain] = (offload[domain] || 0) + score * count;
+        weight[domain] = (weight[domain] || 0) + count;
+      });
+    });
+
+    const domains = Object.keys(weight)
+      .filter((d) => weight[d] >= minMessages)
+      .map((d) => ({ domain: d, score: offload[d] / weight[d] }))
+      .sort((a, b) => a.score - b.score);
+
+    if (domains.length < 2) return null;
+    const engaged = domains[0];
+    const offloaded = domains[domains.length - 1];
+    if (offloaded.score - engaged.score < spread) return null;
+    return `You're most hands-on with ${engaged.domain}, and hand off most with ${offloaded.domain} — whichever tool you're in.`;
+  }
+
+  function buildProfile(history, opts = {}) {
+    const windowDays = opts.windowDays || PROFILE_WINDOW_DAYS;
+    const minMessages = opts.minMessages ?? MIN_PROFILE_MESSAGES;
+    const minSessions = opts.minSessions ?? MIN_PROFILE_SESSIONS;
+    const week = (history || []).slice(-windowDays);
+    const acc = accumulateByPlatform(week);
+
+    return Object.entries(acc)
+      .map(([host, a]) => ({ host, name: prettyPlatform(host), ...a }))
+      .sort((x, y) => y.messages - x.messages)
+      .slice(0, 3)
+      .map((t) => {
+        if (t.messages < minMessages || t.sessions < minSessions) {
+          return { name: t.name, ready: false, line: `Still learning how you use ${t.name}.` };
+        }
+        const score = postureScore(t);
+        const label = postureLabel(score);
+        const use = dominantUse(t.task);
+        const usePart = use ? `mostly ${use}` : "a mix of tasks";
+        return {
+          name: t.name,
+          ready: true,
+          use,
+          posture: label,
+          postureScore: score,
+          messages: t.messages,
+          line: `${t.name} — ${usePart}. ${POSTURE_COPY[label]}`,
+        };
+      });
+  }
+
   function buildDigest({ history, session, digestLog }) {
     const week = history.slice(-7);
     const avgQuestion =
@@ -252,6 +427,7 @@ const LumenNudges = (() => {
       loopTrend,
       driftLines,
       platforms: summarisePlatforms(week),
+      profile: buildProfile(history),
       depthMoments: (digestLog.depthMoments || []).slice(-3),
       mismatchSummary: `${session.mismatchCount || 0} intention checks this session`,
       responses: summariseResponses(digestLog),
@@ -273,6 +449,8 @@ const LumenNudges = (() => {
     detectDepthTaskType,
     isHighStakesDepth,
     summariseResponses,
+    buildProfile,
+    buildProfileContrast,
     buildDigest,
   };
 })();

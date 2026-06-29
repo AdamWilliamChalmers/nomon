@@ -15,6 +15,9 @@ const LumenSession = (() => {
     feedback: [],
     taskTypeWrongCounts: {},
     sessionSensitivity: {},
+    // Histogram of detected task types this session, used by the AI Profile to
+    // say what you mostly use each tool for (see lumen-ai-profile.md).
+    taskTypeCounts: {},
     sessionDate: new Date().toISOString().slice(0, 10),
     platform: window.location.hostname,
   });
@@ -165,7 +168,7 @@ const LumenSession = (() => {
     if (signal === "depth") session.depthCount = Math.max(0, session.depthCount + delta);
   }
 
-  function recordMessage(messageId, loopScore, signal) {
+  function recordMessage(messageId, loopScore, signal, taskType) {
     if (session.scoredMessageIds.includes(messageId)) return false;
 
     session.scoredMessageIds.push(messageId);
@@ -176,6 +179,10 @@ const LumenSession = (() => {
     );
 
     bumpSignalCount(signal, 1);
+    if (taskType) {
+      session.taskTypeCounts = session.taskTypeCounts || {};
+      session.taskTypeCounts[taskType] = (session.taskTypeCounts[taskType] || 0) + 1;
+    }
     save();
     return true;
   }
@@ -240,11 +247,28 @@ const LumenSession = (() => {
   // Combine each platform's daily snapshot into one weighted-by-messages
   // aggregate, so the weekly digest reflects activity across every LLM used
   // that day rather than just the last one written.
+  function sumCountMaps(maps) {
+    const out = {};
+    maps.forEach((map) => {
+      Object.entries(map || {}).forEach(([key, value]) => {
+        out[key] = (out[key] || 0) + (value || 0);
+      });
+    });
+    return out;
+  }
+
   function aggregatePlatforms(byPlatform) {
     const entries = Object.values(byPlatform || {});
     const totalMessages = entries.reduce((sum, e) => sum + (e.messageCount || 0), 0);
     if (!totalMessages) {
-      return { messageCount: 0, questionRatio: 0, avgPromptLength: 0, passiveRate: 0 };
+      return {
+        messageCount: 0,
+        questionRatio: 0,
+        avgPromptLength: 0,
+        passiveRate: 0,
+        signalCounts: {},
+        taskTypeCounts: {},
+      };
     }
     const weighted = (key) =>
       entries.reduce((sum, e) => sum + (e[key] || 0) * (e.messageCount || 0), 0) / totalMessages;
@@ -253,6 +277,8 @@ const LumenSession = (() => {
       questionRatio: weighted("questionRatio"),
       avgPromptLength: weighted("avgPromptLength"),
       passiveRate: weighted("passiveRate"),
+      signalCounts: sumCountMaps(entries.map((e) => e.signalCounts)),
+      taskTypeCounts: sumCountMaps(entries.map((e) => e.taskTypeCounts)),
     };
   }
 
@@ -262,6 +288,15 @@ const LumenSession = (() => {
     const platformSnap = {
       ...computeSessionMetrics(messages),
       messageCount: messages.filter((m) => m.role === "user").length,
+      // Cumulative for this platform/day — the AI Profile reads these to
+      // characterise how you work in each tool (lumen-ai-profile.md).
+      signalCounts: {
+        handoff: session.handoffCount || 0,
+        loop: session.loopCount || 0,
+        mismatch: session.mismatchCount || 0,
+        depth: session.depthCount || 0,
+      },
+      taskTypeCounts: { ...(session.taskTypeCounts || {}) },
     };
 
     return loadHistory().then((history) => {

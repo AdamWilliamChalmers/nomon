@@ -120,6 +120,9 @@ const LumenWidget = (() => {
         <div class="lumen-popover-title">Why last flag</div>
         <p class="lumen-popover-why" id="lumen-last-why">No flags yet this session.</p>
         <div class="lumen-popover-divider"></div>
+        <div class="lumen-popover-title" title="How you tend to work in each AI tool, built from your recent sessions">Your AI profile</div>
+        <div class="lumen-profile" id="lumen-profile"></div>
+        <div class="lumen-popover-divider"></div>
         <div class="lumen-popover-title">This week</div>
         <div class="lumen-popover-digest" id="lumen-digest"></div>
       </div>
@@ -645,9 +648,51 @@ const LumenWidget = (() => {
     document.getElementById("lumen-stat-drift").textContent = String(session.driftCount);
     document.getElementById("lumen-stat-mismatch").textContent = String(session.mismatchCount);
     document.getElementById("lumen-stat-depth").textContent = String(session.depthCount);
+    renderProfile();
     renderDigest();
     syncSettingsUI();
     positionPopover();
+  }
+
+  function renderProfileCard(tool) {
+    if (!tool.ready) {
+      return `<div class="lumen-profile-card lumen-profile-card--pending">
+        <span class="lumen-profile-name">${tool.name}</span>
+        <span class="lumen-profile-pending">Still learning</span>
+      </div>`;
+    }
+    const pct = Math.max(4, Math.min(100, tool.postureScore));
+    const usePart = tool.use ? tool.use : "a mix of tasks";
+    return `<div class="lumen-profile-card">
+      <div class="lumen-profile-row">
+        <span class="lumen-profile-name">${tool.name}</span>
+        <span class="lumen-profile-use">${usePart}</span>
+      </div>
+      <div class="lumen-profile-meter" title="${tool.posture} · ${tool.postureScore}/100 toward hand-off">
+        <span style="left:${pct}%"></span>
+      </div>
+      <div class="lumen-profile-foot">
+        <span class="lumen-profile-end">hands-on</span>
+        <span class="lumen-profile-posture">${tool.posture}</span>
+        <span class="lumen-profile-end">hand-off</span>
+      </div>
+    </div>`;
+  }
+
+  async function renderProfile() {
+    const el = document.getElementById("lumen-profile");
+    if (!el) return;
+    const history = await LumenSession.loadHistory();
+    const tools = LumenNudges.buildProfile(history);
+    const contrast = LumenNudges.buildProfileContrast(history);
+    if (!tools.length) {
+      el.innerHTML = `<p class="lumen-popover-hint">Lumen builds this as you use different AI tools across the week.</p>`;
+      return;
+    }
+    el.innerHTML = `
+      ${contrast ? `<p class="lumen-profile-contrast">${contrast}</p>` : ""}
+      ${tools.map(renderProfileCard).join("")}
+    `;
   }
 
   async function renderDigest() {
@@ -665,6 +710,12 @@ const LumenWidget = (() => {
         digest.platforms?.length
           ? `<p class="lumen-digest-label" title="Lumen tracks every supported AI tool — this is your message split this week">Across tools</p>
       <p class="lumen-digest-line">${digest.platforms.map((p) => `${p.name} ${p.count}`).join(" · ")}</p>`
+          : ""
+      }
+      ${
+        digest.profile?.length
+          ? `<p class="lumen-digest-label" title="How you tend to work in each tool — what you use it for and how hands-on you are">How you work</p>
+      ${digest.profile.map((t) => `<p class="lumen-digest-line">${t.line}</p>`).join("")}`
           : ""
       }
       <p class="lumen-digest-label" title="How your questioning, prompt length and passive replies trended this week">Drift analysis</p>
