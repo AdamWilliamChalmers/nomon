@@ -43,9 +43,9 @@ const SIGNALS = [
 ];
 
 const MODES = [
-  { name: "Ambient", desc: "Quiet strips beside your messages. The default." },
-  { name: "Ghost", desc: "Invisible in-session — you only get the weekly digest." },
-  { name: "Active", desc: "All signals plus reflection cards when it matters." },
+  { name: "Ambient", desc: "Subtle inline cues beside your messages — never a pop-up. The default." },
+  { name: "Ghost", desc: "Nothing in-session — you only get the weekly digest." },
+  { name: "Active", desc: "Inline cues plus reflection cards when it matters." },
   { name: "Focus", desc: "Active, plus a goal you declare for the session." },
 ];
 

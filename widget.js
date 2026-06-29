@@ -156,10 +156,10 @@ const LumenWidget = (() => {
           <div class="lumen-onboarding-step lumen-hidden" data-step="3">
             <h2>How visible should Lumen be?</h2>
             <select id="lumen-onboarding-mode">
-              <option value="ambient">Ambient — quiet strips (default)</option>
-              <option value="ghost">Ghost — digest only, no in-session signals</option>
-              <option value="active">Active — all four signals + cards</option>
-              <option value="focus">Focus — declare a session goal</option>
+              <option value="ambient">Ambient — subtle inline cues (default)</option>
+              <option value="ghost">Ghost — weekly digest only, nothing in-session</option>
+              <option value="active">Active — inline cues + reflection cards</option>
+              <option value="focus">Focus — Active, plus a session goal</option>
             </select>
             <input id="lumen-onboarding-focus" class="lumen-hidden" type="text" placeholder="Today I'm trying to…" />
           </div>

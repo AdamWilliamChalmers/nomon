@@ -6,9 +6,9 @@ const LumenGoals = (() => {
   // nudges, and the FAB's look, not just "visibility". Copy lives here so the
   // popover helper line, onboarding, and landing page stay in sync.
   const MODES = [
-    { value: "ambient", label: "Ambient", blurb: "Quiet strips beside messages. The default." },
-    { value: "ghost", label: "Ghost", blurb: "Invisible in-session — weekly digest only." },
-    { value: "active", label: "Active", blurb: "All signals plus reflection cards." },
+    { value: "ambient", label: "Ambient", blurb: "Subtle inline cues beside your messages — never a pop-up. The default." },
+    { value: "ghost", label: "Ghost", blurb: "Nothing in-session — you only get the weekly digest." },
+    { value: "active", label: "Active", blurb: "Inline cues plus reflection cards when it matters." },
     { value: "focus", label: "Focus", blurb: "Active, plus a goal you declare for this session." },
   ];
 
