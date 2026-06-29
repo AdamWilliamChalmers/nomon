@@ -1,6 +1,12 @@
 import Link from "next/link";
 import BrandLogo from "@/components/BrandLogo";
 
+// Set NEXT_PUBLIC_CHROME_STORE_URL once the extension is published. Until then
+// this falls back to the Chrome Web Store homepage so the CTA is never a dead
+// "#" link.
+const CHROME_STORE_URL =
+  process.env.NEXT_PUBLIC_CHROME_STORE_URL || "https://chromewebstore.google.com/";
+
 const SIGNALS = [
   {
     key: "loop",
@@ -55,7 +61,7 @@ export default function HomePage() {
           <Link href="/upgrade" className="text-[13px] text-[var(--lm-slate)] hover:text-[var(--lm-dusk)]">
             Pro
           </Link>
-          <a href="#" className="lm-landing-cta">
+          <a href={CHROME_STORE_URL} target="_blank" rel="noopener" className="lm-landing-cta">
             Add to Chrome — free
           </a>
         </div>
@@ -76,7 +82,7 @@ export default function HomePage() {
             up a mirror. No nannying. No red alerts. Just signal.
           </p>
           <div className="flex justify-center gap-3 mb-12 flex-wrap">
-            <a href="#" className="lm-landing-cta">
+            <a href={CHROME_STORE_URL} target="_blank" rel="noopener" className="lm-landing-cta">
               Add to Chrome — free
             </a>
             <a href="#how" className="lm-btn">
@@ -218,7 +224,7 @@ export default function HomePage() {
               <li>Exemption learning</li>
               <li>Session badge + popup</li>
             </ul>
-            <a href="#" className="lm-link text-[13px]">
+            <a href={CHROME_STORE_URL} target="_blank" rel="noopener" className="lm-link text-[13px]">
               Install free →
             </a>
             <p className="text-[12px] text-[var(--lm-haze)] mt-2">Chrome Web Store</p>

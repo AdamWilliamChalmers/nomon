@@ -321,7 +321,7 @@ const LumenSession = (() => {
 
     const userId = localStorage.getItem("lumenUserId") || "anonymous";
     const body = JSON.stringify({ userId, ...payload });
-    const base = (globalThis.LumenGoals?.get?.().webAppUrl || "http://localhost:3000").replace(/\/$/, "");
+    const base = LumenConfig.webAppUrl(globalThis.LumenGoals?.get?.().webAppUrl);
 
     try {
       globalThis.LumenNet.fetch(`${base}/api/session`, {
@@ -339,7 +339,7 @@ const LumenSession = (() => {
     const goals = globalThis.LumenGoals?.get?.() || {};
     if (!goals.studyParticipant) return;
 
-    const base = (goals.webAppUrl || "http://localhost:3000").replace(/\/$/, "");
+    const base = LumenConfig.webAppUrl(goals.webAppUrl);
     const params = new URLSearchParams({
       date: session.sessionDate,
       platform: session.platform,

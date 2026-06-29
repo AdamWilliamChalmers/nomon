@@ -108,7 +108,7 @@ const LumenWidget = (() => {
         <label class="lumen-popover-label">Backend URL (for judge / calibration / sharing)</label>
         <input id="lumen-backend-input" class="lumen-popover-focus" type="text" placeholder="http://localhost:3000" />
         <p class="lumen-popover-hint" id="lumen-judge-hint">Catches subtle hand-offs the rules miss · auto-on when the backend has a model key · cheap model, cached per message</p>
-        <a id="lumen-calibration-link" class="lumen-popover-link" href="http://localhost:3000/calibration" target="_blank" rel="noopener">Signal calibration dashboard ↗</a>
+        <a id="lumen-calibration-link" class="lumen-popover-link" href="https://lumen.so/calibration" target="_blank" rel="noopener">Signal calibration dashboard ↗</a>
         <p class="lumen-popover-hint">Drag the Lumen pill to move it out of the way.</p>
         <button class="lumen-popover-reset" id="lumen-reset-session">Reset session</button>
         <div class="lumen-popover-divider"></div>
@@ -232,8 +232,8 @@ const LumenWidget = (() => {
     document.getElementById("lumen-backend-input")?.addEventListener("change", (event) => {
       const url = event.target.value.trim().replace(/\/$/, "");
       LumenGoals.save({
-        webAppUrl: url || "http://localhost:3000",
-        judgeApiUrl: `${url || "http://localhost:3000"}/api/judge`,
+        webAppUrl: LumenConfig.webAppUrl(url),
+        judgeApiUrl: LumenConfig.judgeApiUrl(url),
       });
       syncSettingsUI();
     });
@@ -515,7 +515,7 @@ const LumenWidget = (() => {
     const shareToggle = document.getElementById("lumen-share-data");
     const backendInput = document.getElementById("lumen-backend-input");
     const calibrationLink = document.getElementById("lumen-calibration-link");
-    const base = (goals.webAppUrl || "http://localhost:3000").replace(/\/$/, "");
+    const base = LumenConfig.webAppUrl(goals.webAppUrl);
     if (modeSelect) modeSelect.value = goals.mode;
     if (goalsInput) goalsInput.value = goals.protectedGoals.join("\n");
     if (focusInput) focusInput.value = goals.focusGoal || "";

@@ -64,6 +64,7 @@ window.chrome = undefined;
 // Load the shipped modules in manifest order (chrome is undefined → modules use
 // their localStorage/sessionStorage fallbacks, which jsdom provides).
 const FILES = [
+  "config.js",
   "adapters/chatgpt.js",
   "rules.js",
   "net.js",

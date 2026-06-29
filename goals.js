@@ -9,8 +9,8 @@ const LumenGoals = (() => {
     protectedGoals: [],
     focusGoal: null,
     llmJudgeEnabled: false,
-    judgeApiUrl: "http://localhost:3000/api/judge",
-    webAppUrl: "http://localhost:3000",
+    judgeApiUrl: LumenConfig.judgeApiUrl(),
+    webAppUrl: LumenConfig.webAppUrl(),
     studyParticipant: false,
     // Privacy-by-default: no session data leaves the device unless the user
     // explicitly opts in. Gates postSessionSummary egress (see session.js).
@@ -159,7 +159,7 @@ const LumenGoals = (() => {
   }
 
   async function fetchCrowdCalibration() {
-    const base = (cache.webAppUrl || "http://localhost:3000").replace(/\/$/, "");
+    const base = LumenConfig.webAppUrl(cache.webAppUrl);
     try {
       const res = await globalThis.LumenNet.fetch(`${base}/api/calibration/weights`, {
         cache: "no-store",
@@ -188,7 +188,7 @@ const LumenGoals = (() => {
   // present. Runtime-only (not persisted) so it never clobbers an explicit
   // user choice in settings. Best-effort: web app may be offline.
   async function fetchJudgeCapability() {
-    const base = (cache.webAppUrl || "http://localhost:3000").replace(/\/$/, "");
+    const base = LumenConfig.webAppUrl(cache.webAppUrl);
     try {
       const res = await globalThis.LumenNet.fetch(`${base}/api/judge`, { cache: "no-store" });
       if (!res.ok) return false;

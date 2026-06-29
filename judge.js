@@ -1,6 +1,6 @@
 const LumenJudge = (() => {
   const cache = new Map();
-  const DEFAULT_API = "http://localhost:3000/api/judge";
+  const DEFAULT_API = LumenConfig.judgeApiUrl();
 
   function cacheKey(text, messageIndex) {
     return `${messageIndex}:${text.slice(0, 500)}`;

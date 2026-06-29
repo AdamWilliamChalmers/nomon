@@ -81,3 +81,8 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, sent });
 }
+
+// Vercel Cron invokes scheduled jobs with a GET request and automatically
+// attaches `Authorization: Bearer ${CRON_SECRET}`. Reuse the same handler so
+// the weekly digest runs both on schedule (GET) and on manual trigger (POST).
+export const GET = POST;
