@@ -225,6 +225,7 @@
   border-radius: 7px;
   background: var(--lm-dusk);
   flex-shrink: 0;
+  transition: background var(--lm-transition-base), box-shadow var(--lm-transition-base);
 }
 
 #lumen-root #lumen-fab-dot,
@@ -244,22 +245,40 @@
 }
 
 /* ── Per-mode FAB looks — a glance tells you which mode you're in ── */
-/* Ambient = default (no override). Active = a soft green halo on the mark
-   (most present). Focus = a lavender halo + tinted border (a goal is live).
-   Ghost = clearly faded + dashed outline (in-session invisible). */
+/* The logo mark is recoloured per mode and the pill gets a matching accent
+   border + ring, so Ambient / Active / Focus / Ghost are obviously different.
+   Ambient = neutral dusk. Active = green (most present). Focus = lavender
+   (a goal is live). Ghost = faded + dashed (in-session invisible). */
+#lumen-root #lumen-fab[data-mode="ambient"] #lumen-fab-mark {
+  background: var(--lm-dusk);
+}
+
+#lumen-root #lumen-fab[data-mode="active"] {
+  border-color: var(--lm-loop);
+  box-shadow: 0 0 0 3px var(--lm-loop-tint), 0 2px 10px rgba(26, 24, 37, 0.08);
+}
+#lumen-root #lumen-fab[data-mode="active"]:hover {
+  border-color: var(--lm-loop);
+  box-shadow: 0 0 0 3px var(--lm-loop-tint), 0 4px 16px rgba(26, 24, 37, 0.14);
+}
 #lumen-root #lumen-fab[data-mode="active"] #lumen-fab-mark {
-  box-shadow: 0 0 0 3px var(--lm-loop-tint);
+  background: var(--lm-loop);
 }
 
 #lumen-root #lumen-fab[data-mode="focus"] {
-  border-color: #d4d0ed;
+  border-color: var(--lm-mismatch);
+  box-shadow: 0 0 0 3px var(--lm-mismatch-tint), 0 2px 10px rgba(26, 24, 37, 0.08);
+}
+#lumen-root #lumen-fab[data-mode="focus"]:hover {
+  border-color: var(--lm-mismatch);
+  box-shadow: 0 0 0 3px var(--lm-mismatch-tint), 0 4px 16px rgba(26, 24, 37, 0.14);
 }
 #lumen-root #lumen-fab[data-mode="focus"] #lumen-fab-mark {
-  box-shadow: 0 0 0 3px var(--lm-mismatch-tint);
+  background: var(--lm-mismatch);
 }
 
 #lumen-root #lumen-fab[data-mode="ghost"] {
-  opacity: 0.5;
+  opacity: 0.45;
   border-style: dashed;
   box-shadow: none;
 }
