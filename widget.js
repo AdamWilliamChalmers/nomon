@@ -689,10 +689,235 @@ const LumenWidget = (() => {
       el.innerHTML = `<p class="lumen-popover-hint">Lumen builds this as you use different AI tools across the week.</p>`;
       return;
     }
+    const canShare = tools.some((t) => t.ready);
     el.innerHTML = `
       ${contrast ? `<p class="lumen-profile-contrast">${contrast}</p>` : ""}
       ${tools.map(renderProfileCard).join("")}
+      ${canShare ? `<button class="lumen-profile-share" id="lumen-profile-share" type="button">Share my profile</button>` : ""}
     `;
+    if (canShare) {
+      document.getElementById("lumen-profile-share")?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        shareProfile(tools.filter((t) => t.ready), contrast).catch(() => {});
+      });
+    }
+  }
+
+  const SHARE_PALETTE = {
+    bg: "#f4f3f9",
+    surface: "#ffffff",
+    card: "#f0eff5",
+    border: "#e2e1ea",
+    dusk: "#1a1825",
+    slate: "#7b7a8a",
+    haze: "#9896a8",
+    ghost: "#b8b6c4",
+    mismatch: "#7b5cbf",
+    loop: "#2d9e4e",
+  };
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function wrapText(ctx, text, maxWidth) {
+    const words = (text || "").split(/\s+/);
+    const lines = [];
+    let line = "";
+    words.forEach((word) => {
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  function drawLumenMark(ctx, cx, cy) {
+    ctx.save();
+    ctx.strokeStyle = SHARE_PALETTE.mismatch;
+    ctx.fillStyle = SHARE_PALETTE.mismatch;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 0.22;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawShareCard(tools, contrast) {
+    const W = 1080;
+    const H = 1080;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    const font = (size, weight = 400) =>
+      `${weight} ${size}px "Plus Jakarta Sans", -apple-system, Segoe UI, sans-serif`;
+
+    ctx.fillStyle = SHARE_PALETTE.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    const pad = 90;
+
+    // Brand row
+    drawLumenMark(ctx, pad + 25, pad + 28);
+    ctx.fillStyle = SHARE_PALETTE.dusk;
+    ctx.font = font(34, 600);
+    ctx.textBaseline = "middle";
+    ctx.fillText("Lumen", pad + 62, pad + 30);
+
+    // Title
+    ctx.fillStyle = SHARE_PALETTE.dusk;
+    ctx.font = font(72, 700);
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("How I work with AI", pad, pad + 160);
+
+    // Contrast line (wrapped)
+    let y = pad + 230;
+    if (contrast) {
+      ctx.fillStyle = SHARE_PALETTE.slate;
+      ctx.font = font(36, 500);
+      wrapText(ctx, contrast, W - pad * 2).forEach((ln) => {
+        ctx.fillText(ln, pad, y);
+        y += 50;
+      });
+      y += 30;
+    } else {
+      y += 10;
+    }
+
+    // Tool cards
+    const cardH = 150;
+    const cardW = W - pad * 2;
+    tools.slice(0, 3).forEach((t) => {
+      ctx.fillStyle = SHARE_PALETTE.card;
+      roundRect(ctx, pad, y, cardW, cardH, 22);
+      ctx.fill();
+
+      ctx.fillStyle = SHARE_PALETTE.dusk;
+      ctx.font = font(40, 600);
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(t.name, pad + 36, y + 58);
+
+      const use = t.use ? t.use.toUpperCase() : "A MIX";
+      ctx.font = font(24, 600);
+      ctx.fillStyle = SHARE_PALETTE.mismatch;
+      const useW = ctx.measureText(use).width;
+      ctx.fillText(use, pad + cardW - 36 - useW, y + 56);
+
+      // meter track
+      const mx = pad + 36;
+      const mw = cardW - 72;
+      const my = y + 90;
+      const grad = ctx.createLinearGradient(mx, 0, mx + mw, 0);
+      grad.addColorStop(0, "#e8f7ee");
+      grad.addColorStop(1, "#ede9f8");
+      ctx.fillStyle = grad;
+      roundRect(ctx, mx, my, mw, 8, 4);
+      ctx.fill();
+
+      const pct = Math.max(4, Math.min(100, t.postureScore)) / 100;
+      const dotX = mx + mw * pct;
+      ctx.fillStyle = SHARE_PALETTE.surface;
+      ctx.beginPath();
+      ctx.arc(dotX, my + 4, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = SHARE_PALETTE.dusk;
+      ctx.beginPath();
+      ctx.arc(dotX, my + 4, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = font(22, 500);
+      ctx.fillStyle = SHARE_PALETTE.haze;
+      ctx.fillText("hands-on", mx, my + 44);
+      ctx.fillStyle = SHARE_PALETTE.slate;
+      ctx.font = font(22, 600);
+      const postureW = ctx.measureText(t.posture).width;
+      ctx.fillText(t.posture, mx + (mw - postureW) / 2, my + 44);
+      ctx.fillStyle = SHARE_PALETTE.haze;
+      ctx.font = font(22, 500);
+      const hoW = ctx.measureText("hand-off").width;
+      ctx.fillText("hand-off", mx + mw - hoW, my + 44);
+
+      y += cardH + 24;
+    });
+
+    // Footer
+    ctx.fillStyle = SHARE_PALETTE.haze;
+    ctx.font = font(28, 500);
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("Your AI cognition mirror", pad, H - pad + 8);
+    const url = "lumen.so";
+    const urlW = ctx.measureText(url).width;
+    ctx.fillStyle = SHARE_PALETTE.mismatch;
+    ctx.font = font(28, 600);
+    ctx.fillText(url, W - pad - urlW, H - pad + 8);
+
+    return canvas;
+  }
+
+  function canvasToBlob(canvas) {
+    return new Promise((resolve) => {
+      if (canvas.toBlob) canvas.toBlob((blob) => resolve(blob), "image/png");
+      else resolve(null);
+    });
+  }
+
+  async function shareProfile(tools, contrast) {
+    const canvas = drawShareCard(tools, contrast);
+    const blob = await canvasToBlob(canvas);
+    if (!blob) return;
+
+    // Best effort: copy straight to the clipboard (one-click paste into a post).
+    let copied = false;
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })]);
+        copied = true;
+      }
+    } catch (_) {
+      copied = false;
+    }
+
+    // Always offer the file too, so there's a reliable path on every browser.
+    try {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "lumen-ai-profile.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    } catch (_) {
+      // ignore
+    }
+
+    const btn = document.getElementById("lumen-profile-share");
+    if (btn) {
+      btn.textContent = copied ? "Copied to clipboard ✓" : "Saved image ✓";
+      setTimeout(() => {
+        btn.textContent = "Share my profile";
+      }, 2200);
+    }
   }
 
   async function renderDigest() {

@@ -1,6 +1,6 @@
 # Lumen AI Profile — characterising how you work across tools
 
-> Status: **Phase 0 + Phase 1 + Phase 2 built.** Phase 3 (shareable card) pending.
+> Status: **Phases 0–3 built.** Pending: posture-weight calibration with real data.
 > Decisions locked in: **per-tool framing**, **neutral/descriptive tone**.
 
 ## 0. What's built so far
@@ -19,8 +19,15 @@
   ("You're most hands-on with code, and hand off most with writing — whichever
   tool you're in"). Contrast is withheld unless ≥2 domains clear the sample gate
   and differ by ≥18 points.
+- **Phase 3 (shareable card)** — a "Share my profile" button in the profile
+  section renders a 1080×1080 PNG entirely client-side (`drawShareCard` on a
+  `<canvas>`): Lumen mark + title, the contrast line, per-tool cards with posture
+  meters, and a `lumen.so` footer. It copies to the clipboard where supported and
+  always downloads the file. **No profile data leaves the device** — the image is
+  generated locally.
 - **Tests** — `scripts/test-profile.mjs` (round-trip + characterisation +
   contrast, 14 assertions). e2e (12/12) and the classifier corpus are unaffected.
+  The canvas card itself needs a real browser to preview (manual QA).
 
 Live example from the tests:
 
@@ -157,7 +164,8 @@ Value-neutral, descriptive, never evaluative. Examples:
 - **Phase 2 — on-demand.** ✅ Done. A dedicated "Your AI profile" section in the
   FAB popover (per-tool cards + posture meter + cross-tool contrast line),
   available any time rather than only inside the weekly digest.
-- **Phase 3 — shareable card.** The screenshot artifact / growth loop.
+- **Phase 3 — shareable card.** ✅ Done. Client-side canvas PNG (copy + download),
+  no data leaves the device. The growth-loop artifact.
 
 Optional cross-cutting line (can land in Phase 1 or later):
 

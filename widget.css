@@ -658,6 +658,25 @@
   color: var(--lm-slate);
 }
 
+#lumen-root .lumen-profile-share {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  font-family: var(--lm-font);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lm-mismatch-text);
+  background: var(--lm-mismatch-tint);
+  border: 0.5px solid var(--lm-mismatch);
+  border-radius: var(--lm-radius-sm);
+  cursor: pointer;
+  transition: background var(--lm-transition-fast), opacity var(--lm-transition-fast);
+}
+
+#lumen-root .lumen-profile-share:hover {
+  opacity: 0.85;
+}
+
 /* ── Onboarding ── */
 #lumen-root #lumen-onboarding {
   position: fixed;
