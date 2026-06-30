@@ -1,0 +1,28 @@
+name: weekly-digest
+
+on:
+  schedule:
+    - cron: "0 8 * * 1" # Mondays 08:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Weekly user digest (/api/digest)
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -fsS -X POST "$APP_URL/api/digest" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --retry 5 --retry-all-errors --retry-delay 15 --max-time 180
+
+      - name: Family digest (/api/family/digest)
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -fsS -X POST "$APP_URL/api/family/digest" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --retry 5 --retry-all-errors --retry-delay 15 --max-time 180
