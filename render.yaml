@@ -1,0 +1,53 @@
+# Render Blueprint for the Lumen web app (Next.js 14 in /web).
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Cron note: the weekly digest is NOT defined here. Render Cron Jobs require a
+# paid plan ($1/mo min). On the free tier we trigger the digest endpoints with a
+# scheduled GitHub Action instead (see .github/workflows/cron-digest.yml).
+services:
+  - type: web
+    name: lumen-web
+    runtime: node
+    plan: free
+    rootDir: web
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      # Pin the Node version Render builds/runs with.
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NODE_ENV
+        value: production
+
+      # --- Required: Supabase + email + cron auth ---
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+
+      # --- Landing-page CTA (Chrome Web Store listing) ---
+      - key: NEXT_PUBLIC_CHROME_STORE_URL
+        sync: false
+
+      # --- Optional: LLM judge cascade (leave blank to run rule-based only) ---
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # --- Optional: Polar payments (Phase 2+) ---
+      - key: POLAR_CHECKOUT_URL
+        sync: false
+      - key: NEXT_PUBLIC_POLAR_CHECKOUT_URL
+        sync: false
+      - key: POLAR_WEBHOOK_SECRET
+        sync: false
