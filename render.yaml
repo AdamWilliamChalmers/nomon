@@ -10,15 +10,16 @@ services:
     runtime: node
     plan: free
     rootDir: web
-    buildCommand: npm install && npm run build
+    # --include=dev forces devDependencies (tailwindcss, postcss, typescript) to
+    # install even when the platform sets NODE_ENV=production, which Next needs
+    # at build time. next build/start run in production mode regardless.
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /
     envVars:
       # Pin the Node version Render builds/runs with.
       - key: NODE_VERSION
         value: 20.18.0
-      - key: NODE_ENV
-        value: production
 
       # --- Required: Supabase + email + cron auth ---
       - key: NEXT_PUBLIC_SUPABASE_URL
