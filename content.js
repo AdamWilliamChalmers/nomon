@@ -236,6 +236,10 @@
     LumenWidget.updateBadge();
     debouncedProcess();
 
+    // Weekly digest nudge: once storage is loaded, surface the "digest ready"
+    // indicator on the first launch of a new ISO week (best-effort, async).
+    Promise.resolve(LumenWidget.maybeShowDigestReady?.()).catch(() => {});
+
     window.addEventListener("beforeunload", () => {
       LumenSession.saveSessionSnapshot(messages);
       LumenSession.postSessionSummary();

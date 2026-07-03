@@ -409,6 +409,323 @@
   background: var(--lm-haze);
 }
 
+/* ── Weekly digest "ready" indicator ── */
+/* A small lavender notification dot on the FAB that persists (across page
+   loads) until the user views or dismisses that week's digest. */
+#lumen-root #lumen-fab-digest {
+  display: none;
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lm-mismatch);
+  border: 2px solid var(--lm-surface);
+  animation: lumen-digest-pulse 2.4s ease-out infinite;
+}
+#lumen-root #lumen-fab[data-digest-ready="true"] #lumen-fab-digest {
+  display: block;
+}
+#lumen-root #lumen-fab[data-paused="true"] #lumen-fab-digest {
+  display: none;
+}
+@keyframes lumen-digest-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(123, 92, 191, 0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(123, 92, 191, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(123, 92, 191, 0); }
+}
+
+/* The "popup" itself — anchored above the FAB, clickable to view the digest.
+   Persists until View or dismiss (× marks the week seen). */
+#lumen-root .lumen-digest-toast {
+  position: fixed;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  max-width: 300px;
+  padding: 10px 10px 10px 14px;
+  background: var(--lm-surface);
+  border: 0.5px solid var(--lm-border);
+  border-left: 3px solid var(--lm-mismatch);
+  border-radius: var(--lm-radius-lg);
+  box-shadow: 0 6px 22px rgba(26, 24, 37, 0.14), 0 1px 3px rgba(26, 24, 37, 0.08);
+  font-family: var(--lm-font);
+  pointer-events: auto;
+  z-index: 2147483647;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--lm-transition-base), transform var(--lm-transition-base);
+}
+#lumen-root .lumen-digest-toast.lumen-digest-toast--open {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+#lumen-root .lumen-digest-toast-mark {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lm-mismatch);
+  box-shadow: 0 0 0 4px var(--lm-mismatch-tint);
+}
+#lumen-root .lumen-digest-toast-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+#lumen-root .lumen-digest-toast-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lm-dusk);
+  letter-spacing: -0.01em;
+}
+#lumen-root .lumen-digest-toast-sub {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--lm-slate);
+  line-height: 1.35;
+}
+#lumen-root .lumen-digest-toast-view {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--lm-radius-pill);
+  background: var(--lm-mismatch);
+  color: #ffffff;
+  font-family: var(--lm-font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--lm-transition-fast);
+}
+#lumen-root .lumen-digest-toast-view:hover {
+  background: var(--lm-mismatch-text);
+}
+#lumen-root .lumen-digest-toast-dismiss {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--lm-haze);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color var(--lm-transition-fast), background var(--lm-transition-fast);
+}
+#lumen-root .lumen-digest-toast-dismiss:hover {
+  color: var(--lm-dusk);
+  background: var(--lm-mist-lt);
+}
+/* Ghost mode gets a stronger cue — the digest is its only touchpoint. */
+#lumen-root .lumen-digest-toast--ghost {
+  border-left-width: 4px;
+  animation: lumen-digest-toast-glow 3s ease-in-out infinite;
+}
+@keyframes lumen-digest-toast-glow {
+  0%, 100% { box-shadow: 0 6px 22px rgba(26, 24, 37, 0.16), 0 0 0 3px var(--lm-mismatch-tint); }
+  50% { box-shadow: 0 6px 24px rgba(26, 24, 37, 0.18), 0 0 0 6px rgba(123, 92, 191, 0.10); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #lumen-root #lumen-fab-digest,
+  #lumen-root .lumen-digest-toast--ghost {
+    animation: none;
+  }
+}
+
+/* "Open weekly review" affordance inside the settings popover digest section. */
+#lumen-root .lumen-digest-open {
+  margin-top: 12px;
+  width: 100%;
+  cursor: pointer;
+  padding: 9px 12px;
+  border-radius: var(--lm-radius-sm);
+  border: 0.5px solid var(--lm-border-strong);
+  background: transparent;
+  color: var(--lm-mismatch);
+  font-family: var(--lm-font);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background var(--lm-transition-fast), border-color var(--lm-transition-fast);
+}
+#lumen-root .lumen-digest-open:hover {
+  background: var(--lm-mismatch-tint);
+  border-color: var(--lm-mismatch);
+}
+
+/* ── Weekly review overlay (the "moment": a focused card, not settings) ── */
+#lumen-root #lumen-weekly {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(26, 24, 37, 0.32);
+  pointer-events: auto;
+}
+#lumen-root #lumen-weekly.lumen-weekly--open {
+  display: flex;
+}
+#lumen-root .lumen-weekly-panel {
+  position: relative;
+  width: min(440px, calc(100vw - 32px));
+  max-height: min(86vh, 680px);
+  overflow-y: auto;
+  padding: 26px;
+  background: var(--lm-surface);
+  border: 0.5px solid var(--lm-border);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(26, 24, 37, 0.18);
+  color: var(--lm-dusk);
+}
+#lumen-root #lumen-weekly.lumen-weekly--open .lumen-weekly-panel {
+  animation: lumen-weekly-in 0.28s cubic-bezier(0.37, 0, 0.63, 1) 1;
+}
+@keyframes lumen-weekly-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+#lumen-root .lumen-weekly-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--lm-haze);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color var(--lm-transition-fast), background var(--lm-transition-fast);
+}
+#lumen-root .lumen-weekly-close:hover {
+  color: var(--lm-dusk);
+  background: var(--lm-mist-lt);
+}
+#lumen-root .lumen-weekly-kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lm-mismatch);
+  margin-bottom: 12px;
+}
+#lumen-root .lumen-weekly-headline {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--lm-dusk);
+  margin: 0 0 16px;
+  line-height: 1.3;
+}
+#lumen-root .lumen-weekly-trend {
+  padding: 12px;
+  background: var(--lm-mist-lt);
+  border-radius: var(--lm-radius-lg);
+  margin-bottom: 6px;
+}
+#lumen-root .lumen-weekly-caption {
+  font-size: 11px;
+  color: var(--lm-haze);
+  margin: 0 0 16px;
+}
+#lumen-root .lumen-weekly-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+#lumen-root .lumen-weekly-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--lm-cloud);
+  border: 0.5px solid var(--lm-border);
+  border-radius: var(--lm-radius-sm);
+}
+#lumen-root .lumen-weekly-stat-label {
+  font-size: 12.5px;
+  color: var(--lm-slate);
+}
+#lumen-root .lumen-weekly-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lm-dusk);
+  white-space: nowrap;
+}
+#lumen-root .lumen-weekly-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lm-haze);
+  margin: 16px 0 6px;
+}
+#lumen-root .lumen-weekly-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--lm-slate);
+  margin: 0 0 4px;
+}
+#lumen-root .lumen-weekly-prompt {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--lm-dusk);
+  font-style: italic;
+  margin: 0 0 4px;
+  padding-left: 12px;
+  border-left: 2px solid var(--lm-mismatch);
+}
+#lumen-root .lumen-weekly-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+#lumen-root .lumen-weekly-btn {
+  flex: 1;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 16px;
+  border-radius: var(--lm-radius-sm);
+  border: none;
+  background: var(--lm-mismatch);
+  color: #ffffff;
+  font-family: var(--lm-font);
+  text-align: center;
+  transition: opacity var(--lm-transition-fast);
+}
+#lumen-root .lumen-weekly-btn:hover {
+  opacity: 0.9;
+}
+#lumen-root .lumen-weekly-btn--secondary {
+  background: transparent;
+  border: 0.5px solid var(--lm-border-strong);
+  color: var(--lm-slate);
+  font-weight: 500;
+}
+#lumen-root .lumen-weekly-btn--secondary:hover {
+  border-color: var(--lm-dusk);
+  color: var(--lm-dusk);
+}
+@media (prefers-reduced-motion: reduce) {
+  #lumen-root #lumen-weekly.lumen-weekly--open .lumen-weekly-panel {
+    animation: none;
+  }
+}
+
 /* ── Intervention cards (nudge — left accent bar, mirror not nanny) ── */
 #lumen-root .lumen-card {
   box-sizing: border-box;

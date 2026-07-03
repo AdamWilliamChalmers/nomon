@@ -20,7 +20,11 @@ const LumenGoals = (() => {
     useCases: [],
     protectedGoals: [],
     focusGoal: null,
-    llmJudgeEnabled: false,
+    // On by default: the LLM "second opinion" catches the subtle hand-offs the
+    // local rules miss. It sends only borderline prompts to the configured
+    // backend — disclosed in onboarding + settings, and toggleable from the pill
+    // (turn off to stay fully on-device).
+    llmJudgeEnabled: true,
     judgeApiUrl: LumenConfig.judgeApiUrl(),
     webAppUrl: LumenConfig.webAppUrl(),
     studyParticipant: false,
@@ -29,6 +33,12 @@ const LumenGoals = (() => {
     shareAnonymisedData: false,
     crowdCalibration: null,
     fabPosition: null,
+    // ISO week (e.g. "2026-W27") the user last viewed or dismissed their weekly
+    // digest for. Drives the "digest ready" FAB indicator: while this differs
+    // from the current ISO week, the indicator persists across page loads until
+    // the user opens the digest or dismisses it. Synced so the nudge doesn't
+    // re-fire on every device.
+    lastDigestSeenWeek: null,
     // Runtime-only: set by fetchJudgeCapability(), never persisted.
     judgeAvailable: false,
   };
@@ -232,6 +242,33 @@ const LumenGoals = (() => {
     return Boolean(cache.judgeAvailable);
   }
 
+  // ISO-8601 week string (Monday-start weeks, e.g. "2026-W27"). Gives everyone
+  // the same weekly rhythm for the digest nudge rather than a rolling window.
+  function currentIsoWeek(input = new Date()) {
+    const date = new Date(Date.UTC(input.getFullYear(), input.getMonth(), input.getDate()));
+    const dayNum = (date.getUTCDay() + 6) % 7;
+    date.setUTCDate(date.getUTCDate() - dayNum + 3);
+    const firstThursday = date.getTime();
+    date.setUTCMonth(0, 1);
+    if (date.getUTCDay() !== 4) {
+      date.setUTCMonth(0, 1 + ((4 - date.getUTCDay()) + 7) % 7);
+    }
+    const week = 1 + Math.ceil((firstThursday - date.getTime()) / 604800000);
+    const year = new Date(firstThursday).getUTCFullYear();
+    return `${year}-W${String(week).padStart(2, "0")}`;
+  }
+
+  // True when the user hasn't yet viewed/dismissed the digest for this ISO week.
+  function isDigestUnseenThisWeek() {
+    return cache.lastDigestSeenWeek !== currentIsoWeek();
+  }
+
+  // Called when the user views or dismisses the weekly digest — stamps the
+  // current week so the indicator clears and won't re-appear until next week.
+  function markDigestSeen() {
+    return save({ lastDigestSeenWeek: currentIsoWeek() });
+  }
+
   return {
     get,
     load,
@@ -255,6 +292,9 @@ const LumenGoals = (() => {
     getCrowdCalibration,
     fetchJudgeCapability,
     isJudgeAvailable,
+    currentIsoWeek,
+    isDigestUnseenThisWeek,
+    markDigestSeen,
   };
 })();
 

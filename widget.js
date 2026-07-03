@@ -11,6 +11,9 @@ const LumenWidget = (() => {
   let dismissedReconsider = new Set();
   let activeReconsider = null;
   let lastEvaluation = null;
+  // Cached digest + history for the weekly review overlay (so Share doesn't
+  // recompute) and the toast teaser.
+  let weeklyContext = null;
   let fabDrag = { active: false, moved: false, suppressClick: false, pointerId: null, offsetX: 0, offsetY: 0 };
 
   const OVERLAY_HTML = `
@@ -70,6 +73,7 @@ const LumenWidget = (() => {
         </span>
         <span id="lumen-fab-dot"></span>
         <span id="lumen-fab-score">0</span>
+        <span id="lumen-fab-digest" aria-hidden="true"></span>
       </div>
       <div id="lumen-popover">
         <div class="lumen-popover-head">
@@ -77,6 +81,10 @@ const LumenWidget = (() => {
           <button id="lumen-pause-toggle" class="lumen-popover-pause" type="button">Pause</button>
         </div>
         <div class="lumen-popover-sparkline" id="lumen-sparkline"></div>
+        <label class="lumen-popover-label" title="Your engagement across recent days — a mirror to notice trends, not a target to chase">Recent days</label>
+        <div class="lumen-popover-sparkline" id="lumen-trend-sparkline"></div>
+        <p class="lumen-popover-hint lumen-hidden" id="lumen-trend-empty">A few days of use and your trend shows up here.</p>
+        <a id="lumen-dashboard-link" class="lumen-popover-link" href="https://lumen.so/dashboard" target="_blank" rel="noopener">See full trends on lumen.so ↗</a>
         <div class="lumen-popover-stat" title="Prompts you sent this session"><span>Messages</span><span class="lumen-popover-stat-value" id="lumen-stat-messages">0</span></div>
         <div class="lumen-popover-stat" title="Whole tasks you asked AI to do from scratch"><span>Hand-offs</span><span class="lumen-popover-stat-value" id="lumen-stat-handoff">0</span></div>
         <div class="lumen-popover-stat" title="Stretches of passive back-and-forth without questions"><span>Loops</span><span class="lumen-popover-stat-value" id="lumen-stat-loop">0</span></div>
@@ -98,7 +106,7 @@ const LumenWidget = (() => {
         <input id="lumen-focus-input" class="lumen-popover-focus" type="text" placeholder="Today I'm trying to…" />
         <label class="lumen-popover-check">
           <input type="checkbox" id="lumen-llm-judge" />
-          LLM second opinion (subtle cases)
+          LLM second opinion · catches subtle hand-offs (on)
         </label>
         <label class="lumen-popover-check">
           <input type="checkbox" id="lumen-study-participant" />
@@ -110,7 +118,7 @@ const LumenWidget = (() => {
         </label>
         <label class="lumen-popover-label">Backend URL (for judge / calibration / sharing)</label>
         <input id="lumen-backend-input" class="lumen-popover-focus" type="text" placeholder="http://localhost:3000" />
-        <p class="lumen-popover-hint" id="lumen-judge-hint">Catches subtle hand-offs the rules miss · auto-on when the backend has a model key · cheap model, cached per message</p>
+        <p class="lumen-popover-hint" id="lumen-judge-hint">On by default · catches subtle hand-offs the rules miss · sends only borderline prompts to your backend for a smarter check · cached per message · turn off to stay fully on-device</p>
         <a id="lumen-calibration-link" class="lumen-popover-link" href="https://lumen.so/calibration" target="_blank" rel="noopener">Signal calibration dashboard ↗</a>
         <p class="lumen-popover-hint">Drag the Lumen pill to move it out of the way.</p>
         <button class="lumen-popover-reset" id="lumen-reset-session">Reset session</button>
@@ -123,6 +131,27 @@ const LumenWidget = (() => {
         <div class="lumen-popover-divider"></div>
         <div class="lumen-popover-title">This week</div>
         <div class="lumen-popover-digest" id="lumen-digest"></div>
+      </div>
+      <div id="lumen-digest-toast" class="lumen-digest-toast" role="status" aria-live="polite">
+        <span class="lumen-digest-toast-mark" aria-hidden="true"></span>
+        <div class="lumen-digest-toast-text">
+          <span class="lumen-digest-toast-title">Your weekly digest is ready</span>
+          <span class="lumen-digest-toast-sub" id="lumen-digest-toast-sub">A look at how you worked with AI this week.</span>
+        </div>
+        <button type="button" class="lumen-digest-toast-view" id="lumen-digest-toast-view">View</button>
+        <button type="button" class="lumen-digest-toast-dismiss" id="lumen-digest-toast-dismiss" aria-label="Dismiss">×</button>
+      </div>
+      <div id="lumen-weekly" class="lumen-weekly">
+        <div class="lumen-weekly-panel">
+          <button type="button" class="lumen-weekly-close" id="lumen-weekly-close" aria-label="Close">×</button>
+          <div class="lumen-weekly-kicker">Lumen · weekly review</div>
+          <h2 class="lumen-weekly-headline" id="lumen-weekly-headline">This week</h2>
+          <div class="lumen-weekly-body" id="lumen-weekly-body"></div>
+          <div class="lumen-weekly-actions">
+            <button type="button" class="lumen-weekly-btn" id="lumen-weekly-share">Share this week</button>
+            <button type="button" class="lumen-weekly-btn lumen-weekly-btn--secondary" id="lumen-weekly-done">Done</button>
+          </div>
+        </div>
       </div>
       ${OVERLAY_HTML}
       <div id="lumen-onboarding" class="lumen-onboarding">
@@ -163,6 +192,7 @@ const LumenWidget = (() => {
               <option value="focus">Focus — Active, plus a session goal</option>
             </select>
             <input id="lumen-onboarding-focus" class="lumen-hidden" type="text" placeholder="Today I'm trying to…" />
+            <p class="lumen-popover-hint" style="margin-top:14px;">Smarter detection is on: borderline prompts are sent to Lumen's backend for an LLM second opinion, so subtle hand-offs the local rules miss still get caught. Turn it off any time in the pill to stay fully on-device.</p>
           </div>
           <div class="lumen-onboarding-actions">
             <button id="lumen-onboarding-skip" class="lumen-onboarding-btn lumen-onboarding-btn--ghost">Skip</button>
@@ -255,10 +285,50 @@ const LumenWidget = (() => {
       syncSettingsUI();
     });
 
+    document.getElementById("lumen-digest-toast-view")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      // "View" opens the focused weekly review — the moment, not the settings.
+      openWeeklyReview();
+    });
+
+    document.getElementById("lumen-digest-toast-dismiss")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      // Explicit dismissal counts as done for the week.
+      markDigestViewed();
+    });
+
+    document.getElementById("lumen-weekly-close")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      closeWeeklyReview();
+    });
+
+    document.getElementById("lumen-weekly-done")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      closeWeeklyReview();
+    });
+
+    document.getElementById("lumen-weekly-share")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (weeklyContext) shareWeekly(weeklyContext.digest, weeklyContext.history).catch(() => {});
+    });
+
+    document.getElementById("lumen-weekly")?.addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeWeeklyReview();
+    });
+
     document.addEventListener("mousedown", (event) => {
       if (!popoverOpen) return;
       const root = document.getElementById("lumen-root");
       if (root && !root.contains(event.target)) closePopover();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if (document.getElementById("lumen-weekly")?.classList.contains("lumen-weekly--open")) {
+        closeWeeklyReview();
+      } else if (popoverOpen) {
+        closePopover();
+      }
     });
 
     bindOnboardingEvents();
@@ -332,6 +402,7 @@ const LumenWidget = (() => {
       fab.style.right = "auto";
       fab.style.bottom = "auto";
       if (popoverOpen) positionPopover();
+      if (digestReady) positionDigestToast();
     });
 
     fab.addEventListener("pointerup", (event) => {
@@ -357,6 +428,7 @@ const LumenWidget = (() => {
       if (!pos) return;
       applyFabPosition();
       if (popoverOpen) positionPopover();
+      if (digestReady) positionDigestToast();
     });
   }
 
@@ -676,17 +748,40 @@ const LumenWidget = (() => {
     return globalThis.LumenSparkline?.render?.(scores || []) ?? "";
   }
 
+  async function renderTrend() {
+    const el = document.getElementById("lumen-trend-sparkline");
+    const empty = document.getElementById("lumen-trend-empty");
+    if (!el) return;
+    const history = await LumenSession.loadHistory();
+    // Per-day engagement is the inverse of that day's passive-acceptance rate,
+    // matching the FAB badge (higher = more active evaluation). This is a
+    // mirror of the trend, deliberately neutral — no goal line, no target.
+    const scores = (history || [])
+      .filter((entry) => (entry.messageCount || 0) > 0)
+      .map((entry) => Math.round((1 - (entry.passiveRate || 0)) * 100));
+    const hasTrend = scores.length >= 2;
+    el.classList.toggle("lumen-hidden", !hasTrend);
+    if (empty) empty.classList.toggle("lumen-hidden", hasTrend);
+    el.innerHTML = hasTrend ? renderSparkline(scores) : "";
+  }
+
   function renderPopover() {
     const session = LumenSession.get();
     document.getElementById("lumen-sparkline").innerHTML = renderSparkline(
       (session.loopScores || []).map((s) => 100 - s)
     );
+    const dashLink = document.getElementById("lumen-dashboard-link");
+    if (dashLink) {
+      const goals = globalThis.LumenGoals?.get?.() || {};
+      dashLink.href = `${LumenConfig.webAppUrl(goals.webAppUrl)}/dashboard`;
+    }
     document.getElementById("lumen-stat-messages").textContent = String(session.messageCount);
     document.getElementById("lumen-stat-handoff").textContent = String(session.handoffCount || 0);
     document.getElementById("lumen-stat-loop").textContent = String(session.loopCount);
     document.getElementById("lumen-stat-drift").textContent = String(session.driftCount);
     document.getElementById("lumen-stat-mismatch").textContent = String(session.mismatchCount);
     document.getElementById("lumen-stat-depth").textContent = String(session.depthCount);
+    renderTrend();
     renderProfile();
     renderDigest();
     syncSettingsUI();
@@ -990,7 +1085,343 @@ const LumenWidget = (() => {
       <p class="lumen-digest-line">${digest.responses.line}</p>
       <p class="lumen-digest-label" title="A reflection prompt to take away from the week">Sit with</p>
       <p class="lumen-digest-line lumen-digest-prompt">${digest.prompt}</p>
+      <button type="button" class="lumen-digest-open" id="lumen-digest-open">Open weekly review →</button>
     `;
+    document.getElementById("lumen-digest-open")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      closePopover();
+      openWeeklyReview();
+    });
+  }
+
+  // ── Weekly digest "ready" indicator ──────────────────────────────────────
+  // Minimum bar: at least this many days with activity before we surface a
+  // digest, so week-one (or a thin week) never fires an empty nudge.
+  const DIGEST_MIN_ACTIVE_DAYS = 2;
+  let digestReady = false;
+
+  function countActiveDays(history) {
+    return (history || []).filter((entry) => (entry.messageCount || 0) > 0).length;
+  }
+
+  function positionDigestToast() {
+    const fab = document.getElementById("lumen-fab");
+    const toast = document.getElementById("lumen-digest-toast");
+    if (!fab || !toast) return;
+    const rect = fab.getBoundingClientRect();
+    const gap = 12;
+    toast.style.top = "auto";
+    toast.style.bottom = `${window.innerHeight - rect.top + gap}px`;
+    toast.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
+    toast.style.left = "auto";
+  }
+
+  function showDigestReady(digest) {
+    ensureRoot();
+    digestReady = true;
+    const fab = document.getElementById("lumen-fab");
+    if (fab) fab.dataset.digestReady = "true";
+
+    // Teaser: lead with the actual week-over-week headline so the nudge says
+    // something specific, not "your digest is ready". Ghost mode still gets a
+    // stronger visual cue (it's their only touchpoint).
+    const ghost = LumenGoals.isGhost();
+    const toast = document.getElementById("lumen-digest-toast");
+    const sub = document.getElementById("lumen-digest-toast-sub");
+    if (sub) {
+      sub.textContent =
+        digest?.headline || "A look at how you worked with AI this week.";
+    }
+    if (toast) {
+      toast.classList.toggle("lumen-digest-toast--ghost", ghost);
+      positionDigestToast();
+      toast.classList.add("lumen-digest-toast--open");
+    }
+    pulseFabMark();
+  }
+
+  // Hide just the toast bubble — its attention job is done once the pill opens —
+  // without marking the week seen. The corner dot and "ready" state linger until
+  // the digest itself is actually viewed (or explicitly dismissed).
+  function hideDigestToast() {
+    document.getElementById("lumen-digest-toast")?.classList.remove("lumen-digest-toast--open");
+  }
+
+  // Stamp the week seen and clear every indicator. Only called once the user has
+  // actually laid eyes on the digest (it scrolled into view) or dismissed it.
+  let digestViewObserver = null;
+  function markDigestViewed() {
+    if (digestViewObserver) {
+      digestViewObserver.disconnect();
+      digestViewObserver = null;
+    }
+    if (!digestReady) return;
+    digestReady = false;
+    hideDigestToast();
+    const fab = document.getElementById("lumen-fab");
+    if (fab) fab.dataset.digestReady = "false";
+    LumenGoals.markDigestSeen();
+  }
+
+  // Watch the digest block inside the scrollable popover and mark the week seen
+  // the instant it scrolls into view. The popover is display:none when closed,
+  // so this never fires until the pill is open and the user reaches the digest.
+  function observeDigestView() {
+    if (!digestReady || typeof IntersectionObserver === "undefined") return;
+    const el = document.getElementById("lumen-digest");
+    const root = document.getElementById("lumen-popover");
+    if (!el || !root) return;
+    if (digestViewObserver) digestViewObserver.disconnect();
+    digestViewObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) markDigestViewed();
+      },
+      { root, threshold: 0.5 }
+    );
+    digestViewObserver.observe(el);
+  }
+
+  function stopObservingDigestView() {
+    if (digestViewObserver) {
+      digestViewObserver.disconnect();
+      digestViewObserver = null;
+    }
+  }
+
+  // Per-day engagement (inverse of passive-reply rate), matching the FAB badge
+  // and popover trend — the neutral mirror used across the digest surfaces.
+  function trendScores(history) {
+    return (history || [])
+      .filter((entry) => (entry.messageCount || 0) > 0)
+      .map((entry) => Math.round((1 - (entry.passiveRate || 0)) * 100));
+  }
+
+  async function buildCurrentDigest() {
+    const history = await LumenSession.loadHistory();
+    const digest = LumenNudges.buildDigest({
+      history,
+      session: LumenSession.get(),
+      digestLog: LumenSession.getDigestLog(),
+    });
+    weeklyContext = { history, digest };
+    return weeklyContext;
+  }
+
+  async function maybeShowDigestReady() {
+    if (LumenGoals.isPaused()) return;
+    if (!LumenGoals.isDigestUnseenThisWeek()) return;
+    const history = await LumenSession.loadHistory();
+    if (countActiveDays(history) < DIGEST_MIN_ACTIVE_DAYS) return;
+    const { digest } = await buildCurrentDigest();
+    showDigestReady(digest);
+  }
+
+  function renderWeeklyReview(digest, history) {
+    const headline = document.getElementById("lumen-weekly-headline");
+    if (headline) headline.textContent = digest.headline;
+    const body = document.getElementById("lumen-weekly-body");
+    if (!body) return;
+
+    const scores = trendScores(history);
+    const hasTrend = scores.length >= 2;
+    const statRow = (line) => {
+      const parts = line.split(":");
+      const label = parts.shift();
+      const value = parts.join(":").trim();
+      return `<div class="lumen-weekly-stat"><span class="lumen-weekly-stat-label">${label}</span>${
+        value ? `<span class="lumen-weekly-stat-value">${value}</span>` : ""
+      }</div>`;
+    };
+
+    body.innerHTML = `
+      ${
+        hasTrend
+          ? `<div class="lumen-weekly-trend">${renderSparkline(scores)}</div>
+             <p class="lumen-weekly-caption">Engagement · recent days</p>`
+          : ""
+      }
+      <div class="lumen-weekly-stats">
+        ${digest.driftLines.map(statRow).join("")}
+      </div>
+      ${
+        digest.platforms?.length
+          ? `<p class="lumen-weekly-label">Across tools</p>
+             <p class="lumen-weekly-text">${digest.platforms.map((p) => `${p.name} ${p.count}`).join(" · ")}</p>`
+          : ""
+      }
+      ${
+        digest.profile?.length
+          ? `<p class="lumen-weekly-label">How you work</p>
+             ${digest.profile.map((t) => `<p class="lumen-weekly-text">${t.line}</p>`).join("")}`
+          : ""
+      }
+      <p class="lumen-weekly-label">Mismatch</p>
+      <p class="lumen-weekly-text">${digest.mismatchSummary}</p>
+      <p class="lumen-weekly-label">Sit with</p>
+      <p class="lumen-weekly-prompt">${digest.prompt}</p>
+    `;
+  }
+
+  async function openWeeklyReview() {
+    ensureRoot();
+    // Opening the review is the clearest "viewed" signal — mark the week seen.
+    markDigestViewed();
+    const overlay = document.getElementById("lumen-weekly");
+    if (overlay) {
+      const headline = document.getElementById("lumen-weekly-headline");
+      if (headline) headline.textContent = "This week";
+      const body = document.getElementById("lumen-weekly-body");
+      if (body) body.innerHTML = `<p class="lumen-weekly-caption">Gathering your week…</p>`;
+      overlay.classList.add("lumen-weekly--open");
+    }
+    const { history, digest } = await buildCurrentDigest();
+    renderWeeklyReview(digest, history);
+  }
+
+  function closeWeeklyReview() {
+    document.getElementById("lumen-weekly")?.classList.remove("lumen-weekly--open");
+  }
+
+  function drawWeeklyCard(digest, history) {
+    const W = 1080;
+    const H = 1080;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    const font = (size, weight = 400) =>
+      `${weight} ${size}px "Plus Jakarta Sans", -apple-system, Segoe UI, sans-serif`;
+
+    ctx.fillStyle = SHARE_PALETTE.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    const pad = 90;
+
+    drawLumenMark(ctx, pad + 25, pad + 28);
+    ctx.fillStyle = SHARE_PALETTE.dusk;
+    ctx.font = font(34, 600);
+    ctx.textBaseline = "middle";
+    ctx.fillText("Lumen", pad + 62, pad + 30);
+
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = SHARE_PALETTE.dusk;
+    ctx.font = font(72, 700);
+    ctx.fillText("My week with AI", pad, pad + 160);
+
+    let y = pad + 226;
+    ctx.fillStyle = SHARE_PALETTE.slate;
+    ctx.font = font(34, 500);
+    wrapText(ctx, digest.headline, W - pad * 2).forEach((ln) => {
+      ctx.fillText(ln, pad, y);
+      y += 48;
+    });
+    y += 24;
+
+    const scores = trendScores(history);
+    if (scores.length >= 2) {
+      const tx = pad;
+      const tw = W - pad * 2;
+      const th = 190;
+      const ty = y;
+      ctx.fillStyle = SHARE_PALETTE.card;
+      roundRect(ctx, tx, ty, tw, th, 22);
+      ctx.fill();
+
+      const innerPad = 34;
+      const plotW = tw - innerPad * 2;
+      const plotH = th - innerPad * 2;
+      const min = Math.min(...scores);
+      const max = Math.max(...scores);
+      const range = Math.max(1, max - min);
+      const pointX = (i) => tx + innerPad + (scores.length === 1 ? plotW / 2 : (plotW * i) / (scores.length - 1));
+      const pointY = (s) => ty + innerPad + plotH - plotH * ((s - min) / range);
+
+      ctx.strokeStyle = SHARE_PALETTE.loop;
+      ctx.lineWidth = 4;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      scores.forEach((s, i) => {
+        const px = pointX(i);
+        const py = pointY(s);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = SHARE_PALETTE.loop;
+      ctx.beginPath();
+      ctx.arc(pointX(scores.length - 1), pointY(scores[scores.length - 1]), 9, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = SHARE_PALETTE.haze;
+      ctx.font = font(22, 500);
+      ctx.fillText("Engagement · recent days", tx + innerPad, ty + th + 36);
+      y = ty + th + 78;
+    }
+
+    digest.driftLines.forEach((line) => {
+      const parts = line.split(":");
+      const label = parts.shift();
+      const value = parts.join(":").trim();
+      ctx.fillStyle = SHARE_PALETTE.slate;
+      ctx.font = font(30, 500);
+      ctx.fillText(label, pad, y);
+      if (value) {
+        ctx.fillStyle = SHARE_PALETTE.dusk;
+        ctx.font = font(30, 700);
+        const vw = ctx.measureText(value).width;
+        ctx.fillText(value, W - pad - vw, y);
+      }
+      y += 54;
+    });
+
+    ctx.fillStyle = SHARE_PALETTE.haze;
+    ctx.font = font(28, 500);
+    ctx.fillText("Your AI cognition mirror", pad, H - pad + 8);
+    const url = "lumen.so";
+    const urlW = ctx.measureText(url).width;
+    ctx.fillStyle = SHARE_PALETTE.mismatch;
+    ctx.font = font(28, 600);
+    ctx.fillText(url, W - pad - urlW, H - pad + 8);
+
+    return canvas;
+  }
+
+  async function shareWeekly(digest, history) {
+    const canvas = drawWeeklyCard(digest, history);
+    const blob = await canvasToBlob(canvas);
+    if (!blob) return;
+
+    let copied = false;
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })]);
+        copied = true;
+      }
+    } catch (_) {
+      copied = false;
+    }
+
+    try {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "lumen-week.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    } catch (_) {
+      // ignore
+    }
+
+    const btn = document.getElementById("lumen-weekly-share");
+    if (btn) {
+      btn.textContent = copied ? "Copied to clipboard ✓" : "Saved image ✓";
+      setTimeout(() => {
+        btn.textContent = "Share this week";
+      }, 2200);
+    }
   }
 
   function togglePopover() {
@@ -999,14 +1430,22 @@ const LumenWidget = (() => {
     if (popoverOpen) {
       renderPopover();
       popover.classList.add("lumen-popover--open");
+      // The toast has done its job once the pill is open; hide it but keep the
+      // dot until the digest is actually scrolled into view.
+      if (digestReady) {
+        hideDigestToast();
+        observeDigestView();
+      }
     } else {
       popover.classList.remove("lumen-popover--open");
+      stopObservingDigestView();
     }
   }
 
   function closePopover() {
     popoverOpen = false;
     document.getElementById("lumen-popover")?.classList.remove("lumen-popover--open");
+    stopObservingDigestView();
   }
 
   function shouldShowSignal(signal, evaluation) {
@@ -1324,6 +1763,7 @@ const LumenWidget = (() => {
     init,
     updateBadge,
     injectMessageUI,
+    maybeShowDigestReady,
   };
 })();
 
