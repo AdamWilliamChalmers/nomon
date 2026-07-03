@@ -111,6 +111,17 @@ const LumenSession = (() => {
     saveDigestLog();
   }
 
+  function logGuardEvent(action, goal) {
+    if (!digestLog.guardEvents) digestLog.guardEvents = [];
+    digestLog.guardEvents.push({
+      action,
+      goal: goal ? goal.slice(0, 120) : null,
+      at: Date.now(),
+    });
+    digestLog.guardEvents = digestLog.guardEvents.slice(-20);
+    saveDigestLog();
+  }
+
   function load() {
     return Promise.all([
       new Promise((resolve) => {
@@ -441,6 +452,7 @@ const LumenSession = (() => {
     logMismatchEvent,
     logLoopBreak,
     logOverlayBypassed,
+    logGuardEvent,
     reset,
   };
 })();

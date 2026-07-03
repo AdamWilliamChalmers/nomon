@@ -31,6 +31,7 @@ heavier interrupt.
 | **Ambient** | Loop + Drift strips |
 | **Active** | All signals + Mismatch/Depth cards |
 | **Focus** | Active + session goal calibrates Loop/Mismatch/Depth |
+| **Guard** | Active + optional pre-send hold on clear goal conflicts (opt-in, always bypassable) |
 
 ## Architecture
 

@@ -12,6 +12,7 @@
  *   container?: string,             // default "main"
  *   userWrappers?: string[],        // closest() selectors for the user bubble
  *   inputs?: string[],              // composer selectors, tried in order
+ *   sendButtons?: string[],           // send button selectors, tried in order
  *   matchesFn?: () => boolean,      // override host matching (e.g. path-scoped)
  * }
  */
@@ -103,23 +104,86 @@ globalThis.LumenCreateAdapter = function LumenCreateAdapter(config) {
       return null;
     },
 
+    dispatchComposerInput(el, text) {
+      el.dispatchEvent(
+        new InputEvent("input", {
+          bubbles: true,
+          cancelable: true,
+          inputType: "insertText",
+          data: text,
+        })
+      );
+    },
+
     setChatInputText(text) {
       const el = this.findChatInput();
       if (!el) return false;
+      el.focus();
+
       if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {
-        el.value = text;
+        const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+        const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+        if (setter) setter.call(el, text);
+        else el.value = text;
       } else if (el.isContentEditable) {
-        // ProseMirror / Quill editors read from child paragraph nodes.
         el.innerHTML = "";
-        const p = document.createElement("p");
-        p.textContent = text;
-        el.appendChild(p);
+        for (const line of text.split("\n")) {
+          const p = document.createElement("p");
+          if (line) p.textContent = line;
+          else p.appendChild(document.createElement("br"));
+          el.appendChild(p);
+        }
       } else {
         el.textContent = text;
       }
-      el.dispatchEvent(new Event("input", { bubbles: true }));
+
+      this.dispatchComposerInput(el, text);
       el.focus();
       return true;
+    },
+
+    getChatInputText() {
+      const el = this.findChatInput();
+      if (!el) return "";
+      if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") return el.value || "";
+      return (el.innerText || el.textContent || "").trim();
+    },
+
+    findSendButton() {
+      const selectors = config.sendButtons || [
+        'button[data-testid="send-button"]',
+        'button[aria-label*="Send" i]',
+        'button[aria-label*="send" i]',
+      ];
+      for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el) return el;
+      }
+      return null;
+    },
+
+    triggerSend() {
+      const btn = this.findSendButton();
+      if (btn && !btn.disabled) {
+        btn.click();
+        return true;
+      }
+      const input = this.findChatInput();
+      if (input) {
+        input.focus();
+        input.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            code: "Enter",
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+        return true;
+      }
+      return false;
     },
 
     isAssistantNode(el) {

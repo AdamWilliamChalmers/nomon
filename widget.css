@@ -393,6 +393,19 @@
   background: var(--lm-ghost);
 }
 
+#lumen-root #lumen-fab[data-mode="guard"] {
+  border-color: var(--lm-mismatch);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px var(--lm-mismatch-tint), 0 2px 10px rgba(26, 24, 37, 0.08);
+}
+#lumen-root #lumen-fab[data-mode="guard"]:hover {
+  border-color: var(--lm-mismatch);
+  box-shadow: 0 0 0 3px var(--lm-mismatch-tint), 0 4px 16px rgba(26, 24, 37, 0.14);
+}
+#lumen-root #lumen-fab[data-mode="guard"] #lumen-fab-mark {
+  --lm-ai: var(--lm-mismatch);
+}
+
 /* Paused overrides any mode: muted greyscale, dashed, but still visible so the
    user can click in and resume. */
 #lumen-root #lumen-fab[data-paused="true"] {
@@ -1395,6 +1408,108 @@
 
 #lumen-root .lumen-reconsider-textarea::placeholder {
   color: var(--lm-haze);
+}
+
+/* ── Guard hold (pre-send, opt-in Guard mode only) ── */
+#lumen-root #lumen-guard-hold {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(26, 24, 37, 0.28);
+  pointer-events: auto;
+}
+
+#lumen-root #lumen-guard-hold.lumen-guard-hold--open {
+  display: flex;
+}
+
+#lumen-root .lumen-guard-hold-panel {
+  width: min(480px, 100%);
+  padding: 18px 20px;
+  background: var(--lm-cloud);
+  border: 2px solid var(--lm-mismatch);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(26, 24, 37, 0.18);
+  font-family: var(--lm-font);
+}
+
+#lumen-root .lumen-guard-hold-kicker {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lm-mismatch);
+  margin-bottom: 8px;
+}
+
+#lumen-root .lumen-guard-hold-title {
+  font-size: 17px;
+  font-weight: 650;
+  color: var(--lm-dusk);
+  margin: 0 0 8px;
+  line-height: 1.35;
+}
+
+#lumen-root .lumen-guard-hold-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--lm-slate);
+  margin: 0 0 14px;
+}
+
+#lumen-root .lumen-guard-hold-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#lumen-root .lumen-guard-hold-btn {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: var(--lm-radius-sm);
+  border: none;
+  background: var(--lm-mismatch);
+  color: #f4f3f8;
+  font-family: var(--lm-font);
+}
+
+#lumen-root .lumen-guard-hold-btn--secondary {
+  background: transparent;
+  border: 0.5px solid var(--lm-border-strong);
+  color: var(--lm-slate);
+}
+
+#lumen-root .lumen-guard-hold-btn--ghost {
+  background: transparent;
+  color: var(--lm-haze);
+  padding-left: 0;
+  padding-right: 0;
+}
+
+#lumen-root .lumen-guard-hold-draft-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#lumen-root .lumen-guard-hold-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px 12px;
+  border-radius: var(--lm-radius-sm);
+  border: 0.5px solid var(--lm-border);
+  background: var(--lm-surface);
+  color: var(--lm-dusk);
+  font-size: 13px;
+  font-family: var(--lm-font);
+  resize: vertical;
+  box-sizing: border-box;
 }
 
 /* ── Injected into host AI DOM (outside #lumen-root) ──

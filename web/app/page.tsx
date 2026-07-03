@@ -48,6 +48,11 @@ const MODES = [
   { name: "Ghost", desc: "Nothing in-session — you only get the weekly digest." },
   { name: "Active", desc: "Inline cues plus reflection cards when it matters." },
   { name: "Focus", desc: "Active, plus a goal you declare for the session." },
+  {
+    name: "Guard",
+    desc: "Optional fifth mode: Active, plus a brief hold before send when a prompt clearly conflicts with a protected goal you wrote. Always bypassable.",
+    optIn: true as const,
+  },
 ];
 
 export default function HomePage() {
@@ -85,7 +90,8 @@ export default function HomePage() {
             </h1>
             <p className="lm-landing-subhead mb-7 max-w-md">
               Lumen sits quietly beneath your AI chats and reflects how you&apos;re using them —
-              passivity, drift, goal conflicts. A mirror, not a nanny. No red, no blocked replies.
+              passivity, drift, goal conflicts. A mirror, not a nanny. No red, no nagging, and no
+              blocked replies unless you opt into Guard.
             </p>
             <div className="flex gap-3 mb-7 flex-wrap">
               <a href={CHROME_STORE_URL} target="_blank" rel="noopener" className="lm-landing-cta">
@@ -109,8 +115,9 @@ export default function HomePage() {
         style={{ borderTop: "0.5px solid var(--lm-mist)", borderBottom: "0.5px solid var(--lm-mist)" }}
       >
         {[
-          ["Mirror, not nanny", "no red, no blocked responses"],
+          ["Mirror, not nanny", "no red, no nagging by default"],
           ["Ghost mode", "go invisible any time"],
+          ["Guard mode", "optional hold before send — you opt in"],
           ["Weekly digest", "longitudinal patterns over time"],
         ].map(([strong, rest]) => (
           <div key={strong} className="text-[12px] text-[var(--lm-haze)]">
@@ -187,13 +194,22 @@ export default function HomePage() {
       <section className="max-w-3xl mx-auto px-6 py-20">
         <h2 className="lm-how-title mb-2">You choose how present it is</h2>
         <p className="text-[14px] text-[var(--lm-slate)] mb-8 max-w-lg leading-relaxed">
-          One dial, switchable any time from the pill — and you can pause Lumen entirely.
+          Five modes, one dial — switchable any time from the pill. The first four never block you;
+          Guard is the optional fifth for when you want Lumen to hold the line on goals you wrote.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {MODES.map((m) => (
-            <div key={m.name} className="lm-surface p-4 flex gap-3 items-baseline">
+            <div
+              key={m.name}
+              className={`lm-surface p-4 flex gap-3 items-baseline${"optIn" in m && m.optIn ? " sm:col-span-2" : ""}`}
+            >
               <span className="text-[13px] font-semibold text-[var(--lm-dusk)] min-w-[58px]">
                 {m.name}
+                {"optIn" in m && m.optIn ? (
+                  <span className="block text-[10px] font-medium text-[var(--lm-mismatch)] mt-0.5">
+                    opt-in
+                  </span>
+                ) : null}
               </span>
               <span className="text-[13px] text-[var(--lm-slate)] leading-relaxed">{m.desc}</span>
             </div>

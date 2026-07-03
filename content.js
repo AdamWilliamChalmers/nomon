@@ -81,6 +81,92 @@
     );
   }
 
+  let guardBypassUntil = 0;
+
+  function bindPreSendGuard() {
+    const { goals: LumenGoals, engine: LumenEngine, widget: LumenWidget } = deps();
+
+    const inputFocused = () => {
+      const input = adapter.findChatInput?.();
+      const active = document.activeElement;
+      return input && (input === active || input.contains?.(active));
+    };
+
+    const readComposerText = () => adapter.getChatInputText?.() || "";
+
+    const isSendClick = (target) => {
+      const btn = adapter.findSendButton?.();
+      if (btn && (target === btn || btn.contains?.(target))) return true;
+      return Boolean(
+        target?.closest?.(
+          'button[data-testid="send-button"], button[aria-label*="Send" i], button[aria-label*="send" i]'
+        )
+      );
+    };
+
+    const fireSendWhenReady = (attempt = 0) => {
+      const btn = adapter.findSendButton?.();
+      const disabled = btn?.disabled || btn?.getAttribute?.("aria-disabled") === "true";
+      if (disabled && attempt < 12) {
+        requestAnimationFrame(() => fireSendWhenReady(attempt + 1));
+        return;
+      }
+      adapter.triggerSend?.();
+    };
+
+    const proceedSend = (textOverride) => {
+      const text = (textOverride ?? readComposerText()).trim();
+      if (!text) return;
+
+      guardBypassUntil = Date.now() + 4000;
+      adapter.setChatInputText?.(text);
+      requestAnimationFrame(() => fireSendWhenReady(0));
+    };
+
+    const maybeHoldSend = (event) => {
+      if (Date.now() < guardBypassUntil) return true;
+
+      const text = readComposerText().trim();
+      if (!text) return true;
+
+      if (!LumenGoals?.isGuard?.() || LumenGoals.isPaused()) return true;
+
+      const result = LumenEngine.evaluatePreSend(text, LumenGoals.get(), {
+        taskTypeExempt: LumenGoals.getTaskTypeExemptions(),
+      });
+      if (!result.block) return true;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      LumenWidget.showGuardHold({
+        text,
+        result,
+        adapter,
+        onProceed: proceedSend,
+      });
+      return false;
+    };
+
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key !== "Enter" || event.shiftKey) return;
+        if (!inputFocused()) return;
+        maybeHoldSend(event);
+      },
+      true
+    );
+
+    document.addEventListener(
+      "click",
+      (event) => {
+        if (!isSendClick(event.target)) return;
+        maybeHoldSend(event);
+      },
+      true
+    );
+  }
+
   let domBreakWarned = false;
 
   function syncMessagesFromDom() {
@@ -213,6 +299,7 @@
     // async loads below are slow, blocked, or throw (e.g. the localhost web
     // app is offline and a best-effort fetch rejects).
     bindSendCapture();
+    bindPreSendGuard();
     adapter.onNewMessage(debouncedProcess);
     debouncedProcess();
 

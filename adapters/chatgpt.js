@@ -90,26 +90,97 @@ const LumenAdapterChatGPT = {
   },
 
   findChatInput() {
-    for (const selector of ["#prompt-textarea", "#chat-input", 'textarea[placeholder*="Ask"]']) {
+    for (const selector of [
+      "#prompt-textarea",
+      "#chat-input",
+      'div[contenteditable="true"]#prompt-textarea',
+      'textarea[placeholder*="Ask"]',
+      '[contenteditable="true"][data-placeholder]',
+    ]) {
       const el = document.querySelector(selector);
       if (el) return el;
     }
     return null;
   },
 
+  dispatchComposerInput(el, text) {
+    el.dispatchEvent(
+      new InputEvent("input", {
+        bubbles: true,
+        cancelable: true,
+        inputType: "insertText",
+        data: text,
+      })
+    );
+  },
+
   setChatInputText(text) {
     const el = this.findChatInput();
     if (!el) return false;
+    el.focus();
+
     if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {
-      el.value = text;
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+      if (setter) setter.call(el, text);
+      else el.value = text;
     } else if (el.isContentEditable) {
-      el.textContent = text;
+      el.innerHTML = "";
+      for (const line of text.split("\n")) {
+        const p = document.createElement("p");
+        if (line) p.textContent = line;
+        else p.appendChild(document.createElement("br"));
+        el.appendChild(p);
+      }
     } else {
       el.textContent = text;
     }
-    el.dispatchEvent(new Event("input", { bubbles: true }));
+
+    this.dispatchComposerInput(el, text);
     el.focus();
     return true;
+  },
+
+  getChatInputText() {
+    const el = this.findChatInput();
+    if (!el) return "";
+    if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") return el.value || "";
+    return (el.innerText || el.textContent || "").trim();
+  },
+
+  findSendButton() {
+    for (const selector of [
+      'button[data-testid="send-button"]',
+      'button[aria-label*="Send" i]',
+      'button[aria-label*="send" i]',
+    ]) {
+      const el = document.querySelector(selector);
+      if (el) return el;
+    }
+    return null;
+  },
+
+  triggerSend() {
+    const btn = this.findSendButton();
+    if (btn && !btn.disabled) {
+      btn.click();
+      return true;
+    }
+    const input = this.findChatInput();
+    if (input) {
+      input.focus();
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      return true;
+    }
+    return false;
   },
 
   isAssistantNode(el) {

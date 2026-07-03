@@ -163,6 +163,27 @@ const LumenNudges = (() => {
   // Efficacy = did a nudge change the next action? We count the concrete
   // engaged responses the user already logged (drafted first / reflected /
   // paused) against the times they skipped or bypassed.
+  function getGuardHoldCopy(goal) {
+    return {
+      kicker: "Lumen · guard",
+      title: "This hands over something you wanted to protect",
+      body: `When you set up Lumen, you said: "${goal}". This prompt delegates that. You can always send anyway — Lumen is a mirror, not a lock.`,
+      draftLabel: "Draft something first",
+      sendAnywayLabel: "Send anyway",
+      goalChangedLabel: "My goal changed — stop holding",
+      draftPlaceholder: "Your rough draft — even one sentence…",
+      submitLabel: "Add my draft and send",
+    };
+  }
+
+  function summariseGuardEvents(guardEvents = []) {
+    const holds = guardEvents.filter((e) => e.action === "hold-shown").length;
+    const bypassed = guardEvents.filter((e) => e.action === "bypassed").length;
+    const drafted = guardEvents.filter((e) => e.action === "draft-submitted").length;
+    if (!holds && !bypassed && !drafted) return null;
+    return `${holds} hold${holds === 1 ? "" : "s"} · ${drafted} draft-first · ${bypassed} sent anyway`;
+  }
+
   function summariseResponses(digestLog = {}) {
     const breaks = digestLog.loopBreaks || [];
     const depthLog = digestLog.depthMoments || [];
@@ -430,6 +451,7 @@ const LumenNudges = (() => {
       profile: buildProfile(history),
       depthMoments: (digestLog.depthMoments || []).slice(-3),
       mismatchSummary: `${session.mismatchCount || 0} intention checks this session`,
+      guardSummary: summariseGuardEvents(digestLog.guardEvents || []),
       responses: summariseResponses(digestLog),
       prompt: pickRandom(DIGEST_PROMPTS),
     };
@@ -444,6 +466,7 @@ const LumenNudges = (() => {
     buildCombinedPrompt,
     getMismatchLabel,
     getMismatchCardCopy,
+    getGuardHoldCopy,
     getDepthCardCopy,
     getDepthOverlayCopy,
     detectDepthTaskType,

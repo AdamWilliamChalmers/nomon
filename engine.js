@@ -328,7 +328,7 @@ const LumenEngine = (() => {
     // belongs in active/focus modes (ambient = strips only, ghost = nothing).
     // Hand-off and Depth never gate the AI response — they surface as a strip
     // or an additive card so the experience stays seamless.
-    if (mode !== "active" && mode !== "focus") return null;
+    if (mode !== "active" && mode !== "focus" && mode !== "guard") return null;
     if (exempt) return null;
     if (confidenceLevel === "gray" || confidenceLevel === "low") return null;
     if (messageIndex > 2 && loopScore >= 70) return "loop";
@@ -642,10 +642,35 @@ const LumenEngine = (() => {
     return result;
   }
 
+  function evaluatePreSend(text, goals, context = {}) {
+    if (goals.mode !== "guard" || globalThis.LumenGoals?.isPaused?.()) {
+      return { block: false };
+    }
+    if (!goals.protectedGoals?.length) {
+      return { block: false, needsGoals: true };
+    }
+
+    const taskType = detectTaskType(text);
+    const blockable = LumenRules.isGuardBlockable(text, goals.protectedGoals, {
+      taskType,
+      taskTypeExempt: context.taskTypeExempt || [],
+    });
+    if (!blockable) return { block: false };
+
+    return {
+      block: true,
+      mismatch: blockable.mismatch,
+      confidence: blockable.confidence,
+      reasons: blockable.reasons,
+      taskType,
+    };
+  }
+
   return {
     wordCount,
     isPassiveContinuation,
     evaluateMessage,
+    evaluatePreSend,
     computeLoopSignals,
     detectTaskType,
     getUserMessageIndex,

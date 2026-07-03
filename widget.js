@@ -33,6 +33,27 @@ const LumenWidget = (() => {
         </div>
       </div>`;
 
+  const GUARD_HOLD_HTML = `
+      <div id="lumen-guard-hold" class="lumen-guard-hold">
+        <div class="lumen-guard-hold-panel">
+          <div class="lumen-guard-hold-kicker" id="lumen-guard-hold-kicker">Lumen · guard</div>
+          <h2 class="lumen-guard-hold-title" id="lumen-guard-hold-title">This hands over something you wanted to protect</h2>
+          <p class="lumen-guard-hold-body" id="lumen-guard-hold-body"></p>
+          <div id="lumen-guard-hold-choices" class="lumen-guard-hold-actions">
+            <button type="button" class="lumen-guard-hold-btn" id="lumen-guard-hold-draft">Draft something first</button>
+            <button type="button" class="lumen-guard-hold-btn lumen-guard-hold-btn--secondary" id="lumen-guard-hold-send">Send anyway</button>
+            <button type="button" class="lumen-guard-hold-btn lumen-guard-hold-btn--ghost" id="lumen-guard-hold-goal">My goal changed — stop holding</button>
+          </div>
+          <div id="lumen-guard-hold-draft-mode" class="lumen-guard-hold-draft-mode lumen-hidden">
+            <textarea id="lumen-guard-hold-textarea" class="lumen-guard-hold-textarea" placeholder="Your rough draft — even one sentence…"></textarea>
+            <button type="button" class="lumen-guard-hold-btn" id="lumen-guard-hold-submit">Add my draft and send</button>
+          </div>
+        </div>
+      </div>`;
+
+  let activeGuardHold = null;
+  let guardHoldEventsBound = false;
+
   function ensureHideStyles() {
     if (document.getElementById("lumen-hide-styles")) return;
     const style = document.createElement("style");
@@ -60,6 +81,7 @@ const LumenWidget = (() => {
     ensureHideStyles();
     if (document.getElementById("lumen-root")) {
       ensureReconsiderShell();
+      ensureGuardHoldShell();
       return;
     }
     const root = document.createElement("div");
@@ -98,6 +120,7 @@ const LumenWidget = (() => {
           <option value="ghost">Ghost</option>
           <option value="active">Active</option>
           <option value="focus">Focus</option>
+          <option value="guard">Guard</option>
         </select>
         <p class="lumen-popover-hint" id="lumen-mode-hint"></p>
         <label class="lumen-popover-label">Protected goals</label>
@@ -154,6 +177,7 @@ const LumenWidget = (() => {
         </div>
       </div>
       ${OVERLAY_HTML}
+      ${GUARD_HOLD_HTML}
       <div id="lumen-onboarding" class="lumen-onboarding">
         <div class="lumen-onboarding-panel">
           <div class="lumen-onboarding-step" data-step="1">
@@ -190,8 +214,10 @@ const LumenWidget = (() => {
               <option value="ghost">Ghost — weekly digest only, nothing in-session</option>
               <option value="active">Active — inline cues + reflection cards</option>
               <option value="focus">Focus — Active, plus a session goal</option>
+              <option value="guard">Guard — optional hold before send on clear goal conflicts</option>
             </select>
             <input id="lumen-onboarding-focus" class="lumen-hidden" type="text" placeholder="Today I'm trying to…" />
+            <p class="lumen-popover-hint lumen-hidden" id="lumen-onboarding-guard-hint" style="margin-top:14px;">Guard is optional — a fifth mode you opt into. Lumen stays a mirror by default. If you choose Guard, send pauses briefly when a prompt clearly conflicts with a protected goal you wrote. Always bypassable; add at least one goal in the previous step.</p>
             <p class="lumen-popover-hint" style="margin-top:14px;">Smarter detection is on: borderline prompts are sent to Lumen's backend for an LLM second opinion, so subtle hand-offs the local rules miss still get caught. Turn it off any time in the pill to stay fully on-device.</p>
           </div>
           <div class="lumen-onboarding-actions">
@@ -204,6 +230,7 @@ const LumenWidget = (() => {
     document.body.appendChild(root);
     bindRootEvents();
     bindReconsiderEvents();
+    bindGuardHoldEvents();
   }
 
   function ensureReconsiderShell() {
@@ -218,6 +245,13 @@ const LumenWidget = (() => {
     }
     document.getElementById("lumen-root")?.insertAdjacentHTML("beforeend", OVERLAY_HTML);
     bindReconsiderEvents();
+  }
+
+  function ensureGuardHoldShell() {
+    if (document.getElementById("lumen-guard-hold")) return;
+    document.getElementById("lumen-root")?.insertAdjacentHTML("beforeend", GUARD_HOLD_HTML);
+    guardHoldEventsBound = false;
+    bindGuardHoldEvents();
   }
 
   function bindRootEvents() {
@@ -540,6 +574,88 @@ const LumenWidget = (() => {
     document.getElementById("lumen-reconsider")?.classList.add("lumen-reconsider--open");
   }
 
+  function resetGuardHoldPanel() {
+    document.getElementById("lumen-guard-hold-choices")?.classList.remove("lumen-hidden");
+    document.getElementById("lumen-guard-hold-draft-mode")?.classList.add("lumen-hidden");
+    const textarea = document.getElementById("lumen-guard-hold-textarea");
+    if (textarea) textarea.value = "";
+  }
+
+  function closeGuardHold() {
+    document.getElementById("lumen-guard-hold")?.classList.remove("lumen-guard-hold--open");
+    resetGuardHoldPanel();
+    activeGuardHold = null;
+  }
+
+  function showGuardHold({ text, result, adapter, onProceed }) {
+    ensureRoot();
+    resetGuardHoldPanel();
+
+    const copy = LumenNudges.getGuardHoldCopy(result.mismatch?.goal || "your goal");
+    document.getElementById("lumen-guard-hold-kicker").textContent = copy.kicker;
+    document.getElementById("lumen-guard-hold-title").textContent = copy.title;
+    document.getElementById("lumen-guard-hold-body").textContent = copy.body;
+    document.getElementById("lumen-guard-hold-draft").textContent = copy.draftLabel;
+    document.getElementById("lumen-guard-hold-send").textContent = copy.sendAnywayLabel;
+    document.getElementById("lumen-guard-hold-goal").textContent = copy.goalChangedLabel;
+    document.getElementById("lumen-guard-hold-submit").textContent = copy.submitLabel;
+    document.getElementById("lumen-guard-hold-textarea")?.setAttribute("placeholder", copy.draftPlaceholder);
+
+    activeGuardHold = { text, result, adapter, onProceed };
+    LumenSession.logGuardEvent("hold-shown", result.mismatch?.goal);
+    document.getElementById("lumen-guard-hold")?.classList.add("lumen-guard-hold--open");
+  }
+
+  function bindGuardHoldEvents() {
+    if (guardHoldEventsBound) return;
+    guardHoldEventsBound = true;
+
+    document.getElementById("lumen-guard-hold-draft")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      document.getElementById("lumen-guard-hold-choices")?.classList.add("lumen-hidden");
+      document.getElementById("lumen-guard-hold-draft-mode")?.classList.remove("lumen-hidden");
+      document.getElementById("lumen-guard-hold-textarea")?.focus();
+    });
+
+    document.getElementById("lumen-guard-hold-send")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!activeGuardHold) return;
+      LumenSession.logGuardEvent("bypassed", activeGuardHold.result.mismatch?.goal);
+      const proceed = activeGuardHold.onProceed;
+      const text = activeGuardHold.text;
+      closeGuardHold();
+      proceed?.(text);
+    });
+
+    document.getElementById("lumen-guard-hold-goal")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!activeGuardHold) return;
+      const goal = activeGuardHold.result.mismatch?.goal;
+      if (goal) {
+        LumenGoals.removeProtectedGoal(goal);
+        LumenSession.logMismatchEvent(goal, "goal-changed");
+        LumenSession.logGuardEvent("goal-changed", goal);
+      }
+      closeGuardHold();
+      syncSettingsUI();
+    });
+
+    document.getElementById("lumen-guard-hold-submit")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!activeGuardHold) return;
+      const draft = document.getElementById("lumen-guard-hold-textarea")?.value.trim();
+      if (!draft) {
+        document.getElementById("lumen-guard-hold-textarea")?.focus();
+        return;
+      }
+      const combined = LumenNudges.buildCombinedPrompt(draft, activeGuardHold.text);
+      LumenSession.logGuardEvent("draft-submitted", activeGuardHold.result.mismatch?.goal);
+      const proceed = activeGuardHold.onProceed;
+      closeGuardHold();
+      proceed?.(combined);
+    });
+  }
+
   function bindOnboardingEvents() {
     let step = 1;
     const panel = document.getElementById("lumen-onboarding");
@@ -547,9 +663,11 @@ const LumenWidget = (() => {
     const skipBtn = document.getElementById("lumen-onboarding-skip");
     const modeSelect = document.getElementById("lumen-onboarding-mode");
     const focusInput = document.getElementById("lumen-onboarding-focus");
+    const guardHint = document.getElementById("lumen-onboarding-guard-hint");
 
     modeSelect?.addEventListener("change", () => {
       focusInput.classList.toggle("lumen-hidden", modeSelect.value !== "focus");
+      guardHint?.classList.toggle("lumen-hidden", modeSelect.value !== "guard");
     });
 
     skipBtn?.addEventListener("click", () => {
@@ -580,6 +698,13 @@ const LumenWidget = (() => {
       const protectedGoals = Array.from(new Set([...presetGoals, ...typedGoals]));
       const mode = modeSelect.value;
       const focusGoal = mode === "focus" ? focusInput.value.trim() : null;
+
+      if (mode === "guard" && !protectedGoals.length) {
+        guardHint.textContent =
+          "Guard needs at least one protected goal — go back and add one, or pick another mode.";
+        guardHint.classList.remove("lumen-hidden");
+        return;
+      }
 
       LumenGoals.completeOnboarding({ useCases, protectedGoals, mode });
       if (focusGoal) LumenGoals.save({ focusGoal });
@@ -632,6 +757,11 @@ const LumenWidget = (() => {
     if (!hint) return;
     if (LumenGoals.isPaused()) {
       hint.textContent = "Paused — no tracking or signals until you resume.";
+      return;
+    }
+    if (LumenGoals.isGuard() && !LumenGoals.get().protectedGoals.length) {
+      hint.textContent =
+        "Guard mode needs at least one protected goal below — or switch to another mode.";
       return;
     }
     hint.textContent = LumenGoals.modeMeta().blurb;
@@ -1081,6 +1211,12 @@ const LumenWidget = (() => {
       ${digest.driftLines.map((line) => `<p class="lumen-digest-line">${line}</p>`).join("")}
       <p class="lumen-digest-label" title="Times a prompt conflicted with a goal you set">Mismatch</p>
       <p class="lumen-digest-line">${digest.mismatchSummary}</p>
+      ${
+        digest.guardSummary
+          ? `<p class="lumen-digest-label" title="Guard mode holds — only when you opted in">Guard</p>
+      <p class="lumen-digest-line">${digest.guardSummary}</p>`
+          : ""
+      }
       <p class="lumen-digest-label" title="How often you engaged with a nudge instead of skipping it">Your responses</p>
       <p class="lumen-digest-line">${digest.responses.line}</p>
       <p class="lumen-digest-label" title="A reflection prompt to take away from the week">Sit with</p>
@@ -1764,6 +1900,7 @@ const LumenWidget = (() => {
     updateBadge,
     injectMessageUI,
     maybeShowDigestReady,
+    showGuardHold,
   };
 })();
 

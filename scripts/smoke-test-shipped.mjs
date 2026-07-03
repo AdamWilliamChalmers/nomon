@@ -30,8 +30,13 @@ let currentGoals = {
 };
 sandbox.LumenGoals = {
   get: () => ({ ...currentGoals }),
-  isActive: () => currentGoals.mode === "active" || currentGoals.mode === "focus",
+  isActive: () =>
+    currentGoals.mode === "active" ||
+    currentGoals.mode === "focus" ||
+    currentGoals.mode === "guard",
   isGhost: () => currentGoals.mode === "ghost",
+  isGuard: () => currentGoals.mode === "guard",
+  isPaused: () => false,
 };
 
 vm.createContext(sandbox);
@@ -154,6 +159,36 @@ const cases = [
       r.primary !== "handoff" || "should not fire hand-off on engaged input",
     ],
   },
+  {
+    name: "guard: blocks tier-1 mismatch delegation pre-send",
+    run: () =>
+      Engine.evaluatePreSend("Write me an essay on climate change.", {
+        mode: "guard",
+        protectedGoals: ["Write my own first drafts"],
+      }),
+    check: (r) => [
+      r.block === true || "expected block",
+      r.mismatch?.goal === "Write my own first drafts" || "expected mismatch goal",
+    ],
+  },
+  {
+    name: "guard: does not block in active mode",
+    run: () =>
+      Engine.evaluatePreSend("Write me an essay on climate change.", {
+        mode: "active",
+        protectedGoals: ["Write my own first drafts"],
+      }),
+    check: (r) => [r.block === false || "active must not pre-send block"],
+  },
+  {
+    name: "guard: no hold when prompt does not conflict with goals",
+    run: () =>
+      Engine.evaluatePreSend("What is the capital of France?", {
+        mode: "guard",
+        protectedGoals: ["Write my own first drafts"],
+      }),
+    check: (r) => [r.block === false || "factual lookup should not block"],
+  },
 ];
 
 let passed = 0;
@@ -174,7 +209,11 @@ for (const c of cases) {
     errors.forEach((e) => console.log(`      ${e}`));
   } else {
     passed++;
-    console.log(`PASS  ${c.name} (primary=${result.primary}, overlay=${result.overlayType}, loop=${result.loopScore})`);
+    const detail =
+      result.primary != null
+        ? `(primary=${result.primary}, overlay=${result.overlayType}, loop=${result.loopScore})`
+        : `(block=${result.block})`;
+    console.log(`PASS  ${c.name} ${detail}`);
   }
 }
 

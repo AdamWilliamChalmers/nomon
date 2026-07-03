@@ -229,6 +229,27 @@ const LumenRules = (() => {
     return { level: "low", reasons: ["No strong signal"], overlay: false };
   }
 
+  // Guard mode only: hold send when a tier-1 delegation prompt clearly conflicts
+  // with a user-stated protected goal. Semantic / tier-2 cases stay post-send
+  // nudges — not confident enough to block.
+  function isGuardBlockable(text, protectedGoals, options = {}) {
+    if (!protectedGoals?.length || !text?.trim()) return null;
+    if (checkEngagementOverride(text).active) return null;
+    if (options.taskTypeExempt?.includes(options.taskType)) return null;
+
+    const mismatch = checkMismatchGoals(text, protectedGoals);
+    if (!mismatch) return null;
+
+    const framing = analyzeFraming(text);
+    if (framing.tier !== 1 || framing.source !== "tier1") return null;
+
+    return {
+      mismatch,
+      confidence: "high",
+      reasons: ["This conflicts with a goal you set", ...framing.matches.map((m) => `Matched: ${m}`)],
+    };
+  }
+
   function checkMismatchGoals(text, protectedGoals) {
     if (!protectedGoals?.length) return null;
     for (const goal of protectedGoals) {
@@ -286,6 +307,7 @@ const LumenRules = (() => {
     isStrongDelegation,
     computeConfidence,
     checkMismatchGoals,
+    isGuardBlockable,
     explainEvaluation,
   };
 })();

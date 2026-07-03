@@ -10,6 +10,11 @@ const LumenGoals = (() => {
     { value: "ghost", label: "Ghost", blurb: "Nothing in-session — you only get the weekly digest." },
     { value: "active", label: "Active", blurb: "Inline cues plus reflection cards when it matters." },
     { value: "focus", label: "Focus", blurb: "Active, plus a goal you declare for this session." },
+    {
+      value: "guard",
+      label: "Guard",
+      blurb: "Active, plus a brief hold before send when a prompt clearly conflicts with a protected goal. Always bypassable.",
+    },
   ];
 
   const DEFAULTS = {
@@ -127,8 +132,12 @@ const LumenGoals = (() => {
     return cache.mode === "ghost";
   }
 
+  function isGuard() {
+    return cache.mode === "guard";
+  }
+
   function isActive() {
-    return cache.mode === "active" || cache.mode === "focus";
+    return cache.mode === "active" || cache.mode === "focus" || cache.mode === "guard";
   }
 
   function isPaused() {
@@ -280,6 +289,7 @@ const LumenGoals = (() => {
     getTaskTypeExemptions,
     taskTypeLabel,
     isGhost,
+    isGuard,
     isActive,
     isPaused,
     setPaused,
