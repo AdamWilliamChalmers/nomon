@@ -561,10 +561,16 @@ const LumenEngine = (() => {
     const handoffSemanticOrTier2 =
       framing.tier === 2 || (framing.tier === 1 && framing.source === "semantic");
 
+    // Hand-off is the core "you stopped thinking for yourself" signal, so it
+    // must fire wherever delegation happens — not only in the opening two
+    // messages. Asking the AI to ideate / produce / decide for you mid-chat
+    // ("give me an idea for an app") is exactly the moment a "think for myself"
+    // user wants flagged. Engagement markers, user-provided context, and
+    // task-type exemptions still suppress genuine collaboration.
     const handoffActive =
-      !exempt && !engagementOverride.active && messageIndex <= 2 && handoffTier1Exact;
+      !exempt && !engagementOverride.active && handoffTier1Exact;
     const handoffStripOnly =
-      !exempt && !engagementOverride.active && messageIndex <= 2 && handoffSemanticOrTier2;
+      !exempt && !engagementOverride.active && handoffSemanticOrTier2;
     const loopActive = messageIndex > 2 && loopScore >= loopThreshold;
 
     const handoffLabel = globalThis.LumenNudges.getHandOffLabel();

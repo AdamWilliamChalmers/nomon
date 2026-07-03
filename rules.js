@@ -12,6 +12,16 @@ const LumenRules = (() => {
     { id: "can_write", re: /can you write|could you write|please write/i, label: "can you write" },
     { id: "do_for_me", re: /\bdo (this|it|my|the|all|your)\b[^?]*\bfor me\b|complete this for me/i, label: "do for me" },
     { id: "generate", re: /generate a|create a|produce a|make me|build me|come up with/i, label: "generate/create" },
+    {
+      id: "make_build",
+      re: /\b(make|build|design|develop|code)\b (me |us )?(a|an|the|my|some)\b/i,
+      label: "make/build for me",
+    },
+    {
+      id: "ideate",
+      re: /\b(give me|suggest|think of|come up with)\b[^?]*\b(idea|ideas|name|names|topic|topics|concept|concepts)\b|\bany ideas\b/i,
+      label: "ideate for me",
+    },
     { id: "just_do", re: /just do|can you do/i, label: "just do it" },
     { id: "give_full", re: /give me a full|give me all citations|give me a/i, label: "give me full output" },
     { id: "complete", re: /complete this|finish this|turn this into|output a/i, label: "complete/finish" },
