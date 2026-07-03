@@ -9,6 +9,10 @@ const LumenWidget = (() => {
 
   let popoverOpen = false;
   let dismissedReconsider = new Set();
+  // Message ids whose Mismatch card the user has resolved this session (either
+  // "still my goal" or "my goal changed"). Without this, the card re-injects on
+  // the next processing tick and the buttons appear to do nothing.
+  let dismissedMismatch = new Set();
   let activeReconsider = null;
   let lastEvaluation = null;
   // Cached digest + history for the weekly review overlay (so Share doesn't
@@ -96,7 +100,10 @@ const LumenWidget = (() => {
             <span class="lumen-dot lumen-dot-blue" style="--rx:0px;--ry:4px;--ex:-8px;--ey:0px;"></span>
           </span>
         </span>
-        <span id="lumen-fab-score">0</span>
+        <span id="lumen-fab-engagement" class="lumen-fab-engagement" aria-live="polite">
+          <span id="lumen-fab-label" class="lumen-fab-label lumen-fab-label--empty">—</span>
+          <span id="lumen-fab-trend" class="lumen-fab-trend lumen-hidden" aria-hidden="true"></span>
+        </span>
         <span id="lumen-fab-digest" aria-hidden="true"></span>
       </div>
       <div id="lumen-popover">
@@ -832,6 +839,30 @@ const LumenWidget = (() => {
     return SIGNAL_COLORS.drift;
   }
 
+  // Session engagement band (B): human-readable label from the inverted score.
+  function engagementLabel(engagement) {
+    if (engagement >= 60) return "Engaged";
+    if (engagement >= 35) return "Steady";
+    if (engagement >= 15) return "Drifting";
+    return "Passive";
+  }
+
+  // Trend (C): last message vs the one before — ↑ more active, ↓ more passive.
+  const ENGAGEMENT_TREND_THRESHOLD = 8;
+  function engagementTrend(loopScores) {
+    if (!loopScores || loopScores.length < 2) return null;
+    const last = 100 - loopScores[loopScores.length - 1];
+    const prev = 100 - loopScores[loopScores.length - 2];
+    const diff = last - prev;
+    if (diff >= ENGAGEMENT_TREND_THRESHOLD) {
+      return { arrow: "↑", dir: "up", hint: "more active than your last message" };
+    }
+    if (diff <= -ENGAGEMENT_TREND_THRESHOLD) {
+      return { arrow: "↓", dir: "down", hint: "more passive than your last message" };
+    }
+    return { arrow: "→", dir: "flat", hint: "about the same as your last message" };
+  }
+
   // Play exactly one loop of the four-dot processing animation (converge →
   // pulse → orbit → return). One loop per event, never infinite on the FAB —
   // a perpetually animating pill would be a nag ("mirror, not nanny").
@@ -862,22 +893,68 @@ const LumenWidget = (() => {
     applyFabPosition();
     const session = LumenSession.get();
     const fab = document.getElementById("lumen-fab");
-    const scoreEl = document.getElementById("lumen-fab-score");
+    const engagementEl = document.getElementById("lumen-fab-engagement");
+    const trendEl = document.getElementById("lumen-fab-trend");
+    const labelEl = document.getElementById("lumen-fab-label");
     // sessionScore is a passive-acceptance score (higher = more offloading).
-    // Surface the inverse so the badge reads as engagement: higher = better.
+    // Surface the inverse as a word band (B) plus last-message trend (C).
     const paused = LumenGoals.isPaused();
-    const engagement = session.messageCount ? 100 - (session.sessionScore || 0) : 0;
-    const color = session.messageCount ? engagementColor(engagement) : SIGNAL_COLORS.loop;
-    if (scoreEl) {
-      scoreEl.textContent = paused ? "॥" : String(engagement);
-      scoreEl.style.color = paused ? "var(--lm-haze)" : color;
-      scoreEl.title = paused
-        ? "Lumen is paused — click to open settings and resume"
-        : "Engagement this session — higher means more active evaluation";
+    const hasMessages = session.messageCount > 0;
+    const engagement = hasMessages ? 100 - (session.sessionScore || 0) : null;
+    const color = hasMessages ? engagementColor(engagement) : "var(--lm-haze)";
+    const trend = hasMessages ? engagementTrend(session.loopScores) : null;
+
+    if (labelEl) {
+      if (paused) {
+        labelEl.textContent = "Paused";
+        labelEl.classList.remove("lumen-fab-label--empty");
+        labelEl.style.color = "var(--lm-haze)";
+      } else if (!hasMessages) {
+        labelEl.textContent = "—";
+        labelEl.classList.add("lumen-fab-label--empty");
+        labelEl.style.color = "var(--lm-haze)";
+      } else {
+        labelEl.textContent = engagementLabel(engagement);
+        labelEl.classList.remove("lumen-fab-label--empty");
+        labelEl.style.color = color;
+      }
     }
+
+    if (trendEl) {
+      if (paused || !trend) {
+        trendEl.textContent = "";
+        trendEl.classList.add("lumen-hidden");
+        trendEl.removeAttribute("data-trend");
+      } else {
+        trendEl.textContent = trend.arrow;
+        trendEl.classList.remove("lumen-hidden");
+        trendEl.dataset.trend = trend.dir;
+      }
+    }
+
+    if (engagementEl) {
+      if (paused) {
+        engagementEl.title = "Lumen is paused — click to open settings and resume";
+      } else if (!hasMessages) {
+        engagementEl.title = "Engagement shows after your first message";
+      } else {
+        const label = engagementLabel(engagement);
+        const trendHint = trend ? ` · ${trend.hint}` : "";
+        engagementEl.title = `${label} this session${trendHint}`;
+      }
+      engagementEl.setAttribute(
+        "aria-label",
+        paused
+          ? "Lumen paused"
+          : !hasMessages
+            ? "Engagement not started"
+            : `${engagementLabel(engagement)} this session${trend ? `, trending ${trend.dir}` : ""}`
+      );
+    }
+
     if (fab) {
       // Per-mode + paused looks are handled in CSS via these data attributes so
-      // the user can see at a glance which mode they're in.
+      // the user can see at a glance which mode you're in.
       fab.dataset.mode = LumenGoals.get().mode || "ambient";
       fab.dataset.paused = paused ? "true" : "false";
     }
@@ -1705,7 +1782,8 @@ const LumenWidget = (() => {
     if (
       LumenGoals.isActive() &&
       evaluation.primary === "mismatch" &&
-      evaluation.mismatch?.active
+      evaluation.mismatch?.active &&
+      !dismissedMismatch.has(msg.id)
     ) {
       const isFresh = msg.timestamp && Date.now() - msg.timestamp < 8000;
       renderCard(msg.id, evaluation, strip || bubble, msg.el, adapter, {
@@ -1840,9 +1918,11 @@ const LumenWidget = (() => {
   function renderCard(msgId, evaluation, anchor, msgEl, adapter, cardOptions = {}) {
     if (LumenGoals.isGhost() || !LumenGoals.isActive()) return;
 
-    document.querySelector(`.lumen-card[data-lumen-msg-id="${msgId}"]`)?.remove();
-
-    if (!LumenGoals.isActive()) return;
+    // Idempotent: if a card for this message is already on screen, leave it (and
+    // its live click handlers) in place. injectMessageUI runs on every DOM
+    // mutation, so rebuilding the card each tick was destroying the button the
+    // user was trying to click — making the actions feel dead.
+    if (document.querySelector(`.lumen-card[data-lumen-msg-id="${msgId}"]`)) return;
 
     if (evaluation.primary === "mismatch" && evaluation.mismatch.active) {
       const session = LumenSession.get();
@@ -1862,14 +1942,19 @@ const LumenWidget = (() => {
         </div>
       `;
       card.querySelector('[data-action="keep"]')?.addEventListener("click", () => {
+        dismissedMismatch.add(msgId);
         LumenSession.logMismatchEvent(evaluation.mismatch.goal, "kept");
         card.remove();
       });
       card.querySelector('[data-action="continue"]')?.addEventListener("click", () => {
+        dismissedMismatch.add(msgId);
         LumenGoals.removeProtectedGoal(evaluation.mismatch.goal);
         LumenSession.logMismatchEvent(evaluation.mismatch.goal, "goal-changed");
-        card.remove();
         syncSettingsUI();
+        // Brief confirmation so the (destructive) goal removal is visible,
+        // then dismiss. The id is already suppressed so it won't re-inject.
+        card.innerHTML = `<div class="lumen-card-body">Got it — removed that goal. You can re-add it any time in Lumen settings.</div>`;
+        window.setTimeout(() => card.remove(), 2600);
       });
       anchor.insertAdjacentElement("afterend", card);
     }

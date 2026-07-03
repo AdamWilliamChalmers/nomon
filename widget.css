@@ -191,7 +191,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px 6px 12px;
+  padding: 6px 16px 6px 12px;
   background: var(--lm-surface);
   border: 0.5px solid var(--lm-border);
   border-radius: var(--lm-radius-pill);
@@ -285,7 +285,38 @@
   transition: background var(--lm-transition-slow);
 }
 
-#lumen-root #lumen-fab-score,
+#lumen-root #lumen-fab-engagement {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+#lumen-root #lumen-fab-trend {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+#lumen-root #lumen-fab-trend[data-trend="up"] {
+  color: var(--lm-loop-text);
+}
+#lumen-root #lumen-fab-trend[data-trend="down"] {
+  color: var(--lm-drift-text);
+}
+#lumen-root #lumen-fab-trend[data-trend="flat"] {
+  color: var(--lm-haze);
+}
+
+#lumen-root #lumen-fab-label.lumen-fab-label--empty {
+  color: var(--lm-haze);
+  font-weight: 500;
+}
+
 #lumen-root #lumen-badge-score {
   font-size: 13px;
   font-weight: 700;
@@ -755,6 +786,35 @@
   background: transparent;
   border: 0.5px solid var(--lm-border-strong);
   color: var(--lm-slate);
+}
+
+/* Mismatch card: understated text links rather than dominant buttons. */
+#lumen-root .lumen-card--mismatch .lumen-card-actions {
+  gap: 18px;
+  align-items: center;
+  margin-top: 2px;
+}
+#lumen-root .lumen-card--mismatch .lumen-card-btn,
+#lumen-root .lumen-card--mismatch .lumen-card-btn--secondary {
+  background: transparent;
+  border: none;
+  padding: 2px 0;
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lm-mismatch-text);
+}
+#lumen-root .lumen-card--mismatch .lumen-card-btn:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+#lumen-root .lumen-card--mismatch .lumen-card-btn--secondary {
+  color: var(--lm-haze);
+  font-weight: 500;
+}
+#lumen-root .lumen-card--mismatch .lumen-card-btn--secondary:hover {
+  color: var(--lm-slate);
+  text-decoration: underline;
 }
 
 #lumen-root .lumen-exemption-card {
@@ -1685,6 +1745,35 @@
   background: transparent;
   border: 0.5px solid #c8c7d5;
   color: #7b7a8a;
+}
+
+/* Mismatch card: the choice is the user in dialogue with their own past self,
+   so keep it understated — quiet text links, not dominant buttons. */
+.lumen-card--mismatch .lumen-card-actions {
+  gap: 18px;
+  align-items: center;
+  margin-top: 2px;
+}
+.lumen-card--mismatch .lumen-card-btn,
+.lumen-card--mismatch .lumen-card-btn--secondary {
+  background: transparent;
+  border: none;
+  padding: 2px 0;
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4a3680;
+}
+.lumen-card--mismatch .lumen-card-btn:hover {
+  text-decoration: underline;
+}
+.lumen-card--mismatch .lumen-card-btn--secondary {
+  color: #9896a8;
+  font-weight: 500;
+}
+.lumen-card--mismatch .lumen-card-btn--secondary:hover {
+  color: #7b7a8a;
+  text-decoration: underline;
 }
 
 .lumen-card-reflection {

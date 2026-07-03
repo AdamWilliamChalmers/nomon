@@ -143,10 +143,16 @@ assert(
   doc.querySelectorAll(".lumen-ai-hidden").length === 0
 );
 
-// Badge shows an engagement number (0–100) and a session was recorded.
-const badge = doc.getElementById("lumen-fab-score");
-const badgeVal = Number(badge?.textContent);
-assert("badge shows numeric engagement 0–100", Number.isFinite(badgeVal) && badgeVal >= 0 && badgeVal <= 100, badge?.textContent);
+// Badge shows a word band (Engaged / Steady / …) once the session has messages.
+const badge = doc.getElementById("lumen-fab-label");
+const badgeText = badge?.textContent?.trim();
+const validLabels = ["Engaged", "Steady", "Drifting", "Passive", "Paused", "—"];
+assert(
+  "badge shows engagement label",
+  validLabels.includes(badgeText),
+  badgeText
+);
+assert("badge not stuck on empty dash after messages", badgeText !== "—", badgeText);
 assert("session recorded all user messages", LumenSession.get().messageCount === 3, `count ${LumenSession.get().messageCount}`);
 
 // Ghost mode hides in-session UI.
