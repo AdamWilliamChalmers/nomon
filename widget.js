@@ -108,7 +108,7 @@ const LumenWidget = (() => {
       </div>
       <div id="lumen-popover">
         <div class="lumen-popover-head">
-          <div class="lumen-popover-title">Engagement this session</div>
+          <div class="lumen-popover-title">Today across all AIs</div>
           <button id="lumen-pause-toggle" class="lumen-popover-pause" type="button">Pause</button>
         </div>
         <div class="lumen-popover-sparkline" id="lumen-sparkline"></div>
@@ -116,7 +116,7 @@ const LumenWidget = (() => {
         <div class="lumen-popover-sparkline" id="lumen-trend-sparkline"></div>
         <p class="lumen-popover-hint lumen-hidden" id="lumen-trend-empty">A few days of use and your trend shows up here.</p>
         <a id="lumen-dashboard-link" class="lumen-popover-link" href="https://lumen.so/dashboard" target="_blank" rel="noopener">See full trends on lumen.so ↗</a>
-        <div class="lumen-popover-stat" title="Prompts you sent this session"><span>Messages</span><span class="lumen-popover-stat-value" id="lumen-stat-messages">0</span></div>
+        <div class="lumen-popover-stat" title="Your prompts today across ChatGPT, Gemini, Claude, and other connected tools"><span>Messages</span><span class="lumen-popover-stat-value" id="lumen-stat-messages">0</span></div>
         <div class="lumen-popover-stat" title="Whole tasks you asked AI to do from scratch"><span>Hand-offs</span><span class="lumen-popover-stat-value" id="lumen-stat-handoff">0</span></div>
         <div class="lumen-popover-stat" title="Stretches of passive back-and-forth without questions"><span>Loops</span><span class="lumen-popover-stat-value" id="lumen-stat-loop">0</span></div>
         <div class="lumen-popover-stat" title="Conversations that wandered from your prompt"><span>Drift</span><span class="lumen-popover-stat-value" id="lumen-stat-drift">0</span></div>
@@ -940,7 +940,7 @@ const LumenWidget = (() => {
       } else {
         const label = engagementLabel(engagement);
         const trendHint = trend ? ` · ${trend.hint}` : "";
-        engagementEl.title = `${label} this session${trendHint}`;
+        engagementEl.title = `${label} today across all AIs${trendHint}`;
       }
       engagementEl.setAttribute(
         "aria-label",
@@ -948,7 +948,7 @@ const LumenWidget = (() => {
           ? "Lumen paused"
           : !hasMessages
             ? "Engagement not started"
-            : `${engagementLabel(engagement)} this session${trend ? `, trending ${trend.dir}` : ""}`
+            : `${engagementLabel(engagement)} today across all AIs${trend ? `, trending ${trend.dir}` : ""}`
       );
     }
 

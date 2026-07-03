@@ -48,10 +48,12 @@ globalThis.LumenCreateAdapter = function LumenCreateAdapter(config) {
     },
 
     getMessageId(el, role, index) {
+      const host = window.location.hostname;
       const explicit =
         el.getAttribute?.("data-message-id") ||
         el.closest?.("[data-message-id]")?.getAttribute("data-message-id");
-      return explicit || `lumen-${role}-${index}`;
+      if (explicit) return `${host}:${explicit}`;
+      return `lumen-${host}-${role}-${index}`;
     },
 
     buildMessageList() {

@@ -122,52 +122,68 @@ const LumenSession = (() => {
     saveDigestLog();
   }
 
-  function load() {
-    return Promise.all([
-      new Promise((resolve) => {
-        const key = sessionStorageKey();
-        const finish = (data) => {
-          apply(data || defaultSession());
-          resolve(session);
-        };
+  // Live session must be shared across ChatGPT, Gemini, Claude, etc. Never use
+  // window.sessionStorage for this — it is scoped to each site's origin, so a
+  // fallback there made every new AI tab look like a fresh session.
+  function readLiveSession(key) {
+    return new Promise((resolve) => {
+      const finish = (data) => resolve(data || null);
 
-        if (!chrome?.storage?.session?.get) {
-          try {
-            const raw = window.sessionStorage.getItem(key);
-            finish(raw ? JSON.parse(raw) : null);
-          } catch (_) {
-            finish(null);
-          }
+      const tryLocal = () => {
+        if (!chrome?.storage?.local?.get) {
+          finish(null);
           return;
         }
-
-        chrome.storage.session.get(key, (result) => {
-          if (chrome.runtime?.lastError || result == null) {
-            try {
-              const raw = window.sessionStorage.getItem(key);
-              finish(raw ? JSON.parse(raw) : null);
-            } catch (_) {
-              finish(null);
-            }
+        chrome.storage.local.get(key, (result) => {
+          if (chrome.runtime?.lastError) {
+            finish(null);
             return;
           }
-          finish(result[key]);
+          finish(result?.[key]);
         });
+      };
+
+      if (!chrome?.storage?.session?.get) {
+        tryLocal();
+        return;
+      }
+
+      chrome.storage.session.get(key, (result) => {
+        if (chrome.runtime?.lastError) {
+          tryLocal();
+          return;
+        }
+        if (result?.[key]) {
+          finish(result[key]);
+          return;
+        }
+        tryLocal();
+      });
+    });
+  }
+
+  function writeLiveSession(key, data) {
+    const payload = { [key]: data };
+    if (chrome?.storage?.session?.set) {
+      chrome.storage.session.set(payload, () => void chrome.runtime?.lastError);
+    }
+    if (chrome?.storage?.local?.set) {
+      chrome.storage.local.set(payload, () => void chrome.runtime?.lastError);
+    }
+  }
+
+  function load() {
+    return Promise.all([
+      readLiveSession(sessionStorageKey()).then((data) => {
+        apply(data || defaultSession());
+        return session;
       }),
       loadDigestLog(),
     ]).then(([loadedSession]) => loadedSession);
   }
 
   function save() {
-    const key = sessionStorageKey();
-    try {
-      window.sessionStorage.setItem(key, JSON.stringify(session));
-    } catch (_) {
-      // ignore
-    }
-    if (chrome?.storage?.session?.set) {
-      chrome.storage.session.set({ [key]: session }, () => void chrome.runtime?.lastError);
-    }
+    writeLiveSession(sessionStorageKey(), session);
   }
 
   function bumpSignalCount(signal, delta) {
