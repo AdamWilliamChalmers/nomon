@@ -305,6 +305,10 @@
 
     try {
       await LumenGoals.load();
+      // Now that goals are loaded, decide whether to show first-run onboarding.
+      // (Deferred until here so returning users who completed it don't see it
+      // flash on every page load.)
+      LumenWidget.showOnboardingIfNeeded?.();
       await LumenGoals.loadStudyParticipant();
       await LumenSession.load();
       history = await LumenSession.loadHistory();

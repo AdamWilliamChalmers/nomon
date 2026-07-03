@@ -1913,13 +1913,18 @@ const LumenWidget = (() => {
   function init() {
     ensureRoot();
     applyFabPosition();
-    showOnboardingIfNeeded();
+    // Note: onboarding is intentionally NOT shown here. init() runs before
+    // storage has loaded, when goals still hold defaults (onboardingComplete
+    // === false), so showing it now would re-open the setup cards for returning
+    // users on every load. content.js calls showOnboardingIfNeeded() once
+    // storage has loaded.
     updateBadge();
   }
 
   return {
     init,
     updateBadge,
+    showOnboardingIfNeeded,
     injectMessageUI,
     maybeShowDigestReady,
     showGuardHold,
