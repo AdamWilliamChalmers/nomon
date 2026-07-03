@@ -10,9 +10,8 @@ type BrandLogoProps = {
 };
 
 /**
- * Lumen brand lockup — the two-offset-squares mark, optionally paired with the
- * "lumen" wordmark. Solid square = you, outline square = the AI, glow = the
- * overlap where evaluation happens.
+ * Lumen brand lockup — the four-dot mark, optionally paired with the "lumen"
+ * wordmark.
  */
 export default function BrandLogo({
   variant = "full",

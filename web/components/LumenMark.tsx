@@ -2,95 +2,72 @@ type LumenMarkProps = {
   size?: number;
   /** "none" = static, "loop" = continuous (hero), "once" = single play */
   animate?: "none" | "loop" | "once";
-  /** colour of the solid ("you") square — defaults to the dusk ink */
-  solid?: string;
-  /** colour of the AI outline square + intersection glow */
-  accent?: string;
   className?: string;
   title?: string;
 };
 
 /**
- * Lumen mark — two offset rounded squares. The solid square is "you"; the
- * outline square (accent) is the AI; the low-opacity glow where they overlap is
- * Lumen, the space where evaluation happens. Pure CSS, no SVG, so it scales and
- * animates crisply at any size. Geometry is derived from `size` per the brand
- * spec (square 55%, offset 35%, origin 10%, glow 30%).
+ * Lumen mark — four dots in a T formation: green / amber / purple across the
+ * top, blue below centre. Pure CSS (no SVG) so it scales and animates crisply
+ * at any size. Each dot carries its rest (T) and expanded (diamond) offsets as
+ * custom properties; the processing loop converges, pulses, orbits, and returns.
+ * Colours are the fixed brand palette. On light surfaces we keep the dots opaque
+ * (no mix-blend-mode).
  */
+const DOTS = [
+  { c: "#5ba85c", rx: -0.37, ry: -0.2, ex: 0, ey: -0.35 }, // green  → N
+  { c: "#e5a33d", rx: 0, ry: -0.2, ex: 0.35, ey: 0 }, // amber  → E
+  { c: "#8e44ad", rx: 0.37, ry: -0.2, ex: 0, ey: 0.35 }, // purple → S
+  { c: "#5b9bd5", rx: 0, ry: 0.17, ex: -0.35, ey: 0 }, // blue   → W
+];
+
 export default function LumenMark({
   size = 40,
   animate = "none",
-  solid = "var(--lm-dusk)",
-  accent = "var(--lm-loop)",
   className = "",
   title = "Lumen",
 }: LumenMarkProps) {
-  const sq = size * 0.55;
-  const offset = size * 0.35;
-  const origin = size * 0.1;
-  const inter = size * 0.3;
-  const bw = Math.max(1.5, size * 0.034);
-  const br = size * 0.11;
-  const shift = size * 0.14;
-
+  const d = size * 0.25;
   const animClass =
     animate === "loop" ? " is-loop" : animate === "once" ? " is-active" : "";
 
   return (
     <span
       className={`lumen-mark${animClass}${className ? ` ${className}` : ""}`}
-      style={
-        {
-          position: "relative",
-          display: "inline-block",
-          width: size,
-          height: size,
-          flexShrink: 0,
-          ["--lm-shift" as string]: `${shift}px`,
-        } as React.CSSProperties
-      }
+      style={{
+        position: "relative",
+        display: "inline-block",
+        width: size,
+        height: size,
+        flexShrink: 0,
+      }}
       role="img"
       aria-label={title}
     >
-      <span
-        className="lm-inter"
-        style={{
-          position: "absolute",
-          width: inter,
-          height: inter,
-          top: offset,
-          left: offset,
-          borderRadius: br * 0.45,
-          background: accent,
-          opacity: 0.2,
-          pointerEvents: "none",
-        }}
-      />
-      <span
-        className="lm-you"
-        style={{
-          position: "absolute",
-          width: sq,
-          height: sq,
-          top: origin,
-          left: origin,
-          background: solid,
-          borderRadius: br,
-        }}
-      />
-      <span
-        className="lm-ai"
-        style={{
-          position: "absolute",
-          width: sq,
-          height: sq,
-          top: offset,
-          left: offset,
-          border: `${bw}px solid ${accent}`,
-          borderRadius: br,
-          background: "transparent",
-        }}
-      />
+      <span className="lm-spin" style={{ position: "absolute", inset: 0 }}>
+        {DOTS.map((dot, i) => (
+          <span
+            key={i}
+            className="lm-dot"
+            style={
+              {
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: d,
+                height: d,
+                margin: `${-d / 2}px 0 0 ${-d / 2}px`,
+                borderRadius: "50%",
+                background: dot.c,
+                ["--rx" as string]: `${dot.rx * size}px`,
+                ["--ry" as string]: `${dot.ry * size}px`,
+                ["--ex" as string]: `${dot.ex * size}px`,
+                ["--ey" as string]: `${dot.ey * size}px`,
+              } as React.CSSProperties
+            }
+          />
+        ))}
+      </span>
     </span>
   );
 }

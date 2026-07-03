@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumen — dot mark, static variants</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:     #0A0A09;
+    --green:  #5BA85C;
+    --amber:  #E5A33D;
+    --purple: #8E44AD;
+    --blue:   #5B9BD5;
+    --white:  #F5F2EC;
+  }
+  body {
+    background: var(--bg);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: var(--white);
+    padding: 56px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+  .section-label {
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+    margin-bottom: 28px;
+  }
+  .row { display: flex; align-items: center; gap: 48px; flex-wrap: wrap; }
+  .row.bottom { align-items: flex-end; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .tag { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.28); }
+
+  /* ── Dot mark ──
+     Four dots in a T formation: green / amber / purple on top, blue below centre.
+     Container size sets everything; dots are 26% of container. */
+  .dot-mark { position: relative; flex-shrink: 0; }
+  .dot-mark .d {
+    position: absolute;
+    width: 26%; height: 26%;
+    border-radius: 50%;
+    top: 50%; left: 50%;
+  }
+  /* Rest positions expressed as translate from centre, in % of container */
+  .d-green  { background: var(--green);  transform: translate(-146%, -108%); }
+  .d-amber  { background: var(--amber);  transform: translate(-50%,  -108%); }
+  .d-purple { background: var(--purple); transform: translate(46%,   -108%); }
+  .d-blue   { background: var(--blue);   transform: translate(-50%,   8%);  }
+
+  /* ── Wordmark ── */
+  .wm {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 400;
+    letter-spacing: 0.32em;
+    color: var(--white);
+    text-transform: uppercase;
+    line-height: 1;
+    margin-left: 0.32em; /* optical centring against tracking */
+  }
+
+  /* ── Vertical lockup (like reference image) ── */
+  .lockup-v { display: flex; flex-direction: column; align-items: center; gap: 28px; }
+  .lockup-h { display: flex; align-items: center; gap: 18px; }
+
+  /* ── FAB ── */
+  .fab {
+    background: #161614;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Light swatch ── */
+  .light-bg {
+    background: #f5f4f0;
+    border-radius: 12px;
+    padding: 36px 40px;
+    display: flex; gap: 48px; align-items: center; flex-wrap: wrap;
+  }
+  .light-bg .wm { color: #191917; }
+  .light-bg .tag { color: rgba(0,0,0,0.3); }
+</style>
+</head>
+<body>
+
+<!-- 1. Master lockup — as per reference -->
+<div>
+  <div class="section-label">Master lockup — vertical</div>
+  <div class="lockup-v" style="align-items:center; width:fit-content; padding:48px 64px; background:var(--bg); border:0.5px solid rgba(255,255,255,0.07); border-radius:12px;">
+    <div class="dot-mark" style="width:110px; height:110px;">
+      <div class="d d-green"></div>
+      <div class="d d-amber"></div>
+      <div class="d d-purple"></div>
+      <div class="d d-blue"></div>
+    </div>
+    <span class="wm" style="font-size:34px;">Lumen</span>
+  </div>
+</div>
+
+<!-- 2. Horizontal lockups -->
+<div>
+  <div class="section-label">Horizontal lockups</div>
+  <div class="col" style="align-items:flex-start; gap:28px;">
+
+    <div class="lockup-h">
+      <div class="dot-mark" style="width:44px; height:44px;">
+        <div class="d d-green"></div>
+        <div class="d d-amber"></div>
+        <div class="d d-purple"></div>
+        <div class="d d-blue"></div>
+      </div>
+      <span class="wm" style="font-size:26px;">Lumen</span>
+    </div>
+
+    <div class="lockup-h">
+      <div class="dot-mark" style="width:30px; height:30px;">
+        <div class="d d-green"></div>
+        <div class="d d-amber"></div>
+        <div class="d d-purple"></div>
+        <div class="d d-blue"></div>
+      </div>
+      <span class="wm" style="font-size:17px;">Lumen</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- 3. FAB versions -->
+<div>
+  <div class="section-label">FAB icon</div>
+  <div class="row bottom">
+
+    <div class="col">
+      <div class="fab" style="width:64px;height:64px;border-radius:18px;">
+        <div class="dot-mark" style="width:34px;height:34px;">
+          <div class="d d-green"></div>
+          <div class="d d-amber"></div>
+          <div class="d d-purple"></div>
+          <div class="d d-blue"></div>
+        </div>
+      </div>
+      <span class="tag">64px</span>
+    </div>
+
+    <div class="col">
+      <div class="fab" style="width:56px;height:56px;border-radius:16px;">
+        <div class="dot-mark" style="width:28px;height:28px;">
+          <div class="d d-green"></div>
+          <div class="d d-amber"></div>
+          <div class="d d-purple"></div>
+          <div class="d d-blue"></div>
+        </div>
+      </div>
+      <span class="tag">56px</span>
+    </div>
+
+    <div class="col">
+      <div class="fab" style="width:40px;height:40px;border-radius:12px;">
+        <div class="dot-mark" style="width:20px;height:20px;">
+          <div class="d d-green"></div>
+          <div class="d d-amber"></div>
+          <div class="d d-purple"></div>
+          <div class="d d-blue"></div>
+        </div>
+      </div>
+      <span class="tag">40px</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- 4. Light background -->
+<div>
+  <div class="section-label">Light background</div>
+  <div class="light-bg">
+
+    <div class="lockup-h">
+      <div class="dot-mark" style="width:44px;height:44px;">
+        <div class="d d-green"></div>
+        <div class="d d-amber"></div>
+        <div class="d d-purple"></div>
+        <div class="d d-blue"></div>
+      </div>
+      <span class="wm" style="font-size:26px;">Lumen</span>
+    </div>
+
+    <div class="col">
+      <div style="width:56px;height:56px;border-radius:16px;background:#ffffff;border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;">
+        <div class="dot-mark" style="width:28px;height:28px;">
+          <div class="d d-green"></div>
+          <div class="d d-amber"></div>
+          <div class="d d-purple"></div>
+          <div class="d d-blue"></div>
+        </div>
+      </div>
+      <span class="tag">FAB light</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- 5. Scale strip -->
+<div>
+  <div class="section-label">Scale — mark only</div>
+  <div class="row bottom" style="gap:36px;">
+
+    <div class="col">
+      <div class="dot-mark" style="width:96px;height:96px;">
+        <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-purple"></div><div class="d d-blue"></div>
+      </div>
+      <span class="tag">96px</span>
+    </div>
+
+    <div class="col">
+      <div class="dot-mark" style="width:64px;height:64px;">
+        <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-purple"></div><div class="d d-blue"></div>
+      </div>
+      <span class="tag">64px</span>
+    </div>
+
+    <div class="col">
+      <div class="dot-mark" style="width:40px;height:40px;">
+        <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-purple"></div><div class="d d-blue"></div>
+      </div>
+      <span class="tag">40px</span>
+    </div>
+
+    <div class="col">
+      <div class="dot-mark" style="width:24px;height:24px;">
+        <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-purple"></div><div class="d d-blue"></div>
+      </div>
+      <span class="tag">24px</span>
+    </div>
+
+    <div class="col">
+      <div class="dot-mark" style="width:16px;height:16px;">
+        <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-purple"></div><div class="d d-blue"></div>
+      </div>
+      <span class="tag">16px</span>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

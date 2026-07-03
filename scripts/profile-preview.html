@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lumen AI Profile — preview</title>
+<!--
+  Dev preview only. Mirrors the profile section + share card in widget.js /
+  widget.css with sample data so the design can be eyeballed without loading the
+  extension. widget.js remains the source of truth; keep this in sync when the
+  card layout changes.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --lm-surface: #ffffff;
+    --lm-mist-lt: #f0eff5;
+    --lm-dusk: #1a1825;
+    --lm-slate: #7b7a8a;
+    --lm-haze: #9896a8;
+    --lm-ghost: #b8b6c4;
+    --lm-border: #e2e1ea;
+    --lm-mismatch: #7b5cbf;
+    --lm-mismatch-tint: #ede9f8;
+    --lm-mismatch-text: #4a3680;
+    --lm-loop-tint: #e8f7ee;
+    --lm-font: "Plus Jakarta Sans", -apple-system, sans-serif;
+    --lm-radius-sm: 8px;
+    --lm-transition-fast: 0.12s ease;
+    --lm-transition-slow: 0.3s ease;
+  }
+  body {
+    margin: 0;
+    background: #e8e7f0;
+    font-family: var(--lm-font);
+    color: var(--lm-dusk);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    padding: 40px;
+    align-items: flex-start;
+  }
+  .panel { display: flex; flex-direction: column; gap: 8px; }
+  .panel h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--lm-slate); margin: 0 0 4px; }
+  /* Mimic the popover container */
+  #lumen-root .popover {
+    width: 300px;
+    background: var(--lm-surface);
+    border: 0.5px solid var(--lm-border);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(26,24,37,0.14);
+    padding: 16px;
+  }
+  #lumen-root .lumen-popover-title { font-size: 12px; font-weight: 600; color: var(--lm-dusk); margin-bottom: 10px; }
+  #lumen-root .lumen-popover-hint { font-size: 11px; color: var(--lm-haze); }
+
+  #lumen-root .lumen-profile-contrast { font-size: 11px; line-height: 1.5; color: var(--lm-dusk); margin: 0 0 10px; }
+  #lumen-root .lumen-profile-card { background: var(--lm-mist-lt); border: 0.5px solid var(--lm-border); border-radius: var(--lm-radius-sm); padding: 8px 10px; margin-bottom: 8px; }
+  #lumen-root .lumen-profile-card--pending { display: flex; align-items: center; justify-content: space-between; background: transparent; border-style: dashed; }
+  #lumen-root .lumen-profile-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  #lumen-root .lumen-profile-name { font-size: 12px; font-weight: 600; color: var(--lm-dusk); }
+  #lumen-root .lumen-profile-use { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: var(--lm-mismatch); }
+  #lumen-root .lumen-profile-pending { font-size: 10px; color: var(--lm-haze); font-style: italic; }
+  #lumen-root .lumen-profile-meter { position: relative; height: 5px; border-radius: 3px; background: linear-gradient(90deg, var(--lm-loop-tint), var(--lm-mismatch-tint)); overflow: hidden; }
+  #lumen-root .lumen-profile-meter > span { position: absolute; top: -2px; height: 9px; width: 9px; margin-left: -4px; border-radius: 50%; background: var(--lm-dusk); box-shadow: 0 0 0 2px var(--lm-surface); transition: left var(--lm-transition-slow); }
+  #lumen-root .lumen-profile-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 5px; }
+  #lumen-root .lumen-profile-end { font-size: 9px; color: var(--lm-ghost); }
+  #lumen-root .lumen-profile-posture { font-size: 10px; font-weight: 600; color: var(--lm-slate); }
+  #lumen-root .lumen-profile-share { width: 100%; margin-top: 4px; padding: 8px 10px; font-family: var(--lm-font); font-size: 11px; font-weight: 600; color: var(--lm-mismatch-text); background: var(--lm-mismatch-tint); border: 0.5px solid var(--lm-mismatch); border-radius: var(--lm-radius-sm); cursor: pointer; }
+  #lumen-root .lumen-profile-share:hover { opacity: 0.85; }
+
+  #card-preview { width: 420px; height: 420px; border-radius: 16px; box-shadow: 0 12px 40px rgba(26,24,37,0.14); }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <h3>Popover section</h3>
+    <div id="lumen-root">
+      <div class="popover">
+        <div class="lumen-popover-title" title="How you tend to work in each AI tool">Your AI profile</div>
+        <div class="lumen-profile" id="lumen-profile"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Shareable card (click "Share my profile")</h3>
+    <canvas id="card-preview"></canvas>
+  </div>
+
+<script>
+  // Sample data (matches the test corpus shapes).
+  const tools = [
+    { name: "ChatGPT", ready: true, use: "writing", posture: "hand-off heavy", postureScore: 78 },
+    { name: "Claude", ready: true, use: "code", posture: "hands-on", postureScore: 24 },
+    { name: "Gemini", ready: false },
+  ];
+  const contrast = "You're most hands-on with code, and hand off most with writing — whichever tool you're in.";
+
+  const SHARE_PALETTE = {
+    bg: "#f4f3f9", surface: "#ffffff", card: "#f0eff5", border: "#e2e1ea",
+    dusk: "#1a1825", slate: "#7b7a8a", haze: "#9896a8", ghost: "#b8b6c4",
+    mismatch: "#7b5cbf", loop: "#2d9e4e",
+  };
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function wrapText(ctx, text, maxWidth) {
+    const words = (text || "").split(/\s+/);
+    const lines = []; let line = "";
+    words.forEach((word) => {
+      const test = line ? line + " " + word : word;
+      if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = word; }
+      else line = test;
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+  function drawLumenMark(ctx, cx, cy) {
+    const S = 50, r = S * 0.125;
+    const dots = [
+      { c: "#5ba85c", x: -0.37 * S, y: -0.2 * S },
+      { c: "#e5a33d", x: 0, y: -0.2 * S },
+      { c: "#8e44ad", x: 0.37 * S, y: -0.2 * S },
+      { c: "#5b9bd5", x: 0, y: 0.17 * S },
+    ];
+    ctx.save();
+    dots.forEach((d) => { ctx.fillStyle = d.c; ctx.beginPath(); ctx.arc(cx + d.x, cy + d.y, r, 0, Math.PI * 2); ctx.fill(); });
+    ctx.restore();
+  }
+  function drawShareCard(tools, contrast) {
+    const W = 1080, H = 1080;
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    const font = (size, weight = 400) => weight + " " + size + 'px "Plus Jakarta Sans", -apple-system, Segoe UI, sans-serif';
+    ctx.fillStyle = SHARE_PALETTE.bg; ctx.fillRect(0, 0, W, H);
+    const pad = 90;
+    drawLumenMark(ctx, pad + 25, pad + 28);
+    ctx.fillStyle = SHARE_PALETTE.dusk; ctx.font = font(34, 600); ctx.textBaseline = "middle";
+    ctx.fillText("Lumen", pad + 62, pad + 30);
+    ctx.fillStyle = SHARE_PALETTE.dusk; ctx.font = font(72, 700); ctx.textBaseline = "alphabetic";
+    ctx.fillText("How I work with AI", pad, pad + 160);
+    let y = pad + 230;
+    if (contrast) {
+      ctx.fillStyle = SHARE_PALETTE.slate; ctx.font = font(36, 500);
+      wrapText(ctx, contrast, W - pad * 2).forEach((ln) => { ctx.fillText(ln, pad, y); y += 50; });
+      y += 30;
+    } else y += 10;
+    const cardH = 150, cardW = W - pad * 2;
+    tools.slice(0, 3).forEach((t) => {
+      ctx.fillStyle = SHARE_PALETTE.card; roundRect(ctx, pad, y, cardW, cardH, 22); ctx.fill();
+      ctx.fillStyle = SHARE_PALETTE.dusk; ctx.font = font(40, 600); ctx.textBaseline = "alphabetic";
+      ctx.fillText(t.name, pad + 36, y + 58);
+      const use = t.ready ? (t.use ? t.use.toUpperCase() : "A MIX") : "STILL LEARNING";
+      ctx.font = font(24, 600); ctx.fillStyle = SHARE_PALETTE.mismatch;
+      const useW = ctx.measureText(use).width; ctx.fillText(use, pad + cardW - 36 - useW, y + 56);
+      if (t.ready) {
+        const mx = pad + 36, mw = cardW - 72, my = y + 90;
+        const grad = ctx.createLinearGradient(mx, 0, mx + mw, 0);
+        grad.addColorStop(0, "#e8f7ee"); grad.addColorStop(1, "#ede9f8");
+        ctx.fillStyle = grad; roundRect(ctx, mx, my, mw, 8, 4); ctx.fill();
+        const pct = Math.max(4, Math.min(100, t.postureScore)) / 100;
+        const dotX = mx + mw * pct;
+        ctx.fillStyle = SHARE_PALETTE.surface; ctx.beginPath(); ctx.arc(dotX, my + 4, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = SHARE_PALETTE.dusk; ctx.beginPath(); ctx.arc(dotX, my + 4, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.font = font(22, 500); ctx.fillStyle = SHARE_PALETTE.haze; ctx.fillText("hands-on", mx, my + 44);
+        ctx.fillStyle = SHARE_PALETTE.slate; ctx.font = font(22, 600);
+        const postureW = ctx.measureText(t.posture).width; ctx.fillText(t.posture, mx + (mw - postureW) / 2, my + 44);
+        ctx.fillStyle = SHARE_PALETTE.haze; ctx.font = font(22, 500);
+        const hoW = ctx.measureText("hand-off").width; ctx.fillText("hand-off", mx + mw - hoW, my + 44);
+      }
+      y += cardH + 24;
+    });
+    ctx.fillStyle = SHARE_PALETTE.haze; ctx.font = font(28, 500); ctx.textBaseline = "alphabetic";
+    ctx.fillText("Your AI cognition mirror", pad, H - pad + 8);
+    const url = "lumen.so"; const urlW = ctx.measureText(url).width;
+    ctx.fillStyle = SHARE_PALETTE.mismatch; ctx.font = font(28, 600); ctx.fillText(url, W - pad - urlW, H - pad + 8);
+    return canvas;
+  }
+
+  function renderProfileCard(tool) {
+    if (!tool.ready) {
+      return '<div class="lumen-profile-card lumen-profile-card--pending"><span class="lumen-profile-name">' + tool.name + '</span><span class="lumen-profile-pending">Still learning</span></div>';
+    }
+    const pct = Math.max(4, Math.min(100, tool.postureScore));
+    const usePart = tool.use ? tool.use : "a mix of tasks";
+    return '<div class="lumen-profile-card"><div class="lumen-profile-row"><span class="lumen-profile-name">' + tool.name + '</span><span class="lumen-profile-use">' + usePart + '</span></div>'
+      + '<div class="lumen-profile-meter" title="' + tool.posture + '"><span style="left:' + pct + '%"></span></div>'
+      + '<div class="lumen-profile-foot"><span class="lumen-profile-end">hands-on</span><span class="lumen-profile-posture">' + tool.posture + '</span><span class="lumen-profile-end">hand-off</span></div></div>';
+  }
+
+  const el = document.getElementById("lumen-profile");
+  el.innerHTML = (contrast ? '<p class="lumen-profile-contrast">' + contrast + '</p>' : "")
+    + tools.map(renderProfileCard).join("")
+    + '<button class="lumen-profile-share" id="lumen-profile-share" type="button">Share my profile</button>';
+
+  // Render the card into the always-visible preview canvas immediately…
+  function paintPreview() {
+    const card = drawShareCard(tools.filter((t) => t.ready || true), contrast);
+    const dst = document.getElementById("card-preview");
+    const dctx = dst.getContext("2d");
+    dctx.clearRect(0, 0, dst.width, dst.height);
+    dctx.drawImage(card, 0, 0, 1080, 1080, 0, 0, dst.width, dst.height);
+    return card;
+  }
+  paintPreview();
+
+  document.getElementById("lumen-profile-share").addEventListener("click", () => {
+    const card = paintPreview();
+    card.toBlob((blob) => {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "lumen-ai-profile.png";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    }, "image/png");
+    const btn = document.getElementById("lumen-profile-share");
+    btn.textContent = "Saved image ✓";
+    setTimeout(() => { btn.textContent = "Share my profile"; }, 2000);
+  });
+</script>
+</body>
+</html>

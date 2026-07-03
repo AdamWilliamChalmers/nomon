@@ -7,39 +7,32 @@
    LOGO MARK
    ──────────────────────────────────────────── */
 .lumen-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--lumen-dusk);
-  border-radius: 9px;
+  position: relative;
+  display: inline-flex;
   flex-shrink: 0;
 }
-.lumen-mark--sm  { width: 20px; height: 20px; border-radius: 5px; }
-.lumen-mark--md  { width: 28px; height: 28px; border-radius: 7px; }
-.lumen-mark--lg  { width: 36px; height: 36px; border-radius: 9px; }
-.lumen-mark--xl  { width: 44px; height: 44px; border-radius: 11px; }
+.lumen-mark--sm  { width: 20px; height: 20px; }
+.lumen-mark--md  { width: 28px; height: 28px; }
+.lumen-mark--lg  { width: 36px; height: 36px; }
+.lumen-mark--xl  { width: 44px; height: 44px; }
 
-/* Two-offset-squares glyph — solid square = you, outline square = the AI,
-   the low-opacity glow is where evaluation happens. Sits inside .lumen-mark. */
+/* Four-dot glyph — green / amber / purple across the top, blue below centre.
+   Dots are 25% of the mark; positioned by translate from the centre. */
 .lumen-mark__glyph {
-  position: relative;
-  width: 58%;
-  height: 58%;
+  position: absolute;
+  inset: 0;
 }
 .lumen-mark__glyph span { position: absolute; display: block; }
-.lumen-mark__glyph .lm-inter {
-  width: 30%; height: 30%; top: 35%; left: 35%;
-  background: var(--lumen-loop); opacity: 0.2; border-radius: 16%;
+.lumen-mark__glyph .lm-dot {
+  top: 50%; left: 50%;
+  width: 25%; height: 25%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) translate(var(--rx), var(--ry));
 }
-.lumen-mark__glyph .lm-you {
-  width: 55%; height: 55%; top: 10%; left: 10%;
-  background: #fff; border-radius: 20%;
-}
-.lumen-mark__glyph .lm-ai {
-  width: 55%; height: 55%; top: 35%; left: 35%;
-  border: 1.5px solid var(--lumen-loop);
-  background: transparent; border-radius: 20%;
-}
+.lumen-mark__glyph .lm-green  { background: #5ba85c; --rx: -148%; --ry: -80%; }
+.lumen-mark__glyph .lm-amber  { background: #e5a33d; --rx: 0;     --ry: -80%; }
+.lumen-mark__glyph .lm-purple { background: #8e44ad; --rx: 148%;  --ry: -80%; }
+.lumen-mark__glyph .lm-blue   { background: #5b9bd5; --rx: 0;     --ry: 68%; }
 
 .lumen-lockup {
   display: flex;

@@ -1,8 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
   <!-- Source for the Chrome toolbar icons (icon16/48/128.png). Export to PNG at
-       16, 48 and 128px. Dusk chip so the mark reads on light browser chrome. -->
+       16, 48 and 128px. Dusk chip so the four-dot mark reads on light chrome. -->
   <rect width="128" height="128" rx="28" fill="#1a1825"/>
-  <rect x="52.6" y="52.6" width="22.8" height="22.8" rx="3.8" fill="#2d9e4e" opacity="0.28"/>
-  <rect x="33.6" y="33.6" width="41.8" height="41.8" rx="8.4" fill="#ffffff"/>
-  <rect x="52.6" y="52.6" width="41.8" height="41.8" rx="8.4" fill="none" stroke="#2d9e4e" stroke-width="3"/>
+  <!-- Four dots, T formation: green / amber / purple across the top, blue below. -->
+  <circle cx="37.4" cy="49.6" r="10" fill="#5ba85c"/>
+  <circle cx="64" cy="49.6" r="10" fill="#e5a33d"/>
+  <circle cx="90.6" cy="49.6" r="10" fill="#8e44ad"/>
+  <circle cx="64" cy="76.2" r="10" fill="#5b9bd5"/>
 </svg>

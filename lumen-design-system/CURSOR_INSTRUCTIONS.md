@@ -135,31 +135,22 @@ body {
 
 ## Logo mark
 
-The Lumen mark is **two offset rounded squares**. The solid square is "you"; the outline square is the AI; the low-opacity glow where they overlap is Lumen — the space where evaluation happens.
+The Lumen mark is **four dots in a T formation** — green, amber and purple across the top, blue set apart below centre. Serif wordmark, uppercase, wide tracking. The dots are the fixed brand palette (green `#5ba85c`, amber `#e5a33d`, purple `#8e44ad`, blue `#5b9bd5`); the mark reads as pure geometry.
 
 ```html
-<!-- Standard mark (dark bg) — use in popup header, favicon.
-     Drop the glyph inside the .lumen-mark container; geometry scales to fit. -->
+<!-- Standard mark — bare dots (no chip). Drop the glyph inside the .lumen-mark
+     container; the dots scale to fit at 25% of the container. -->
 <div class="lumen-mark lumen-mark--lg">
   <span class="lumen-mark__glyph" aria-hidden="true">
-    <span class="lm-inter"></span>
-    <span class="lm-you"></span>
-    <span class="lm-ai"></span>
+    <span class="lm-dot lm-green"></span>
+    <span class="lm-dot lm-amber"></span>
+    <span class="lm-dot lm-purple"></span>
+    <span class="lm-dot lm-blue"></span>
   </span>
 </div>
 ```
 
-```html
-<!-- Mark container — the square rounded pill -->
-<div style="
-  width: 36px; height: 36px;
-  background: #1a1825;
-  border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-">
-  <!-- .lumen-mark__glyph above -->
-</div>
-```
+For dark placements (e.g. the extension toolbar icon / favicon) the dots sit on a dusk `#1a1825` rounded chip; on light UI surfaces the mark is used bare. Keep `mix-blend-mode: screen` only on dark backgrounds — strip it everywhere else.
 
 ### Logo lockup (wordmark + mark)
 

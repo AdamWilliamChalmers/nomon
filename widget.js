@@ -89,11 +89,13 @@ const LumenWidget = (() => {
     root.innerHTML = `
       <div id="lumen-fab">
         <span id="lumen-fab-mark" aria-hidden="true">
-          <span class="lumen-mark-inter"></span>
-          <span class="lumen-mark-you"></span>
-          <span class="lumen-mark-ai"></span>
+          <span class="lumen-dot-spin">
+            <span class="lumen-dot lumen-dot-green" style="--rx:-9px;--ry:-5px;--ex:0px;--ey:-8px;"></span>
+            <span class="lumen-dot lumen-dot-amber" style="--rx:0px;--ry:-5px;--ex:8px;--ey:0px;"></span>
+            <span class="lumen-dot lumen-dot-purple" style="--rx:9px;--ry:-5px;--ex:0px;--ey:8px;"></span>
+            <span class="lumen-dot lumen-dot-blue" style="--rx:0px;--ry:4px;--ex:-8px;--ey:0px;"></span>
+          </span>
         </span>
-        <span id="lumen-fab-dot"></span>
         <span id="lumen-fab-score">0</span>
         <span id="lumen-fab-digest" aria-hidden="true"></span>
       </div>
@@ -180,6 +182,19 @@ const LumenWidget = (() => {
       ${GUARD_HOLD_HTML}
       <div id="lumen-onboarding" class="lumen-onboarding">
         <div class="lumen-onboarding-panel">
+          <div class="lumen-onboarding-head">
+            <span class="lumen-onboarding-mark" aria-hidden="true">
+              <span class="lm-d lm-d-green"></span>
+              <span class="lm-d lm-d-amber"></span>
+              <span class="lm-d lm-d-purple"></span>
+              <span class="lm-d lm-d-blue"></span>
+            </span>
+            <div class="lumen-onboarding-progress" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1">
+              <span class="lumen-onboarding-pip" data-pip="1"></span>
+              <span class="lumen-onboarding-pip" data-pip="2"></span>
+              <span class="lumen-onboarding-pip" data-pip="3"></span>
+            </div>
+          </div>
           <div class="lumen-onboarding-step" data-step="1">
             <h2>Set up Lumen</h2>
             <p>What do you mainly use AI for?</p>
@@ -222,7 +237,10 @@ const LumenWidget = (() => {
           </div>
           <div class="lumen-onboarding-actions">
             <button id="lumen-onboarding-skip" class="lumen-onboarding-btn lumen-onboarding-btn--ghost">Skip</button>
-            <button id="lumen-onboarding-next" class="lumen-onboarding-btn">Continue</button>
+            <div class="lumen-onboarding-actions-right">
+              <button id="lumen-onboarding-back" class="lumen-onboarding-btn lumen-onboarding-btn--ghost lumen-hidden">Back</button>
+              <button id="lumen-onboarding-next" class="lumen-onboarding-btn">Continue</button>
+            </div>
           </div>
         </div>
       </div>
@@ -660,10 +678,29 @@ const LumenWidget = (() => {
     let step = 1;
     const panel = document.getElementById("lumen-onboarding");
     const nextBtn = document.getElementById("lumen-onboarding-next");
+    const backBtn = document.getElementById("lumen-onboarding-back");
     const skipBtn = document.getElementById("lumen-onboarding-skip");
+    const progress = panel?.querySelector(".lumen-onboarding-progress");
     const modeSelect = document.getElementById("lumen-onboarding-mode");
     const focusInput = document.getElementById("lumen-onboarding-focus");
     const guardHint = document.getElementById("lumen-onboarding-guard-hint");
+
+    const TOTAL_STEPS = 3;
+    function showStep(n) {
+      step = Math.min(TOTAL_STEPS, Math.max(1, n));
+      for (let i = 1; i <= TOTAL_STEPS; i += 1) {
+        panel
+          .querySelector(`[data-step="${i}"]`)
+          ?.classList.toggle("lumen-hidden", i !== step);
+      }
+      nextBtn.textContent = step === TOTAL_STEPS ? "Finish" : "Continue";
+      backBtn?.classList.toggle("lumen-hidden", step === 1);
+      panel.querySelectorAll(".lumen-onboarding-pip").forEach((pip, i) => {
+        pip.classList.toggle("is-active", i + 1 === step);
+        pip.classList.toggle("is-done", i + 1 < step);
+      });
+      progress?.setAttribute("aria-valuenow", String(step));
+    }
 
     modeSelect?.addEventListener("change", () => {
       focusInput.classList.toggle("lumen-hidden", modeSelect.value !== "focus");
@@ -675,12 +712,13 @@ const LumenWidget = (() => {
       panel.classList.remove("lumen-onboarding--open");
     });
 
+    backBtn?.addEventListener("click", () => {
+      if (step > 1) showStep(step - 1);
+    });
+
     nextBtn?.addEventListener("click", () => {
-      if (step < 3) {
-        panel.querySelector(`[data-step="${step}"]`)?.classList.add("lumen-hidden");
-        step += 1;
-        panel.querySelector(`[data-step="${step}"]`)?.classList.remove("lumen-hidden");
-        nextBtn.textContent = step === 3 ? "Finish" : "Continue";
+      if (step < TOTAL_STEPS) {
+        showStep(step + 1);
         return;
       }
 
@@ -711,6 +749,8 @@ const LumenWidget = (() => {
       panel.classList.remove("lumen-onboarding--open");
       syncSettingsUI();
     });
+
+    showStep(1);
   }
 
   function showOnboardingIfNeeded() {
@@ -792,45 +832,29 @@ const LumenWidget = (() => {
     return SIGNAL_COLORS.drift;
   }
 
+  // Play exactly one loop of the four-dot processing animation (converge →
+  // pulse → orbit → return). One loop per event, never infinite on the FAB —
+  // a perpetually animating pill would be a nag ("mirror, not nanny").
   let fabPulseTimer = null;
   function pulseFabMark() {
     const mark = document.getElementById("lumen-fab-mark");
     if (!mark) return;
     // Restart the one-shot animation even if it's mid-flight.
-    mark.classList.remove("lumen-mark-pulse");
+    mark.classList.remove("lumen-mark-active");
     void mark.offsetWidth;
-    mark.classList.add("lumen-mark-pulse");
+    mark.classList.add("lumen-mark-active");
     window.clearTimeout(fabPulseTimer);
     fabPulseTimer = window.setTimeout(
-      () => mark.classList.remove("lumen-mark-pulse"),
-      3300
+      () => mark.classList.remove("lumen-mark-active"),
+      5200
     );
   }
 
-  // On mode change, play the flip portion of the mark animation and reveal the
-  // new mode colour at the edge-on midpoint — so the mark looks like it morphs
-  // into the new mode rather than just recolouring.
-  let fabMorphTimer = null;
-  let fabMorphColorTimer = null;
+  // The four-dot mark has fixed brand colours (mode is shown by the pill's
+  // border/ring), so a mode switch just replays one processing loop as feedback.
   function morphFabMark() {
-    const mark = document.getElementById("lumen-fab-mark");
-    const reduce =
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!mark || reduce) {
-      updateBadge();
-      return;
-    }
-    mark.classList.remove("lumen-mark-morph");
-    void mark.offsetWidth;
-    mark.classList.add("lumen-mark-morph");
-    window.clearTimeout(fabMorphColorTimer);
-    fabMorphColorTimer = window.setTimeout(updateBadge, 275);
-    window.clearTimeout(fabMorphTimer);
-    fabMorphTimer = window.setTimeout(
-      () => mark.classList.remove("lumen-mark-morph"),
-      620
-    );
+    updateBadge();
+    pulseFabMark();
   }
 
   function updateBadge() {
@@ -838,14 +862,12 @@ const LumenWidget = (() => {
     applyFabPosition();
     const session = LumenSession.get();
     const fab = document.getElementById("lumen-fab");
-    const dot = document.getElementById("lumen-fab-dot");
     const scoreEl = document.getElementById("lumen-fab-score");
     // sessionScore is a passive-acceptance score (higher = more offloading).
     // Surface the inverse so the badge reads as engagement: higher = better.
     const paused = LumenGoals.isPaused();
     const engagement = session.messageCount ? 100 - (session.sessionScore || 0) : 0;
     const color = session.messageCount ? engagementColor(engagement) : SIGNAL_COLORS.loop;
-    if (dot) dot.style.background = paused ? "var(--lm-ghost)" : color;
     if (scoreEl) {
       scoreEl.textContent = paused ? "॥" : String(engagement);
       scoreEl.style.color = paused ? "var(--lm-haze)" : color;
@@ -1007,23 +1029,23 @@ const LumenWidget = (() => {
     return lines;
   }
 
+  // Four-dot mark (T formation) for share cards. Drawn opaque — cards are light.
   function drawLumenMark(ctx, cx, cy) {
+    const S = 50;
+    const r = S * 0.125;
+    const dots = [
+      { c: "#5ba85c", x: -0.37 * S, y: -0.2 * S },
+      { c: "#e5a33d", x: 0, y: -0.2 * S },
+      { c: "#8e44ad", x: 0.37 * S, y: -0.2 * S },
+      { c: "#5b9bd5", x: 0, y: 0.17 * S },
+    ];
     ctx.save();
-    ctx.strokeStyle = SHARE_PALETTE.mismatch;
-    ctx.fillStyle = SHARE_PALETTE.mismatch;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 0.5;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.globalAlpha = 0.22;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 25, 0, Math.PI * 2);
-    ctx.stroke();
+    dots.forEach((d) => {
+      ctx.fillStyle = d.c;
+      ctx.beginPath();
+      ctx.arc(cx + d.x, cy + d.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    });
     ctx.restore();
   }
 

@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
-  <!-- Lumen mark: two offset rounded squares. Solid = you, outline = AI, glow = overlap. -->
-  <rect x="12.6" y="12.6" width="10.8" height="10.8" rx="1.6" fill="#2d9e4e" opacity="0.2"/>
-  <rect x="3.6" y="3.6" width="19.8" height="19.8" rx="4" fill="#1a1825"/>
-  <rect x="12.6" y="12.6" width="19.8" height="19.8" rx="4" fill="none" stroke="#2d9e4e" stroke-width="1.5"/>
+  <!-- Lumen mark: four dots in a T formation. Green / amber / purple across the
+       top, blue below centre. Transparent background. -->
+  <circle cx="4.7" cy="10.8" r="4.7" fill="#5ba85c"/>
+  <circle cx="18" cy="10.8" r="4.7" fill="#e5a33d"/>
+  <circle cx="31.3" cy="10.8" r="4.7" fill="#8e44ad"/>
+  <circle cx="18" cy="24.1" r="4.7" fill="#5b9bd5"/>
 </svg>

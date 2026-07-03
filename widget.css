@@ -191,7 +191,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px 6px 6px;
+  padding: 6px 14px 6px 12px;
   background: var(--lm-surface);
   border: 0.5px solid var(--lm-border);
   border-radius: var(--lm-radius-pill);
@@ -216,123 +216,68 @@
   box-shadow: 0 4px 16px rgba(26, 24, 37, 0.12), 0 1px 3px rgba(26, 24, 37, 0.08);
 }
 
-/* The mark itself: two offset rounded squares. The solid square is "you"
-   (always dusk); the outline square + glow are the AI, tinted per mode via
-   --lm-ai. --lm-shift drives the converge distance for the active animation. */
+/* The mark: four dots in a T formation — green / amber / purple across the top,
+   blue below centre. Each dot carries rest (--rx/--ry) and diamond (--ex/--ey)
+   offsets inline. Idle is static; while scoring, one processing loop plays.
+   No mix-blend-mode here — the FAB pill is light, so the dots stay opaque. */
 #lumen-root #lumen-fab-mark {
   position: relative;
   width: 24px;
   height: 24px;
   flex-shrink: 0;
-  --lm-ai: var(--lm-dusk);
-  --lm-shift: 3.5px;
-  --lm-mark-dur: 3.2s;
-  --lm-mark-ease: cubic-bezier(0.37, 0, 0.63, 1);
+  --lm-dot-dur: 5s;
+  --lm-dot-ease: cubic-bezier(0.45, 0, 0.55, 1);
 }
-#lumen-root #lumen-fab-mark > span {
+#lumen-root #lumen-fab-mark .lumen-dot-spin {
   position: absolute;
-  will-change: transform, opacity;
+  inset: 0;
 }
-#lumen-root #lumen-fab-mark .lumen-mark-you {
-  width: 13px;
-  height: 13px;
-  top: 2px;
-  left: 2px;
-  background: var(--lm-dusk);
-  border-radius: 2.5px;
-  transform-origin: center;
+#lumen-root #lumen-fab-mark .lumen-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  transform: translate(var(--rx), var(--ry));
+  will-change: transform;
 }
-#lumen-root #lumen-fab-mark .lumen-mark-ai {
-  width: 13px;
-  height: 13px;
-  top: 8px;
-  left: 8px;
-  border: 1.5px solid var(--lm-ai);
-  background: transparent;
-  border-radius: 2.5px;
-  transform-origin: center;
-  transition: border-color var(--lm-transition-base);
+#lumen-root #lumen-fab-mark .lumen-dot-green { background: #5ba85c; }
+#lumen-root #lumen-fab-mark .lumen-dot-amber { background: #e5a33d; }
+#lumen-root #lumen-fab-mark .lumen-dot-purple { background: #8e44ad; }
+#lumen-root #lumen-fab-mark .lumen-dot-blue { background: #5b9bd5; }
+
+/* One 5s processing loop: rest → converge → pulse → diamond → orbit → return. */
+@keyframes lumen-dot-cycle {
+  0%, 22% { transform: translate(var(--rx), var(--ry)) scale(1); }
+  32% { transform: translate(0, 0) scale(0.88); }
+  39% { transform: translate(0, 0) scale(1.28); }
+  44% { transform: translate(0, 0) scale(0.94); }
+  54%, 76% { transform: translate(var(--ex), var(--ey)) scale(1); }
+  86% { transform: translate(0, 0) scale(0.85); }
+  100% { transform: translate(var(--rx), var(--ry)) scale(1); }
 }
-#lumen-root #lumen-fab-mark .lumen-mark-inter {
-  width: 7px;
-  height: 7px;
-  top: 8px;
-  left: 8px;
-  border-radius: 1.5px;
-  background: var(--lm-ai);
-  opacity: 0.2;
-  pointer-events: none;
-  transition: background var(--lm-transition-base);
+@keyframes lumen-dot-spin {
+  0%, 52% { transform: rotate(0deg); }
+  80%, 100% { transform: rotate(360deg); }
 }
 
-/* One-shot converge/flip pulse when a signal fires. */
-@keyframes lumen-fab-you {
-  0%, 30% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
-  50% { transform: translate(var(--lm-shift), var(--lm-shift)) rotate(7deg) scale(0.97); opacity: 1; }
-  58% { transform: translate(var(--lm-shift), var(--lm-shift)) rotate(2deg) scale(1.03); opacity: 0.9; }
-  64% { transform: translate(var(--lm-shift), var(--lm-shift)) rotate(0deg) scaleX(0) scaleY(1.03); opacity: 0.55; }
-  70% { transform: translate(var(--lm-shift), var(--lm-shift)) rotate(-2deg) scale(1.03); opacity: 0.9; }
-  84%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+/* Idle = static. One loop per event when .lumen-mark-active is toggled on. */
+#lumen-root #lumen-fab-mark.lumen-mark-active .lumen-dot-spin {
+  animation: lumen-dot-spin var(--lm-dot-dur) var(--lm-dot-ease) 1;
 }
-@keyframes lumen-fab-ai {
-  0%, 30% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
-  50% { transform: translate(calc(-1 * var(--lm-shift)), calc(-1 * var(--lm-shift))) rotate(-7deg) scale(0.97); opacity: 1; }
-  58% { transform: translate(calc(-1 * var(--lm-shift)), calc(-1 * var(--lm-shift))) rotate(-2deg) scale(1.03); opacity: 0.9; }
-  64% { transform: translate(calc(-1 * var(--lm-shift)), calc(-1 * var(--lm-shift))) rotate(0deg) scaleX(0) scaleY(1.03); opacity: 0.55; }
-  70% { transform: translate(calc(-1 * var(--lm-shift)), calc(-1 * var(--lm-shift))) rotate(2deg) scale(1.03); opacity: 0.9; }
-  84%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
-}
-@keyframes lumen-fab-inter {
-  0%, 28% { opacity: 0; transform: scale(0.5); }
-  52% { opacity: 0.28; transform: scale(1); }
-  64% { opacity: 0.65; transform: scale(1.12); }
-  76% { opacity: 0.18; transform: scale(0.9); }
-  88%, 100% { opacity: 0; transform: scale(0.5); }
-}
-#lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-you {
-  animation: lumen-fab-you var(--lm-mark-dur) var(--lm-mark-ease) 1;
-}
-#lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-ai {
-  animation: lumen-fab-ai var(--lm-mark-dur) var(--lm-mark-ease) 1;
-}
-#lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-inter {
-  animation: lumen-fab-inter var(--lm-mark-dur) var(--lm-mark-ease) 1;
-}
-
-/* Mode switch: a quick in-place flip (the "transform" beat of the loop). The
-   new mode colour is swapped in JS at the edge-on midpoint so it reads as the
-   mark morphing into the new mode. */
-@keyframes lumen-fab-morph {
-  0% { transform: scaleX(1) scaleY(1); }
-  45% { transform: scaleX(0.04) scaleY(1.04); }
-  55% { transform: scaleX(0.04) scaleY(1.04); }
-  100% { transform: scaleX(1) scaleY(1); }
-}
-@keyframes lumen-fab-morph-glow {
-  0% { opacity: 0.2; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.15); }
-  100% { opacity: 0.2; transform: scale(1); }
-}
-#lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-you,
-#lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-ai {
-  animation: lumen-fab-morph 0.55s var(--lm-mark-ease) 1;
-}
-#lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-inter {
-  animation: lumen-fab-morph-glow 0.55s var(--lm-mark-ease) 1;
+#lumen-root #lumen-fab-mark.lumen-mark-active .lumen-dot {
+  animation: lumen-dot-cycle var(--lm-dot-dur) var(--lm-dot-ease) 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-you,
-  #lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-ai,
-  #lumen-root #lumen-fab-mark.lumen-mark-pulse .lumen-mark-inter,
-  #lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-you,
-  #lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-ai,
-  #lumen-root #lumen-fab-mark.lumen-mark-morph .lumen-mark-inter {
+  #lumen-root #lumen-fab-mark.lumen-mark-active .lumen-dot-spin,
+  #lumen-root #lumen-fab-mark.lumen-mark-active .lumen-dot {
     animation: none;
   }
 }
 
-#lumen-root #lumen-fab-dot,
 #lumen-root #lumen-badge-dot {
   width: 7px;
   height: 7px;
@@ -349,14 +294,10 @@
 }
 
 /* ── Per-mode FAB looks — a glance tells you which mode you're in ── */
-/* The logo mark is recoloured per mode and the pill gets a matching accent
-   border + ring, so Ambient / Active / Focus / Ghost are obviously different.
-   Ambient = neutral dusk. Active = green (most present). Focus = lavender
+/* The four-dot mark keeps its fixed brand colours; the pill gets a matching
+   accent border + ring so Ambient / Active / Focus / Guard / Ghost are
+   obviously different. Active = green (most present). Focus / Guard = lavender
    (a goal is live). Ghost = faded + dashed (in-session invisible). */
-#lumen-root #lumen-fab[data-mode="ambient"] #lumen-fab-mark {
-  --lm-ai: var(--lm-dusk);
-}
-
 #lumen-root #lumen-fab[data-mode="active"] {
   border-color: var(--lm-loop);
   box-shadow: 0 0 0 3px var(--lm-loop-tint), 0 2px 10px rgba(26, 24, 37, 0.08);
@@ -364,9 +305,6 @@
 #lumen-root #lumen-fab[data-mode="active"]:hover {
   border-color: var(--lm-loop);
   box-shadow: 0 0 0 3px var(--lm-loop-tint), 0 4px 16px rgba(26, 24, 37, 0.14);
-}
-#lumen-root #lumen-fab[data-mode="active"] #lumen-fab-mark {
-  --lm-ai: var(--lm-loop);
 }
 
 #lumen-root #lumen-fab[data-mode="focus"] {
@@ -377,20 +315,11 @@
   border-color: var(--lm-mismatch);
   box-shadow: 0 0 0 3px var(--lm-mismatch-tint), 0 4px 16px rgba(26, 24, 37, 0.14);
 }
-#lumen-root #lumen-fab[data-mode="focus"] #lumen-fab-mark {
-  --lm-ai: var(--lm-mismatch);
-}
 
 #lumen-root #lumen-fab[data-mode="ghost"] {
   opacity: 0.45;
   border-style: dashed;
   box-shadow: none;
-}
-#lumen-root #lumen-fab[data-mode="ghost"] #lumen-fab-mark {
-  --lm-ai: var(--lm-ghost);
-}
-#lumen-root #lumen-fab[data-mode="ghost"] #lumen-fab-mark .lumen-mark-you {
-  background: var(--lm-ghost);
 }
 
 #lumen-root #lumen-fab[data-mode="guard"] {
@@ -402,24 +331,14 @@
   border-color: var(--lm-mismatch);
   box-shadow: 0 0 0 3px var(--lm-mismatch-tint), 0 4px 16px rgba(26, 24, 37, 0.14);
 }
-#lumen-root #lumen-fab[data-mode="guard"] #lumen-fab-mark {
-  --lm-ai: var(--lm-mismatch);
-}
 
 /* Paused overrides any mode: muted greyscale, dashed, but still visible so the
-   user can click in and resume. */
+   user can click in and resume. The greyscale filter desaturates the dots. */
 #lumen-root #lumen-fab[data-paused="true"] {
   opacity: 0.55;
   filter: grayscale(1);
   border-style: dashed;
   box-shadow: none;
-}
-#lumen-root #lumen-fab[data-paused="true"] #lumen-fab-mark {
-  --lm-ai: var(--lm-haze);
-  box-shadow: none;
-}
-#lumen-root #lumen-fab[data-paused="true"] #lumen-fab-mark .lumen-mark-you {
-  background: var(--lm-haze);
 }
 
 /* ── Weekly digest "ready" indicator ── */
@@ -1125,7 +1044,9 @@
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(26, 24, 37, 0.32);
+  background: rgba(26, 24, 37, 0.34);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
   pointer-events: auto;
 }
 
@@ -1134,29 +1055,85 @@
 }
 
 #lumen-root .lumen-onboarding-panel {
-  width: min(440px, calc(100vw - 32px));
-  padding: 24px;
+  width: min(460px, calc(100vw - 32px));
+  padding: 26px 28px 22px;
   background: var(--lm-surface);
   border: 0.5px solid var(--lm-border);
-  border-radius: 12px;
-  box-shadow: 0 24px 64px rgba(26, 24, 37, 0.18);
+  border-radius: 18px;
+  box-shadow:
+    0 32px 64px -16px rgba(26, 24, 37, 0.28),
+    0 12px 24px -12px rgba(26, 24, 37, 0.16);
   color: var(--lm-dusk);
   position: relative;
   overflow: visible;
+  animation: lumen-onboard-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes lumen-onboard-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Header — brand mark + step progress */
+#lumen-root .lumen-onboarding-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+#lumen-root .lumen-onboarding-mark {
+  position: relative;
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+#lumen-root .lumen-onboarding-mark .lm-d {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 25%;
+  height: 25%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) translate(var(--rx), var(--ry));
+}
+#lumen-root .lumen-onboarding-mark .lm-d-green { background: #5ba85c; --rx: -148%; --ry: -80%; }
+#lumen-root .lumen-onboarding-mark .lm-d-amber { background: #e5a33d; --rx: 0; --ry: -80%; }
+#lumen-root .lumen-onboarding-mark .lm-d-purple { background: #8e44ad; --rx: 148%; --ry: -80%; }
+#lumen-root .lumen-onboarding-mark .lm-d-blue { background: #5b9bd5; --rx: 0; --ry: 68%; }
+
+#lumen-root .lumen-onboarding-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#lumen-root .lumen-onboarding-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lm-mist);
+  transition: width var(--lm-transition-base), background var(--lm-transition-base);
+}
+#lumen-root .lumen-onboarding-pip.is-done { background: var(--lm-border-strong); }
+#lumen-root .lumen-onboarding-pip.is-active {
+  width: 20px;
+  border-radius: 3px;
+  background: var(--lm-dusk);
 }
 
 #lumen-root .lumen-onboarding-panel h2 {
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   color: var(--lm-dusk);
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 #lumen-root .lumen-onboarding-panel p {
   font-size: 13px;
   color: var(--lm-slate);
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   line-height: 1.5;
 }
 
@@ -1169,36 +1146,45 @@
 }
 
 #lumen-root .lumen-onboarding-option {
-  display: block !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
   position: relative;
   box-sizing: border-box;
   min-width: 0;
   width: auto !important;
-  padding: 8px 10px;
-  border-radius: var(--lm-radius-sm);
-  border: 0.5px solid var(--lm-border);
+  min-height: 42px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--lm-border);
   background: var(--lm-cloud);
   cursor: pointer;
   text-align: center;
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 12.5px;
+  line-height: 1.3;
   color: var(--lm-slate);
   user-select: none;
   transition:
     border-color var(--lm-transition-fast),
     background var(--lm-transition-fast),
-    color var(--lm-transition-fast);
+    color var(--lm-transition-fast),
+    box-shadow var(--lm-transition-fast),
+    transform var(--lm-transition-fast);
 }
 
 #lumen-root .lumen-onboarding-option:hover {
   border-color: var(--lm-border-strong);
+  background: var(--lm-surface);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -6px rgba(26, 24, 37, 0.2);
 }
 
 #lumen-root .lumen-onboarding-option:has(input:checked) {
-  border-color: var(--lm-dusk);
-  background: var(--lm-mist-lt);
-  color: var(--lm-dusk);
+  border-color: var(--lm-mismatch);
+  background: var(--lm-mismatch-tint);
+  color: var(--lm-mismatch-text);
   font-weight: 600;
+  box-shadow: 0 0 0 3px var(--lm-mismatch-tint);
 }
 
 #lumen-root .lumen-onboarding-option span {
@@ -1226,54 +1212,98 @@
 #lumen-root .lumen-onboarding-panel input:not([type="checkbox"]) {
   box-sizing: border-box;
   width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--lm-radius-sm);
-  border: 0.5px solid var(--lm-border);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--lm-border);
   background: var(--lm-cloud);
   color: var(--lm-dusk);
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--lm-font);
+  transition: border-color var(--lm-transition-fast),
+    box-shadow var(--lm-transition-fast);
+}
+
+#lumen-root .lumen-onboarding-panel textarea:focus,
+#lumen-root .lumen-onboarding-panel select:focus,
+#lumen-root .lumen-onboarding-panel input:not([type="checkbox"]):focus {
+  outline: none;
+  border-color: var(--lm-mismatch);
+  box-shadow: 0 0 0 3px var(--lm-mismatch-tint);
+}
+
+#lumen-root .lumen-onboarding-panel select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%237b7a8a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
 }
 
 #lumen-root .lumen-onboarding-panel textarea {
-  min-height: 80px;
+  min-height: 84px;
   resize: vertical;
+  line-height: 1.5;
 }
 
 #lumen-root .lumen-onboarding-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 20px;
+}
+
+#lumen-root .lumen-onboarding-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 #lumen-root .lumen-onboarding-btn {
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  padding: 9px 16px;
-  border-radius: var(--lm-radius-sm);
+  padding: 10px 18px;
+  border-radius: 10px;
   border: none;
   background: var(--lm-dusk);
   color: #f4f3f8;
   font-family: var(--lm-font);
-  transition: opacity var(--lm-transition-fast);
+  box-shadow: 0 6px 16px -8px rgba(26, 24, 37, 0.5);
+  transition: transform var(--lm-transition-fast),
+    box-shadow var(--lm-transition-fast), opacity var(--lm-transition-fast);
 }
 
 #lumen-root .lumen-onboarding-btn:hover {
-  opacity: 0.88;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -8px rgba(26, 24, 37, 0.55);
+}
+#lumen-root .lumen-onboarding-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px -8px rgba(26, 24, 37, 0.5);
 }
 
 #lumen-root .lumen-onboarding-btn--ghost {
   background: transparent;
-  border: 0.5px solid var(--lm-border-strong);
+  border: 1px solid var(--lm-border-strong);
   color: var(--lm-slate);
+  box-shadow: none;
 }
 
 #lumen-root .lumen-onboarding-btn--ghost:hover {
-  opacity: 1;
   border-color: var(--lm-dusk);
   color: var(--lm-dusk);
+  transform: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #lumen-root .lumen-onboarding-panel { animation: none; }
+  #lumen-root .lumen-onboarding-option:hover,
+  #lumen-root .lumen-onboarding-btn:hover { transform: none; }
 }
 
 #lumen-root .lumen-hidden {
