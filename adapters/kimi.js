@@ -1,13 +1,21 @@
 /* Kimi (Moonshot AI) adapter — kimi.com and kimi.moonshot.cn — shared factory.
- * Best-effort selectors against Kimi's DOM; the fail-soft guard in content.js
- * prevents a selector drift from breaking the page. */
+ * Verified live against a logged-in kimi.com session. Each turn is a
+ * .chat-content-item(-user/-assistant) → .segment(-user/-assistant); user text
+ * lives in .user-content and assistant text in .markdown (inside
+ * .segment-assistant). The two content selectors are siblings across turns, so
+ * they don't double-count. Composer is a controlled contenteditable and send is
+ * .send-button-container. Fail-soft guard in content.js covers drift.
+ * NOTE: kimi.moonshot.cn (legacy CN domain) may differ; verified on kimi.com. */
 globalThis.LumenAdapterKimi = globalThis.LumenCreateAdapter({
   hostnames: ["kimi.com", "kimi.moonshot.cn"],
   platform: "kimi",
-  userSelector:
-    '[class*="user-content"], [class*="userMessage"], [data-message-author-role="user"], .user',
-  assistantSelector:
-    '[class*="assistant-content"], [class*="segment-assistant"], [data-message-author-role="assistant"], [class*="markdown"]',
-  userWrappers: ['[class*="user-content"]', '[data-message-author-role="user"]', "[class*='chat-item']"],
+  userSelector: ".user-content",
+  assistantSelector: ".segment-assistant .markdown, div.markdown",
+  userWrappers: [".chat-content-item-user", ".segment-user", ".user-content"],
   inputs: ['[contenteditable="true"]', "textarea"],
+  sendButtons: [
+    ".send-button-container",
+    'button[aria-label*="send" i]',
+    'button[type="submit"]',
+  ],
 });

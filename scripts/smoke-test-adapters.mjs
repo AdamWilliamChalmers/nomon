@@ -108,6 +108,7 @@ assert("qwen does NOT match chatgpt.com", !matchesOn(qwen, "chatgpt.com"));
 assert("kimi matches kimi.com", matchesOn(kimi, "kimi.com"));
 assert("kimi matches kimi.moonshot.cn", matchesOn(kimi, "kimi.moonshot.cn"));
 assert("kimi does NOT match chatgpt.com", !matchesOn(kimi, "chatgpt.com"));
+assert("minimax matches agent.minimax.io", matchesOn(minimax, "agent.minimax.io"));
 assert("minimax matches chat.minimax.io", matchesOn(minimax, "chat.minimax.io"));
 assert("minimax matches chat.minimaxi.com", matchesOn(minimax, "chat.minimaxi.com"));
 assert("minimax does NOT match chatgpt.com", !matchesOn(minimax, "chatgpt.com"));
@@ -130,6 +131,7 @@ const hostCases = [
   ["chat.qwen.ai", "/"],
   ["kimi.com", "/"],
   ["kimi.moonshot.cn", "/"],
+  ["agent.minimax.io", "/"],
   ["chat.minimax.io", "/"],
   ["chat.minimaxi.com", "/"],
 ];
@@ -196,6 +198,7 @@ for (const host of [
   "chat.qwen.ai",
   "kimi.com",
   "kimi.moonshot.cn",
+  "agent.minimax.io",
   "chat.minimax.io",
   "chat.minimaxi.com",
 ]) {
