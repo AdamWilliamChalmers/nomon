@@ -21,12 +21,14 @@ export default function HomePage() {
       {/* ═══════════ Nav ═══════════ */}
       <nav>
         <div className="wrap nav-inner">
-          <a className="nav-brand" href="#" aria-label="Lumen home">
-            <StaticMark size={26} />
-            <span className="wm" style={{ fontSize: 14 }}>
-              Lumen
-            </span>
-          </a>
+          <div className="nav-left">
+            <a className="nav-brand" href="#" aria-label="Lumen home">
+              <span className="wm" style={{ fontSize: 14 }}>
+                Lumen
+              </span>
+            </a>
+            <span className="nav-tagline">A mirror, not a nanny</span>
+          </div>
           <div className="nav-links">
             <a href="#how">How it works</a>
             <a href="#signals">Signals</a>
@@ -54,7 +56,7 @@ export default function HomePage() {
 
           <p className="lede">
             Lumen is a free browser extension that notices when you&rsquo;ve stopped evaluating what
-            the AI gives you — and quietly says so, in one line under your message.{" "}
+            the AI gives you &amp; quietly says so, in one line under your prompt.{" "}
             <strong>A mirror, not a nanny.</strong> It never interrupts, never blocks a reply, and
             never reads what you write.
           </p>
@@ -380,8 +382,10 @@ export default function HomePage() {
         <div className="wrap">
           <h2>For the sceptical</h2>
           <p className="section-intro">
-            Fair questions, direct answers. If a tool watches how you use AI, you should be
-            suspicious of it by default. Here&rsquo;s exactly where the lines are.
+            Fair questions, direct answers. Lumen exists to counter cognitive offloading — the
+            well-studied habit of leaning on a tool until you stop thinking for yourself. And if a
+            tool watches how you use AI, you should be suspicious of it by default. Here&rsquo;s
+            exactly where the lines are.
           </p>
 
           <div className="qa">
@@ -430,6 +434,15 @@ export default function HomePage() {
               <p>
                 <b>Ghost mode.</b> One click and nothing appears in-session at all — you only get the
                 weekly digest. It&rsquo;s a first-class mode, not a buried setting.
+              </p>
+            </div>
+            <div className="qa-item">
+              <h3>Who&rsquo;s behind this?</h3>
+              <p>
+                <b>A researcher, not a growth team.</b> Lumen is built in Edinburgh by Dr Adam
+                Chalmers, a University of Edinburgh academic working on computational social science
+                and AI governance. All feedback can be directed to{" "}
+                <a href="mailto:hello@lumen.io">hello@lumen.io</a>.
               </p>
             </div>
           </div>

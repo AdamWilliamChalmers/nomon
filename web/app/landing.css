@@ -201,11 +201,30 @@ html:has(.lumen-landing) {
   justify-content: space-between;
   padding: 20px 0;
 }
+.lumen-landing .nav-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 .lumen-landing .nav-brand {
   display: flex;
   align-items: center;
   gap: 13px;
   text-decoration: none;
+}
+.lumen-landing .nav-tagline {
+  padding-left: 15px;
+  border-left: 1px solid var(--ll-hairline);
+  font-family: var(--ll-serif);
+  font-style: italic;
+  font-size: 14.5px;
+  line-height: 1;
+  color: var(--ll-faint);
+}
+@media (max-width: 680px) {
+  .lumen-landing .nav-tagline {
+    display: none;
+  }
 }
 .lumen-landing .nav-links {
   display: flex;
@@ -870,6 +889,16 @@ html:has(.lumen-landing) {
 .lumen-landing .qa-item p b {
   color: var(--ll-ink);
   font-weight: 600;
+}
+.lumen-landing .qa-item p a {
+  color: var(--ll-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--ll-hairline);
+  text-underline-offset: 2px;
+  transition: text-decoration-color 0.15s;
+}
+.lumen-landing .qa-item p a:hover {
+  text-decoration-color: var(--ll-ink);
 }
 
 /* ————————————————————————————————————————
