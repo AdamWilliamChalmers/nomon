@@ -31,6 +31,8 @@ for (const file of [
   "adapters/qwen.js",
   "adapters/kimi.js",
   "adapters/minimax.js",
+  "adapters/huggingchat.js",
+  "adapters/doubao.js",
 ]) {
   vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), sandbox);
 }
@@ -47,6 +49,8 @@ const deepseek = sandbox.LumenAdapterDeepSeek;
 const qwen = sandbox.LumenAdapterQwen;
 const kimi = sandbox.LumenAdapterKimi;
 const minimax = sandbox.LumenAdapterMiniMax;
+const huggingchat = sandbox.LumenAdapterHuggingChat;
+const doubao = sandbox.LumenAdapterDoubao;
 const allAdapters = [
   ["chatgpt", chatgpt],
   ["claude", claude],
@@ -60,6 +64,8 @@ const allAdapters = [
   ["qwen", qwen],
   ["kimi", kimi],
   ["minimax", minimax],
+  ["huggingchat", huggingchat],
+  ["doubao", doubao],
 ];
 
 function matchesOn(adapter, hostname, pathname = "/") {
@@ -112,6 +118,12 @@ assert("minimax matches agent.minimax.io", matchesOn(minimax, "agent.minimax.io"
 assert("minimax matches chat.minimax.io", matchesOn(minimax, "chat.minimax.io"));
 assert("minimax matches chat.minimaxi.com", matchesOn(minimax, "chat.minimaxi.com"));
 assert("minimax does NOT match chatgpt.com", !matchesOn(minimax, "chatgpt.com"));
+assert("huggingchat matches huggingface.co/chat path", matchesOn(huggingchat, "huggingface.co", "/chat/"));
+assert("huggingchat does NOT match huggingface.co home", !matchesOn(huggingchat, "huggingface.co", "/"));
+assert("huggingchat does NOT match chatgpt.com", !matchesOn(huggingchat, "chatgpt.com"));
+assert("doubao matches doubao.com", matchesOn(doubao, "doubao.com"));
+assert("doubao matches www.doubao.com", matchesOn(doubao, "www.doubao.com"));
+assert("doubao does NOT match chatgpt.com", !matchesOn(doubao, "chatgpt.com"));
 
 // Exactly one adapter should claim each host (no overlap).
 const hostCases = [
@@ -134,6 +146,9 @@ const hostCases = [
   ["agent.minimax.io", "/"],
   ["chat.minimax.io", "/"],
   ["chat.minimaxi.com", "/"],
+  ["huggingface.co", "/chat/"],
+  ["doubao.com", "/"],
+  ["www.doubao.com", "/"],
 ];
 for (const [host, pathname] of hostCases) {
   const claimers = allAdapters.filter(([, a]) => matchesOn(a, host, pathname)).length;
@@ -178,6 +193,8 @@ for (const a of [
   "qwen",
   "kimi",
   "minimax",
+  "huggingchat",
+  "doubao",
 ]) {
   assert(`manifest loads ${a} adapter`, cs.js.includes(`adapters/${a}.js`));
   assert(
@@ -201,12 +218,14 @@ for (const host of [
   "agent.minimax.io",
   "chat.minimax.io",
   "chat.minimaxi.com",
+  "huggingface.co/chat",
+  "doubao.com",
 ]) {
   assert(`manifest matches ${host}`, cs.matches.some((m) => m.includes(host)));
 }
 assert(
   "all adapters load before content.js",
-  cs.js.indexOf("adapters/minimax.js") < cs.js.indexOf("content.js")
+  cs.js.indexOf("adapters/doubao.js") < cs.js.indexOf("content.js")
 );
 
 console.log(`\n${passed} passed, ${failed} failed`);

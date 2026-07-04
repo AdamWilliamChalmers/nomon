@@ -230,6 +230,9 @@ const LumenNudges = (() => {
     "kimi.moonshot.cn": "Kimi",
     "chat.minimax.io": "MiniMax",
     "chat.minimaxi.com": "MiniMax",
+    "huggingface.co": "HuggingChat",
+    "doubao.com": "Doubao",
+    "www.doubao.com": "Doubao",
   };
 
   function prettyPlatform(host) {

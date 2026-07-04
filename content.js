@@ -17,6 +17,8 @@
       g.LumenAdapterQwen,
       g.LumenAdapterKimi,
       g.LumenAdapterMiniMax,
+      g.LumenAdapterHuggingChat,
+      g.LumenAdapterDoubao,
     ].filter(Boolean);
   }
 

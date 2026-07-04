@@ -72,7 +72,7 @@ export default function HomePage() {
 
           <p className="hero-fine">
             Works with ChatGPT, Claude, Gemini, Grok, Copilot, Perplexity, Mistral, Meta AI,
-            DeepSeek, Qwen, Kimi and MiniMax · Everything stays on your device
+            DeepSeek, Qwen, Kimi, MiniMax, HuggingChat and Doubao · Everything stays on your device
           </p>
         </div>
 
@@ -224,6 +224,8 @@ export default function HomePage() {
             <li>Qwen</li>
             <li>Kimi</li>
             <li>MiniMax</li>
+            <li>HuggingChat</li>
+            <li>Doubao</li>
           </ul>
         </div>
       </section>

@@ -36,7 +36,10 @@
         "https://kimi.moonshot.cn/*",
         "https://agent.minimax.io/*",
         "https://chat.minimax.io/*",
-        "https://chat.minimaxi.com/*"
+        "https://chat.minimaxi.com/*",
+        "https://huggingface.co/chat/*",
+        "https://www.doubao.com/*",
+        "https://doubao.com/*"
       ]
     }
   ],
@@ -62,7 +65,10 @@
         "https://kimi.moonshot.cn/*",
         "https://agent.minimax.io/*",
         "https://chat.minimax.io/*",
-        "https://chat.minimaxi.com/*"
+        "https://chat.minimaxi.com/*",
+        "https://huggingface.co/chat/*",
+        "https://www.doubao.com/*",
+        "https://doubao.com/*"
       ],
       "js": [
         "config.js",
@@ -79,6 +85,8 @@
         "adapters/qwen.js",
         "adapters/kimi.js",
         "adapters/minimax.js",
+        "adapters/huggingchat.js",
+        "adapters/doubao.js",
         "rules.js",
         "net.js",
         "nudges.js",
