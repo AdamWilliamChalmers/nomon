@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumen — AI should sharpen your thinking. Not replace it.</title>
+<meta name="description" content="Lumen is a free Chrome extension that notices when you've stopped evaluating what AI gives you — and quietly reflects it back. A mirror, not a nanny.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ————————————————————————————————————————
+   Tokens
+———————————————————————————————————————— */
+:root {
+  --paper:    #FBFBF9;
+  --card:     #FFFFFF;
+  --ink:      #191917;
+  --muted:    #6E6E68;
+  --faint:    #9A9A93;
+  --hairline: rgba(25,25,23,0.10);
+  --hairline-soft: rgba(25,25,23,0.06);
+
+  /* Signal colours — the only chroma on the page */
+  --sky:    #4E9CC4;   /* hand-off */
+  --green:  #2E9E4F;   /* loop     */
+  --amber:  #B5810F;   /* drift    */
+  --rose:   #B5486B;   /* mismatch */
+  --blue:   #3273C5;   /* depth    */
+
+  --serif: 'Newsreader', Georgia, serif;
+  --sans:  'Plus Jakarta Sans', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+  --dur: 5s;
+  --ease: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: rgba(50,115,197,0.16); }
+
+a { color: inherit; }
+button { font-family: inherit; cursor: pointer; }
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.wrap { max-width: 1060px; margin: 0 auto; padding: 0 28px; }
+
+/* ————————————————————————————————————————
+   Dot mark — static + animated
+———————————————————————————————————————— */
+.mark { position: relative; flex-shrink: 0; }
+.mark .d {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 26%; height: 26%;
+  border-radius: 50%;
+}
+.mark .d-green { background: var(--green); transform: translate(-146%, -108%); }
+.mark .d-amber { background: var(--amber); transform: translate(-50%,  -108%); }
+.mark .d-rose  { background: var(--rose);  transform: translate(46%,   -108%); }
+.mark .d-blue  { background: var(--blue);  transform: translate(-50%,    8%);  }
+
+/* Animated variant — dots carry rest (--rx/--ry) and diamond (--ex/--ey) offsets */
+.mark-anim { position: relative; flex-shrink: 0; }
+.mark-anim .spin {
+  position: absolute; inset: 0;
+  animation: spin var(--dur) var(--ease) infinite;
+}
+.mark-anim .d {
+  position: absolute;
+  top: 50%; left: 50%;
+  border-radius: 50%;
+  mix-blend-mode: multiply;   /* light backgrounds: colours deepen on overlap */
+  will-change: transform;
+  animation: dot-cycle var(--dur) var(--ease) infinite;
+}
+.mark-anim .d-green { background: var(--green); }
+.mark-anim .d-amber { background: var(--amber); }
+.mark-anim .d-rose  { background: var(--rose);  }
+.mark-anim .d-blue  { background: var(--blue);  }
+
+@keyframes dot-cycle {
+  0%, 22%  { transform: translate(var(--rx), var(--ry)) scale(1); }
+  32%      { transform: translate(0, 0) scale(0.88); }
+  39%      { transform: translate(0, 0) scale(1.28); }
+  44%      { transform: translate(0, 0) scale(0.94); }
+  54%, 76% { transform: translate(var(--ex), var(--ey)) scale(1); }
+  86%      { transform: translate(0, 0) scale(0.85); }
+  100%     { transform: translate(var(--rx), var(--ry)) scale(1); }
+}
+@keyframes spin {
+  0%, 52%   { transform: rotate(0deg); }
+  80%, 100% { transform: rotate(360deg); }
+}
+
+/* Wordmark */
+.wm {
+  font-family: var(--serif);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  margin-left: 0.3em; /* optical compensation for trailing tracking */
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* ————————————————————————————————————————
+   Nav
+———————————————————————————————————————— */
+nav {
+  border-bottom: 1px solid var(--hairline-soft);
+  background: var(--paper);
+}
+.nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 0;
+}
+.nav-brand { display: flex; align-items: center; gap: 13px; text-decoration: none; }
+.nav-links { display: flex; align-items: center; gap: 30px; }
+.nav-links a {
+  text-decoration: none; font-size: 14.5px; color: var(--muted);
+  transition: color 0.15s;
+}
+.nav-links a:hover { color: var(--ink); }
+
+.btn {
+  display: inline-block;
+  font-size: 15px; font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 10px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-primary { background: var(--ink); color: var(--paper); }
+.btn-primary:hover { background: #33332f; }
+.btn-ghost {
+  background: transparent; color: var(--ink);
+  border-color: var(--hairline);
+}
+.btn-ghost:hover { border-color: rgba(25,25,23,0.28); }
+.btn-small { font-size: 14px; padding: 9px 16px; }
+
+/* ————————————————————————————————————————
+   Hero
+———————————————————————————————————————— */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: 64px;
+  align-items: center;
+  padding: 88px 0 96px;
+}
+.hero h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(38px, 5vw, 56px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  margin: 34px 0 24px;
+}
+.hero h1 em {
+  font-style: italic;
+  font-weight: 400;
+}
+.hero .lede {
+  font-size: 17.5px;
+  color: var(--muted);
+  max-width: 46ch;
+  margin-bottom: 34px;
+}
+.hero .lede strong { color: var(--ink); font-weight: 600; }
+.hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.hero-fine {
+  margin-top: 26px;
+  font-size: 13.5px;
+  color: var(--faint);
+}
+
+/* ————————————————————————————————————————
+   Chat demo card (hero, mode previews)
+———————————————————————————————————————— */
+.chat {
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(25,25,23,0.04), 0 12px 40px -18px rgba(25,25,23,0.12);
+  overflow: hidden;
+}
+.chat-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.chat-head-left { display: flex; align-items: center; gap: 9px; }
+.chat-head-left span { font-size: 13px; color: var(--muted); }
+.pill {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+  border-radius: 99px;
+  padding: 4px 11px;
+}
+.chat-body { padding: 20px 18px 22px; }
+.bubble {
+  background: #F1F1ED;
+  border-radius: 12px 12px 3px 12px;
+  padding: 12px 15px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  max-width: 92%;
+  margin-left: auto;
+}
+.ai-reply {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+  padding: 4px 2px 0;
+}
+
+/* The signal strip — the product's core UI element */
+.strip {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 13px;
+  padding: 10px 2px 2px;
+  justify-content: flex-end;
+}
+.strip .who {
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--faint);
+}
+.strip .sig { font-weight: 600; }
+.strip .dot-i {
+  width: 7px; height: 7px; border-radius: 50%;
+  display: inline-block; position: relative; top: -1px;
+}
+.strip.left { justify-content: flex-start; padding-left: 0; }
+
+.sig-sky   { color: var(--sky);   } .bg-sky   { background: var(--sky);   }
+.sig-green { color: var(--green); } .bg-green { background: var(--green); }
+.sig-amber { color: var(--amber); } .bg-amber { background: var(--amber); }
+.sig-rose  { color: var(--rose);  } .bg-rose  { background: var(--rose);  }
+.sig-blue  { color: var(--blue);  } .bg-blue  { background: var(--blue);  }
+
+/* Reflection card inside chat demo */
+.reflect {
+  border: 1px solid var(--hairline);
+  border-left: 2.5px solid var(--blue);
+  border-radius: 10px;
+  padding: 15px 16px;
+  margin-top: 12px;
+  background: var(--card);
+}
+.reflect h4 { font-size: 14.5px; font-weight: 700; margin-bottom: 5px; }
+.reflect p { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.reflect-actions { display: flex; gap: 9px; margin-top: 12px; flex-wrap: wrap; }
+.chip {
+  font-size: 13px; font-weight: 600;
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  border-radius: 8px;
+  padding: 7px 13px;
+}
+.chip-solid { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chat-note {
+  font-size: 13.5px; color: var(--muted);
+  padding: 16px 18px;
+  border-top: 1px solid var(--hairline-soft);
+  line-height: 1.55;
+}
+
+/* ————————————————————————————————————————
+   Plain-terms bar
+———————————————————————————————————————— */
+.terms {
+  border-top: 1px solid var(--hairline-soft);
+  border-bottom: 1px solid var(--hairline-soft);
+  background: var(--card);
+}
+.terms-inner {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 36px;
+  padding: 26px 0;
+}
+.terms-inner div { font-size: 14px; color: var(--muted); line-height: 1.5; }
+.terms-inner strong { color: var(--ink); font-weight: 600; display: block; margin-bottom: 2px; }
+
+/* ————————————————————————————————————————
+   Sections
+———————————————————————————————————————— */
+section { padding: 96px 0; }
+section + section { border-top: 1px solid var(--hairline-soft); }
+
+h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(30px, 3.6vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+  margin-bottom: 18px;
+}
+.section-intro {
+  font-size: 16.5px;
+  color: var(--muted);
+  max-width: 58ch;
+  margin-bottom: 56px;
+}
+
+/* How it works */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 44px;
+}
+.step h3 {
+  font-size: 17px; font-weight: 700;
+  margin-bottom: 10px;
+}
+.step p { font-size: 15px; color: var(--muted); }
+.step-visual {
+  height: 72px;
+  display: flex; align-items: center;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+/* step 1: the shape of a conversation, abstracted */
+.shape-viz { display: flex; align-items: flex-end; gap: 5px; height: 40px; }
+.shape-viz i {
+  width: 9px; border-radius: 3px;
+  background: rgba(25,25,23,0.14);
+  display: block;
+}
+.shape-viz i.q { background: rgba(25,25,23,0.34); }
+/* step 3: mini card */
+.mini-card {
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  background: var(--card);
+  padding: 9px 12px;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  display: flex; align-items: center; gap: 10px;
+}
+.mini-card .mark { width: 20px; height: 20px; }
+.mini-card b { color: var(--ink); font-size: 12px; display: block; }
+
+/* ————————————————————————————————————————
+   Across your AIs
+———————————————————————————————————————— */
+.ai-list {
+  list-style: none;
+  display: flex; flex-wrap: wrap; gap: 12px;
+}
+.ai-list li {
+  font-family: var(--serif);
+  font-size: 19px;
+  padding: 11px 22px;
+  border: 1px solid var(--hairline);
+  border-radius: 99px;
+  background: var(--card);
+  color: var(--ink);
+}
+.ai-fine {
+  margin-top: 24px;
+  font-size: 13.5px;
+  color: var(--faint);
+  max-width: 52ch;
+}
+
+/* ————————————————————————————————————————
+   Signals
+———————————————————————————————————————— */
+.signal-row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 40px;
+  padding: 26px 0;
+  border-top: 1px solid var(--hairline-soft);
+  align-items: baseline;
+}
+.signal-row:last-of-type { border-bottom: 1px solid var(--hairline-soft); }
+.signal-row .meaning { font-size: 15px; color: var(--muted); }
+.signal-row .meaning b { color: var(--ink); font-weight: 600; }
+.signal-row .lives {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--faint);
+}
+
+/* ————————————————————————————————————————
+   Modes — interactive dial
+———————————————————————————————————————— */
+.modes-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 56px;
+  align-items: start;
+}
+.dial {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 26px;
+}
+.dial button {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600;
+  padding: 9px 17px;
+  border-radius: 99px;
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.dial button .dot-i { top: 0; }
+.pill { display: inline-flex; align-items: center; gap: 6px; }
+.pill .dot-i { top: 0; width: 6px; height: 6px; }
+.dial button:hover { border-color: rgba(25,25,23,0.3); color: var(--ink); }
+.dial button[aria-pressed="true"] {
+  background: var(--ink); color: var(--paper); border-color: var(--ink);
+}
+.dial button .optin {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.55; margin-left: 6px;
+}
+.mode-desc { font-size: 15.5px; color: var(--muted); min-height: 76px; }
+.mode-desc b { color: var(--ink); font-weight: 600; }
+.mode-fine { margin-top: 22px; font-size: 13.5px; color: var(--faint); max-width: 42ch; }
+
+.mode-preview { min-height: 300px; }
+.mode-preview .chat-body { min-height: 218px; }
+.hold-card {
+  border: 1px solid var(--hairline);
+  border-left: 2.5px solid var(--rose);
+  border-radius: 10px;
+  padding: 15px 16px;
+  margin-top: 12px;
+}
+.hold-card h4 { font-size: 14.5px; font-weight: 700; margin-bottom: 5px; }
+.hold-card p { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.hold-card p q { font-style: italic; }
+.goal-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 600;
+  color: var(--muted);
+  border: 1px dashed var(--hairline);
+  border-radius: 99px;
+  padding: 5px 13px;
+  margin-bottom: 16px;
+}
+.nothing {
+  font-size: 13.5px; color: var(--faint); font-style: italic;
+  padding: 14px 2px 0;
+  text-align: right;
+}
+
+/* ————————————————————————————————————————
+   Weekly card
+———————————————————————————————————————— */
+.week-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: 72px;
+  align-items: center;
+}
+.wcard {
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(25,25,23,0.04), 0 12px 40px -18px rgba(25,25,23,0.12);
+  padding: 26px;
+}
+.wcard-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.wcard h3 { font-size: 19px; font-weight: 700; margin-top: 12px; }
+.wcard .shape-label { font-size: 13.5px; color: var(--muted); margin-bottom: 14px; }
+.wcard .summary { font-size: 14px; color: var(--muted); line-height: 1.55; margin-bottom: 20px; }
+.wstats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 20px;
+}
+.wstat {
+  background: #F6F6F3;
+  border-radius: 10px;
+  padding: 13px 15px;
+}
+.wstat span {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--faint);
+  display: block; margin-bottom: 3px;
+}
+.wstat b { font-size: 21px; font-weight: 700; }
+.wbar { margin-bottom: 13px; }
+.wbar-label {
+  display: flex; justify-content: space-between;
+  font-size: 12.5px; color: var(--muted); margin-bottom: 6px;
+}
+.wbar-track { height: 4px; background: #ECECE8; border-radius: 99px; }
+.wbar-fill { height: 100%; border-radius: 99px; }
+.wcard .sit-with {
+  font-size: 13.5px; color: var(--muted); font-style: italic;
+  border-top: 1px solid var(--hairline-soft);
+  padding-top: 16px; margin-top: 6px;
+}
+
+/* ————————————————————————————————————————
+   Sceptical Q&A
+———————————————————————————————————————— */
+.qa { max-width: 760px; }
+.qa-item {
+  padding: 26px 0;
+  border-top: 1px solid var(--hairline-soft);
+}
+.qa-item:last-child { border-bottom: 1px solid var(--hairline-soft); }
+.qa-item h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.qa-item p { font-size: 15px; color: var(--muted); max-width: 64ch; }
+.qa-item p b { color: var(--ink); font-weight: 600; }
+
+/* ————————————————————————————————————————
+   Closing + footer
+———————————————————————————————————————— */
+.closing { text-align: center; padding: 110px 0; }
+.closing .mark-anim { margin: 0 auto 34px; }
+.closing h2 { margin-bottom: 14px; }
+.closing p { color: var(--muted); margin-bottom: 32px; }
+
+footer {
+  border-top: 1px solid var(--hairline-soft);
+  padding: 34px 0 44px;
+}
+.footer-inner {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 18px;
+}
+.footer-inner .nav-brand .wm { font-size: 13px; }
+footer .fine { font-size: 13px; color: var(--faint); }
+footer .fine a { color: var(--faint); }
+
+/* ————————————————————————————————————————
+   Responsive
+———————————————————————————————————————— */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: 48px; padding: 56px 0 72px; }
+  .terms-inner { grid-template-columns: 1fr 1fr; gap: 22px 32px; }
+  .steps { grid-template-columns: 1fr; gap: 36px; }
+  .signal-row { grid-template-columns: 1fr; gap: 8px; }
+  .modes-grid { grid-template-columns: 1fr; gap: 40px; }
+  .week-grid { grid-template-columns: 1fr; gap: 44px; }
+  section { padding: 68px 0; }
+  .nav-links a:not(.btn) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .mark-anim .spin, .mark-anim .d { animation: none; }
+  .mark-anim .d { transform: translate(var(--rx), var(--ry)); }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ Nav ═══════════ -->
+<nav>
+  <div class="wrap nav-inner">
+    <a class="nav-brand" href="#" aria-label="Lumen home">
+      <div class="mark" style="width:26px;height:26px;" aria-hidden="true">
+        <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-rose"></div><div class="d d-blue"></div>
+      </div>
+      <span class="wm" style="font-size:14px;">Lumen</span>
+    </a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#signals">Signals</a>
+      <a href="#sceptical">For the sceptical</a>
+      <a class="btn btn-primary btn-small" href="#">Add to Chrome — free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════ Hero ═══════════ -->
+<header class="hero wrap">
+  <div>
+    <!-- Animated mark, 56px. Offsets per scaling formula: dot .25S, rest ±.37S / −.20S / +.17S, diamond ±.35S -->
+    <div class="mark-anim" style="width:56px;height:56px;" role="img" aria-label="Lumen mark">
+      <div class="spin">
+        <div class="d d-green" style="width:14px;height:14px;margin:-7px 0 0 -7px; --rx:-21px; --ry:-11px; --ex:0px;   --ey:-20px;"></div>
+        <div class="d d-amber" style="width:14px;height:14px;margin:-7px 0 0 -7px; --rx:0px;   --ry:-11px; --ex:20px;  --ey:0px;"></div>
+        <div class="d d-rose"  style="width:14px;height:14px;margin:-7px 0 0 -7px; --rx:21px;  --ry:-11px; --ex:0px;   --ey:20px;"></div>
+        <div class="d d-blue"  style="width:14px;height:14px;margin:-7px 0 0 -7px; --rx:0px;   --ry:10px;  --ex:-20px; --ey:0px;"></div>
+      </div>
+    </div>
+
+    <h1>AI should sharpen your thinking. <em>Not replace it.</em></h1>
+
+    <p class="lede">
+      Lumen is a free browser extension that notices when you've stopped
+      evaluating what the AI gives you — and quietly says so, in one line
+      under your message. <strong>A mirror, not a nanny.</strong> It never
+      interrupts, never blocks a reply, and never reads what you write.
+    </p>
+
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="#">Add to Chrome — free</a>
+      <a class="btn btn-ghost" href="#how">See how it works</a>
+    </div>
+
+    <p class="hero-fine">
+      Works with ChatGPT, Claude, Gemini, Grok, Copilot and Perplexity ·
+      Everything stays on your device
+    </p>
+  </div>
+
+  <!-- Demo: the product doing its thing -->
+  <div class="chat" aria-label="Example of Lumen in an AI chat">
+    <div class="chat-head">
+      <div class="chat-head-left">
+        <div class="mark" style="width:18px;height:18px;" aria-hidden="true">
+          <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-rose"></div><div class="d d-blue"></div>
+        </div>
+        <span>your AI chat</span>
+      </div>
+      <span class="pill"><span class="dot-i bg-amber"></span>Active</span>
+    </div>
+    <div class="chat-body">
+      <div class="bubble">Should I take the new job or stay where I am? Just tell me what to do.</div>
+      <div class="strip">
+        <span class="who">Lumen</span>
+        <span class="dot-i bg-blue"></span>
+        <span class="sig sig-blue">depth · worth thinking first?</span>
+      </div>
+      <div class="reflect">
+        <h4>Worth a beat first</h4>
+        <p>This is a call only you can weigh. Want 30 seconds to note your own read before the answer loads? Still your call.</p>
+        <div class="reflect-actions">
+          <button class="chip chip-solid">Let me think first</button>
+          <button class="chip">Skip — just ask</button>
+        </div>
+      </div>
+    </div>
+    <div class="chat-note">
+      Both paths have real trade-offs. Before I weigh in — what matters most
+      to you right now: growth, stability, or the people?
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ Plain terms ═══════════ -->
+<div class="terms">
+  <div class="wrap terms-inner">
+    <div><strong>Never interrupts</strong>Signals appear after you send, never as pop-ups.</div>
+    <div><strong>Never blocks</strong>The AI's reply always arrives, undelayed.</div>
+    <div><strong>Never reads content</strong>It sees the shape of a conversation, not the words.</div>
+    <div><strong>Always dismissible</strong>Ghost mode makes it fully invisible, any time.</div>
+  </div>
+</div>
+
+<!-- ═══════════ How it works ═══════════ -->
+<section id="how">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="section-intro">
+      Three quiet mechanisms. No score chasing, no streaks, no guilt.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-visual" aria-hidden="true">
+          <div class="shape-viz">
+            <i class="q" style="height:34px"></i><i style="height:12px"></i><i style="height:14px"></i><i class="q" style="height:28px"></i><i style="height:10px"></i><i style="height:11px"></i><i style="height:9px"></i><i class="q" style="height:22px"></i><i style="height:12px"></i>
+          </div>
+        </div>
+        <h3>It reads the shape of the conversation</h3>
+        <p>A lightweight extension watches how you and the AI are talking — questions versus commands, pace, pushback. Never the content itself, and nothing leaves your browser.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-visual">
+          <div class="strip left" style="padding:0;">
+            <span class="who">Lumen</span>
+            <span class="dot-i bg-green"></span>
+            <span class="sig sig-green">loop · still with it?</span>
+          </div>
+        </div>
+        <h3>It reflects, inline</h3>
+        <p>When you stop evaluating, a one-line strip appears under your message. One of five signals, each with its own name and meaning. Never a banner, never a block.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-visual">
+          <div class="mini-card">
+            <div class="mark" aria-hidden="true"><div class="d d-green"></div><div class="d d-amber"></div><div class="d d-rose"></div><div class="d d-blue"></div></div>
+            <div><b>This week</b>Explorer · steady</div>
+          </div>
+        </div>
+        <h3>It adds up over the week</h3>
+        <p>Patterns roll into one card — your shape and your trends, in plain words. No raw scores, no leaderboard, nothing to grind.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ Across your AIs ═══════════ -->
+<section id="everywhere">
+  <div class="wrap">
+    <h2>One mirror, every chat</h2>
+    <p class="section-intro" style="margin-bottom:36px;">
+      Your habits with AI aren't per-tool, so the mirror isn't either. Lumen
+      works inside the chat interfaces you already use, and your weekly card
+      reflects all of them together — switching tools never resets the picture.
+    </p>
+    <ul class="ai-list" aria-label="Supported AI tools">
+      <li>ChatGPT</li>
+      <li>Claude</li>
+      <li>Gemini</li>
+      <li>Grok</li>
+      <li>Copilot</li>
+      <li>Perplexity</li>
+    </ul>
+    <p class="ai-fine">
+      That's the exact list today. It isn't exhaustive — and never will be.
+      New tools are added site by site as they matter.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════ Signals ═══════════ -->
+<section id="signals">
+  <div class="wrap">
+    <h2>Five signals, five meanings</h2>
+    <p class="section-intro">
+      One warning light can't mean five different things — so Lumen doesn't
+      use one. Each signal has its own name, colour and voice, and reads as
+      quiet data under your message. There is no red anywhere.
+    </p>
+
+    <div class="signal-row">
+      <div class="strip left">
+        <span class="who">Lumen</span>
+        <span class="dot-i bg-sky"></span>
+        <span class="sig sig-sky">hand-off · what do you already know?</span>
+      </div>
+      <p class="meaning">You've delegated a whole task in your first message. A gentle prompt to put down your own starting point first.
+        <span class="lives">An invitation, never a gate.</span></p>
+    </div>
+
+    <div class="signal-row">
+      <div class="strip left">
+        <span class="who">Lumen</span>
+        <span class="dot-i bg-green"></span>
+        <span class="sig sig-green">loop · still with it?</span>
+      </div>
+      <p class="meaning">You've accepted several answers in a row without editing or pushing back. In-session, right now.
+        <span class="lives">Noticing, not judging.</span></p>
+    </div>
+
+    <div class="signal-row">
+      <div class="strip left">
+        <span class="who">Lumen</span>
+        <span class="dot-i bg-amber"></span>
+        <span class="sig sig-amber">drift · fewer questions than last week</span>
+      </div>
+      <p class="meaning">Across sessions, you're asking less and accepting more. A longer-term pattern.
+        <span class="lives">Lives in your weekly digest, never as an alarm.</span></p>
+    </div>
+
+    <div class="signal-row">
+      <div class="strip left">
+        <span class="who">Lumen</span>
+        <span class="dot-i bg-rose"></span>
+        <span class="sig sig-rose">mismatch · you said you'd write this part</span>
+      </div>
+      <p class="meaning">This conflicts with a goal <b>you</b> set. Lumen just quotes your past self back — it never decides what you should protect.
+        <span class="lives">Only ever fires on goals you wrote yourself.</span></p>
+    </div>
+
+    <div class="signal-row">
+      <div class="strip left">
+        <span class="who">Lumen</span>
+        <span class="dot-i bg-blue"></span>
+        <span class="sig sig-blue">depth · worth thinking first?</span>
+      </div>
+      <p class="meaning">A high-stakes question where the thinking is the point. An invitation to a beat before the answer loads.
+        <span class="lives">The answer still arrives — never delayed.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ Modes ═══════════ -->
+<section id="modes">
+  <div class="wrap">
+    <h2>You choose how present it is</h2>
+    <p class="section-intro">
+      One dial, four settings — one for each dot in the mark. Switch any
+      time; the panel on the right shows exactly what you'd see.
+    </p>
+
+    <div class="modes-grid">
+      <div>
+        <div class="dial" role="group" aria-label="Visibility modes">
+          <button data-mode="ghost" aria-pressed="false"><span class="dot-i bg-blue"></span>Ghost</button>
+          <button data-mode="ambient" aria-pressed="true"><span class="dot-i bg-green"></span>Ambient</button>
+          <button data-mode="active" aria-pressed="false"><span class="dot-i bg-amber"></span>Active</button>
+          <button data-mode="guard" aria-pressed="false"><span class="dot-i bg-rose"></span>Guard<span class="optin">opt-in</span></button>
+        </div>
+        <p class="mode-desc" id="mode-desc">
+          <b>The default.</b> Subtle inline strips for Loop and Drift beside
+          your messages — never a pop-up, never a card.
+        </p>
+        <p class="mode-fine">
+          The first three modes never hold you up. Guard is the only one that
+          can pause before send — you switch it on yourself, it only acts on
+          goals you wrote, and it is always bypassable.
+        </p>
+      </div>
+
+      <div class="chat mode-preview">
+        <div class="chat-head">
+          <div class="chat-head-left">
+            <div class="mark" style="width:18px;height:18px;" aria-hidden="true">
+              <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-rose"></div><div class="d d-blue"></div>
+            </div>
+            <span>your AI chat</span>
+          </div>
+          <span class="pill" id="mode-pill">Ambient</span>
+        </div>
+        <div class="chat-body" id="mode-body" aria-live="polite">
+          <!-- filled by script -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ Weekly card ═══════════ -->
+<section id="week">
+  <div class="wrap week-grid">
+    <div>
+      <h2>Your week, in one card</h2>
+      <p class="section-intro" style="margin-bottom:0;">
+        Every signal rolls up into a single, shareable card — your shape,
+        your trends, and one question worth sitting with. Shapes, not
+        rankings: there are no raw scores and no leaderboard, because the
+        point is comparison with your own last week, not with strangers.
+      </p>
+    </div>
+
+    <div class="wcard">
+      <div class="wcard-top">
+        <div class="mark" style="width:22px;height:22px;" aria-hidden="true">
+          <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-rose"></div><div class="d d-blue"></div>
+        </div>
+        <span class="pill">Share</span>
+      </div>
+      <h3>This week</h3>
+      <p class="shape-label">Explorer · steady</p>
+      <p class="summary">Mostly research and learning mode. You pushed back a little more than last week.</p>
+      <div class="wstats">
+        <div class="wstat"><span>Depth moments</span><b>6</b></div>
+        <div class="wstat"><span>Questions asked</span><b>41</b></div>
+        <div class="wstat"><span>Conscious delegates</span><b>12</b></div>
+        <div class="wstat"><span>Loop breaks</span><b>5</b></div>
+      </div>
+      <div class="wbar">
+        <div class="wbar-label"><span>Intentional use</span><span>78%</span></div>
+        <div class="wbar-track"><div class="wbar-fill bg-green" style="width:78%"></div></div>
+      </div>
+      <div class="wbar">
+        <div class="wbar-label"><span>Questions vs commands</span><span>62%</span></div>
+        <div class="wbar-track"><div class="wbar-fill bg-blue" style="width:62%"></div></div>
+      </div>
+      <p class="sit-with">One to sit with: what did you figure out yourself this week, without AI?</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ For the sceptical ═══════════ -->
+<section id="sceptical">
+  <div class="wrap">
+    <h2>For the sceptical</h2>
+    <p class="section-intro">
+      Fair questions, direct answers. If a tool watches how you use AI, you
+      should be suspicious of it by default. Here's exactly where the lines are.
+    </p>
+
+    <div class="qa">
+      <div class="qa-item">
+        <h3>Does it read my conversations?</h3>
+        <p><b>No.</b> Lumen reads the shape of a conversation — message length, question-versus-command patterns, pace — never the words. Message text is not stored, analysed as content, or transmitted.</p>
+      </div>
+      <div class="qa-item">
+        <h3>Does anything leave my computer?</h3>
+        <p><b>Not unless you switch it on.</b> All scoring runs locally in your browser. Contributing anonymised counts to research is off by default, opt-in, visible in a transparency view, and revocable — with full deletion on request.</p>
+      </div>
+      <div class="qa-item">
+        <h3>Will it nag me?</h3>
+        <p><b>It's built not to.</b> Signals are one-line strips under messages you've already sent. No pop-ups, no red, no streaks, no guilt mechanics. If it ever feels like a nag, that's a bug in the product, not a feature you have to manage.</p>
+      </div>
+      <div class="qa-item">
+        <h3>Is this a screen-time app?</h3>
+        <p><b>No.</b> Lumen measures <b>how</b> you use AI, not how much. Use AI as often as you like — heavy use with your judgement engaged is exactly the point.</p>
+      </div>
+      <div class="qa-item">
+        <h3>Can it ever stop me sending a message?</h3>
+        <p><b>Only if you ask it to.</b> Guard mode — off by default — briefly holds a message that clearly conflicts with a goal you wrote, and even then one click sends it anyway. The other four modes never touch your messages.</p>
+      </div>
+      <div class="qa-item">
+        <h3>What if I just want it gone for a while?</h3>
+        <p><b>Ghost mode.</b> One click and nothing appears in-session at all — you only get the weekly digest. It's a first-class mode, not a buried setting.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ Closing ═══════════ -->
+<section class="closing">
+  <div class="wrap">
+    <div class="mark-anim" style="width:88px;height:88px;" role="img" aria-label="Lumen mark">
+      <div class="spin">
+        <div class="d d-green" style="width:22px;height:22px;margin:-11px 0 0 -11px; --rx:-33px; --ry:-18px; --ex:0px;   --ey:-31px;"></div>
+        <div class="d d-amber" style="width:22px;height:22px;margin:-11px 0 0 -11px; --rx:0px;   --ry:-18px; --ex:31px;  --ey:0px;"></div>
+        <div class="d d-rose"  style="width:22px;height:22px;margin:-11px 0 0 -11px; --rx:33px;  --ry:-18px; --ex:0px;   --ey:31px;"></div>
+        <div class="d d-blue"  style="width:22px;height:22px;margin:-11px 0 0 -11px; --rx:0px;   --ry:15px;  --ex:-31px; --ey:0px;"></div>
+      </div>
+    </div>
+    <h2>Keep your judgement in the loop.</h2>
+    <p>Free, private, and quiet by design.</p>
+    <a class="btn btn-primary" href="#">Add to Chrome — free</a>
+  </div>
+</section>
+
+<!-- ═══════════ Footer ═══════════ -->
+<footer>
+  <div class="wrap footer-inner">
+    <a class="nav-brand" href="#" aria-label="Lumen home">
+      <div class="mark" style="width:20px;height:20px;" aria-hidden="true">
+        <div class="d d-green"></div><div class="d d-amber"></div><div class="d d-rose"></div><div class="d d-blue"></div>
+      </div>
+      <span class="wm">Lumen</span>
+    </a>
+    <p class="fine">Free extension · Ages 13+ · <a href="#">Privacy</a> · <a href="#">How scoring works</a></p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var modes = {
+    ghost: {
+      pill: 'Ghost', color: 'bg-blue',
+      desc: '<b>Fully invisible.</b> Nothing appears in-session — you only get the weekly digest.',
+      body:
+        '<div class="bubble">Draft a reply to the landlord about the deposit.</div>' +
+        '<p class="nothing">nothing appears — digest on Monday</p>'
+    },
+    ambient: {
+      pill: 'Ambient', color: 'bg-green',
+      desc: '<b>The default.</b> Subtle inline strips for Loop and Drift beside your messages — never a pop-up, never a card.',
+      body:
+        '<div class="bubble">ok use that version</div>' +
+        '<div class="strip"><span class="who">Lumen</span><span class="dot-i bg-green"></span><span class="sig sig-green">loop · still with it?</span></div>'
+    },
+    active: {
+      pill: 'Active', color: 'bg-amber',
+      desc: '<b>Everything on.</b> All five signals, plus reflection cards when it matters.',
+      body:
+        '<div class="bubble">Should I take the new job or stay where I am? Just tell me what to do.</div>' +
+        '<div class="strip"><span class="who">Lumen</span><span class="dot-i bg-blue"></span><span class="sig sig-blue">depth · worth thinking first?</span></div>' +
+        '<div class="reflect"><h4>Worth a beat first</h4><p>This is a call only you can weigh. Want 30 seconds to note your own read before the answer loads? Still your call.</p>' +
+        '<div class="reflect-actions"><button class="chip chip-solid">Let me think first</button><button class="chip">Skip — just ask</button></div></div>'
+    },
+    guard: {
+      pill: 'Guard', color: 'bg-rose',
+      desc: '<b>The opt-in fourth mode.</b> Active, plus a brief hold before send when a prompt clearly conflicts with a protected goal you wrote. Always bypassable.',
+      body:
+        '<div class="bubble">Write the introduction chapter for me.</div>' +
+        '<div class="strip"><span class="who">Lumen</span><span class="dot-i bg-rose"></span><span class="sig sig-rose">mismatch · held before send</span></div>' +
+        '<div class="hold-card"><h4>Quoting you back</h4><p>On 12 June you wrote: <q>I draft every chapter introduction myself.</q> Send anyway, or edit first?</p>' +
+        '<div class="reflect-actions"><button class="chip">Send anyway</button><button class="chip chip-solid">Edit first</button></div></div>'
+    }
+  };
+
+  var buttons = document.querySelectorAll('.dial button');
+  var body = document.getElementById('mode-body');
+  var pill = document.getElementById('mode-pill');
+  var desc = document.getElementById('mode-desc');
+
+  function setMode(key) {
+    var m = modes[key];
+    body.innerHTML = m.body;
+    pill.innerHTML = '<span class="dot-i ' + m.color + '"></span>' + m.pill;
+    desc.innerHTML = m.desc;
+    buttons.forEach(function (b) {
+      b.setAttribute('aria-pressed', b.dataset.mode === key ? 'true' : 'false');
+    });
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () { setMode(b.dataset.mode); });
+  });
+
+  setMode('ambient');
+})();
+</script>
+
+</body>
+</html>

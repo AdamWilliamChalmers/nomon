@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Lumen mark: four dots in a T formation, per the "new logo and look" static spec.
+       Green / amber / purple across the top, blue below centre. Dots are 0.26x the
+       canvas on a near-black chip so the mark reads on any tab bar. -->
+  <rect width="512" height="512" rx="112" fill="#0A0A09"/>
+  <circle cx="128.2" cy="178.8" r="66.56" fill="#5BA85C"/>
+  <circle cx="256" cy="178.8" r="66.56" fill="#E5A33D"/>
+  <circle cx="383.8" cy="178.8" r="66.56" fill="#8E44AD"/>
+  <circle cx="256" cy="333.2" r="66.56" fill="#5B9BD5"/>
+</svg>

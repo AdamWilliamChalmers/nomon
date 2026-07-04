@@ -11,7 +11,10 @@ export const metadata: Metadata = {
   title: "Lumen — Stay sharp while using AI",
   description: "Companion web app for the Lumen Chrome extension",
   icons: {
-    icon: "/icon.png",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png" },
+    ],
     apple: "/icon.png",
   },
 };

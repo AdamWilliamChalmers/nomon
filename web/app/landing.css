@@ -1,0 +1,963 @@
+/* Newsreader (serif) for the marketing landing page. Plus Jakarta Sans is
+   already loaded globally. */
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap");
+
+/* ============================================================
+   Lumen marketing landing page.
+   Every rule is namespaced under `.lumen-landing` so this warm-paper
+   design never leaks into the app routes (dashboard, community, …),
+   which keep the diffuse `--lm-*` system.
+   ============================================================ */
+:root {
+  --ll-paper: #fbfbf9;
+  --ll-card: #ffffff;
+  --ll-ink: #191917;
+  --ll-muted: #6e6e68;
+  --ll-faint: #9a9a93;
+  --ll-hairline: rgba(25, 25, 23, 0.1);
+  --ll-hairline-soft: rgba(25, 25, 23, 0.06);
+
+  /* Signal colours — the only chroma on the page */
+  --ll-sky: #4e9cc4; /* hand-off */
+  --ll-green: #2e9e4f; /* loop     */
+  --ll-amber: #b5810f; /* drift    */
+  --ll-rose: #b5486b; /* mismatch */
+  --ll-blue: #3273c5; /* depth    */
+
+  --ll-serif: "Newsreader", Georgia, serif;
+  --ll-sans: "Plus Jakarta Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+  --ll-dur: 5s;
+  --ll-ease: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+html:has(.lumen-landing) {
+  scroll-behavior: smooth;
+}
+
+.lumen-landing {
+  background: var(--ll-paper);
+  color: var(--ll-ink);
+  font-family: var(--ll-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.lumen-landing *,
+.lumen-landing *::before,
+.lumen-landing *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.lumen-landing ::selection {
+  background: rgba(50, 115, 197, 0.16);
+}
+
+.lumen-landing a {
+  color: inherit;
+}
+.lumen-landing button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.lumen-landing :focus-visible {
+  outline: 2px solid var(--ll-blue);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.lumen-landing .wrap {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ————————————————————————————————————————
+   Dot mark — static + animated
+———————————————————————————————————————— */
+.lumen-landing .mark {
+  position: relative;
+  flex-shrink: 0;
+}
+.lumen-landing .mark .d {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26%;
+  height: 26%;
+  border-radius: 50%;
+}
+.lumen-landing .mark .d-green {
+  background: var(--ll-green);
+  transform: translate(-146%, -108%);
+}
+.lumen-landing .mark .d-amber {
+  background: var(--ll-amber);
+  transform: translate(-50%, -108%);
+}
+.lumen-landing .mark .d-rose {
+  background: var(--ll-rose);
+  transform: translate(46%, -108%);
+}
+.lumen-landing .mark .d-blue {
+  background: var(--ll-blue);
+  transform: translate(-50%, 8%);
+}
+
+/* Animated variant — dots carry rest (--rx/--ry) and diamond (--ex/--ey) offsets */
+.lumen-landing .mark-anim {
+  position: relative;
+  flex-shrink: 0;
+}
+.lumen-landing .mark-anim .spin {
+  position: absolute;
+  inset: 0;
+  animation: ll-spin var(--ll-dur) var(--ll-ease) infinite;
+}
+.lumen-landing .mark-anim .d {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  mix-blend-mode: multiply; /* light backgrounds: colours deepen on overlap */
+  will-change: transform;
+  animation: ll-dot-cycle var(--ll-dur) var(--ll-ease) infinite;
+}
+.lumen-landing .mark-anim .d-green {
+  background: var(--ll-green);
+}
+.lumen-landing .mark-anim .d-amber {
+  background: var(--ll-amber);
+}
+.lumen-landing .mark-anim .d-rose {
+  background: var(--ll-rose);
+}
+.lumen-landing .mark-anim .d-blue {
+  background: var(--ll-blue);
+}
+
+@keyframes ll-dot-cycle {
+  0%,
+  22% {
+    transform: translate(var(--rx), var(--ry)) scale(1);
+  }
+  32% {
+    transform: translate(0, 0) scale(0.88);
+  }
+  39% {
+    transform: translate(0, 0) scale(1.28);
+  }
+  44% {
+    transform: translate(0, 0) scale(0.94);
+  }
+  54%,
+  76% {
+    transform: translate(var(--ex), var(--ey)) scale(1);
+  }
+  86% {
+    transform: translate(0, 0) scale(0.85);
+  }
+  100% {
+    transform: translate(var(--rx), var(--ry)) scale(1);
+  }
+}
+@keyframes ll-spin {
+  0%,
+  52% {
+    transform: rotate(0deg);
+  }
+  80%,
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Wordmark */
+.lumen-landing .wm {
+  font-family: var(--ll-serif);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  margin-left: 0.3em; /* optical compensation for trailing tracking */
+  line-height: 1;
+  color: var(--ll-ink);
+}
+
+/* ————————————————————————————————————————
+   Nav
+———————————————————————————————————————— */
+.lumen-landing nav {
+  border-bottom: 1px solid var(--ll-hairline-soft);
+  background: var(--ll-paper);
+}
+.lumen-landing .nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+}
+.lumen-landing .nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  text-decoration: none;
+}
+.lumen-landing .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+.lumen-landing .nav-links a {
+  text-decoration: none;
+  font-size: 14.5px;
+  color: var(--ll-muted);
+  transition: color 0.15s;
+}
+.lumen-landing .nav-links a:hover {
+  color: var(--ll-ink);
+}
+
+.lumen-landing .btn {
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 10px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.lumen-landing .btn-primary {
+  background: var(--ll-ink);
+  color: var(--ll-paper);
+}
+.lumen-landing .btn-primary:hover {
+  background: #33332f;
+}
+.lumen-landing .btn-ghost {
+  background: transparent;
+  color: var(--ll-ink);
+  border-color: var(--ll-hairline);
+}
+.lumen-landing .btn-ghost:hover {
+  border-color: rgba(25, 25, 23, 0.28);
+}
+.lumen-landing .btn-small {
+  font-size: 14px;
+  padding: 9px 16px;
+}
+
+/* ————————————————————————————————————————
+   Hero
+———————————————————————————————————————— */
+.lumen-landing .hero {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: 64px;
+  align-items: center;
+  padding: 88px 0 96px;
+}
+.lumen-landing .hero h1 {
+  font-family: var(--ll-serif);
+  font-weight: 400;
+  font-size: clamp(38px, 5vw, 56px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  margin: 34px 0 24px;
+}
+.lumen-landing .hero h1 em {
+  font-style: italic;
+  font-weight: 400;
+}
+.lumen-landing .hero .lede {
+  font-size: 17.5px;
+  color: var(--ll-muted);
+  max-width: 46ch;
+  margin-bottom: 34px;
+}
+.lumen-landing .hero .lede strong {
+  color: var(--ll-ink);
+  font-weight: 600;
+}
+.lumen-landing .hero-ctas {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.lumen-landing .hero-fine {
+  margin-top: 26px;
+  font-size: 13.5px;
+  color: var(--ll-faint);
+}
+
+/* ————————————————————————————————————————
+   Chat demo card (hero, mode previews)
+———————————————————————————————————————— */
+.lumen-landing .chat {
+  background: var(--ll-card);
+  border: 1px solid var(--ll-hairline);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px rgba(25, 25, 23, 0.04),
+    0 12px 40px -18px rgba(25, 25, 23, 0.12);
+  overflow: hidden;
+}
+.lumen-landing .chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ll-hairline-soft);
+}
+.lumen-landing .chat-head-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.lumen-landing .chat-head-left span {
+  font-size: 13px;
+  color: var(--ll-muted);
+}
+.lumen-landing .pill {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ll-muted);
+  border: 1px solid var(--ll-hairline);
+  border-radius: 99px;
+  padding: 4px 11px;
+}
+.lumen-landing .chat-body {
+  padding: 20px 18px 22px;
+}
+.lumen-landing .bubble {
+  background: #f1f1ed;
+  border-radius: 12px 12px 3px 12px;
+  padding: 12px 15px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  max-width: 92%;
+  margin-left: auto;
+}
+.lumen-landing .ai-reply {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ll-muted);
+  padding: 4px 2px 0;
+}
+
+/* The signal strip — the product's core UI element */
+.lumen-landing .strip {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  padding: 10px 2px 2px;
+  justify-content: flex-end;
+}
+.lumen-landing .strip .who {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ll-faint);
+}
+.lumen-landing .strip .sig {
+  font-weight: 600;
+}
+.lumen-landing .dot-i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+}
+.lumen-landing .strip .dot-i {
+  top: -1px;
+}
+.lumen-landing .strip.left {
+  justify-content: flex-start;
+  padding-left: 0;
+}
+
+.lumen-landing .sig-sky {
+  color: var(--ll-sky);
+}
+.lumen-landing .bg-sky {
+  background: var(--ll-sky);
+}
+.lumen-landing .sig-green {
+  color: var(--ll-green);
+}
+.lumen-landing .bg-green {
+  background: var(--ll-green);
+}
+.lumen-landing .sig-amber {
+  color: var(--ll-amber);
+}
+.lumen-landing .bg-amber {
+  background: var(--ll-amber);
+}
+.lumen-landing .sig-rose {
+  color: var(--ll-rose);
+}
+.lumen-landing .bg-rose {
+  background: var(--ll-rose);
+}
+.lumen-landing .sig-blue {
+  color: var(--ll-blue);
+}
+.lumen-landing .bg-blue {
+  background: var(--ll-blue);
+}
+
+/* Reflection card inside chat demo */
+.lumen-landing .reflect {
+  border: 1px solid var(--ll-hairline);
+  border-left: 2.5px solid var(--ll-blue);
+  border-radius: 10px;
+  padding: 15px 16px;
+  margin-top: 12px;
+  background: var(--ll-card);
+}
+.lumen-landing .reflect h4 {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.lumen-landing .reflect p {
+  font-size: 13.5px;
+  color: var(--ll-muted);
+  line-height: 1.5;
+}
+.lumen-landing .reflect-actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.lumen-landing .chip {
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--ll-hairline);
+  background: var(--ll-card);
+  border-radius: 8px;
+  padding: 7px 13px;
+}
+.lumen-landing .chip-solid {
+  background: var(--ll-ink);
+  color: var(--ll-paper);
+  border-color: var(--ll-ink);
+}
+.lumen-landing .chat-note {
+  font-size: 13.5px;
+  color: var(--ll-muted);
+  padding: 16px 18px;
+  border-top: 1px solid var(--ll-hairline-soft);
+  line-height: 1.55;
+}
+
+/* ————————————————————————————————————————
+   Plain-terms bar
+———————————————————————————————————————— */
+.lumen-landing .terms {
+  border-top: 1px solid var(--ll-hairline-soft);
+  border-bottom: 1px solid var(--ll-hairline-soft);
+  background: var(--ll-card);
+}
+.lumen-landing .terms-inner {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 36px;
+  padding: 26px 0;
+}
+.lumen-landing .terms-inner div {
+  font-size: 14px;
+  color: var(--ll-muted);
+  line-height: 1.5;
+}
+.lumen-landing .terms-inner strong {
+  color: var(--ll-ink);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* ————————————————————————————————————————
+   Sections
+———————————————————————————————————————— */
+.lumen-landing section {
+  padding: 96px 0;
+}
+.lumen-landing section + section {
+  border-top: 1px solid var(--ll-hairline-soft);
+}
+
+.lumen-landing h2 {
+  font-family: var(--ll-serif);
+  font-weight: 400;
+  font-size: clamp(30px, 3.6vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+  margin-bottom: 18px;
+}
+.lumen-landing .section-intro {
+  font-size: 16.5px;
+  color: var(--ll-muted);
+  max-width: 58ch;
+  margin-bottom: 56px;
+}
+
+/* How it works */
+.lumen-landing .steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 44px;
+}
+.lumen-landing .step h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.lumen-landing .step p {
+  font-size: 15px;
+  color: var(--ll-muted);
+}
+.lumen-landing .step-visual {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--ll-hairline-soft);
+}
+/* step 1: the shape of a conversation, abstracted */
+.lumen-landing .shape-viz {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 40px;
+}
+.lumen-landing .shape-viz i {
+  width: 9px;
+  border-radius: 3px;
+  background: rgba(25, 25, 23, 0.14);
+  display: block;
+}
+.lumen-landing .shape-viz i.q {
+  background: rgba(25, 25, 23, 0.34);
+}
+/* step 3: mini card */
+.lumen-landing .mini-card {
+  border: 1px solid var(--ll-hairline);
+  border-radius: 9px;
+  background: var(--ll-card);
+  padding: 9px 12px;
+  font-size: 11.5px;
+  color: var(--ll-muted);
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lumen-landing .mini-card .mark {
+  width: 20px;
+  height: 20px;
+}
+.lumen-landing .mini-card b {
+  color: var(--ll-ink);
+  font-size: 12px;
+  display: block;
+}
+
+/* ————————————————————————————————————————
+   Across your AIs
+———————————————————————————————————————— */
+.lumen-landing .ai-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.lumen-landing .ai-list li {
+  font-family: var(--ll-serif);
+  font-size: 19px;
+  padding: 11px 22px;
+  border: 1px solid var(--ll-hairline);
+  border-radius: 99px;
+  background: var(--ll-card);
+  color: var(--ll-ink);
+}
+.lumen-landing .ai-fine {
+  margin-top: 24px;
+  font-size: 13.5px;
+  color: var(--ll-faint);
+  max-width: 52ch;
+}
+
+/* ————————————————————————————————————————
+   Signals
+———————————————————————————————————————— */
+.lumen-landing .signal-row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 40px;
+  padding: 26px 0;
+  border-top: 1px solid var(--ll-hairline-soft);
+  align-items: baseline;
+}
+.lumen-landing .signal-row:last-of-type {
+  border-bottom: 1px solid var(--ll-hairline-soft);
+}
+.lumen-landing .signal-row .meaning {
+  font-size: 15px;
+  color: var(--ll-muted);
+}
+.lumen-landing .signal-row .meaning b {
+  color: var(--ll-ink);
+  font-weight: 600;
+}
+.lumen-landing .signal-row .lives {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--ll-faint);
+}
+
+/* ————————————————————————————————————————
+   Modes — interactive dial
+———————————————————————————————————————— */
+.lumen-landing .modes-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 56px;
+  align-items: start;
+}
+.lumen-landing .dial {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 26px;
+}
+.lumen-landing .dial button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 17px;
+  border-radius: 99px;
+  border: 1px solid var(--ll-hairline);
+  background: var(--ll-card);
+  color: var(--ll-muted);
+  transition: all 0.15s;
+}
+.lumen-landing .dial button .dot-i {
+  top: 0;
+}
+.lumen-landing .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lumen-landing .pill .dot-i {
+  top: 0;
+  width: 6px;
+  height: 6px;
+}
+.lumen-landing .dial button:hover {
+  border-color: rgba(25, 25, 23, 0.3);
+  color: var(--ll-ink);
+}
+.lumen-landing .dial button[aria-pressed="true"] {
+  background: var(--ll-ink);
+  color: var(--ll-paper);
+  border-color: var(--ll-ink);
+}
+.lumen-landing .dial button .optin {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-left: 6px;
+}
+.lumen-landing .mode-desc {
+  font-size: 15.5px;
+  color: var(--ll-muted);
+  min-height: 76px;
+}
+.lumen-landing .mode-desc b {
+  color: var(--ll-ink);
+  font-weight: 600;
+}
+.lumen-landing .mode-fine {
+  margin-top: 22px;
+  font-size: 13.5px;
+  color: var(--ll-faint);
+  max-width: 42ch;
+}
+
+.lumen-landing .mode-preview {
+  min-height: 300px;
+}
+.lumen-landing .mode-preview .chat-body {
+  min-height: 218px;
+}
+.lumen-landing .hold-card {
+  border: 1px solid var(--ll-hairline);
+  border-left: 2.5px solid var(--ll-rose);
+  border-radius: 10px;
+  padding: 15px 16px;
+  margin-top: 12px;
+}
+.lumen-landing .hold-card h4 {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.lumen-landing .hold-card p {
+  font-size: 13.5px;
+  color: var(--ll-muted);
+  line-height: 1.5;
+}
+.lumen-landing .hold-card p q {
+  font-style: italic;
+}
+.lumen-landing .goal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ll-muted);
+  border: 1px dashed var(--ll-hairline);
+  border-radius: 99px;
+  padding: 5px 13px;
+  margin-bottom: 16px;
+}
+.lumen-landing .nothing {
+  font-size: 13.5px;
+  color: var(--ll-faint);
+  font-style: italic;
+  padding: 14px 2px 0;
+  text-align: right;
+}
+
+/* ————————————————————————————————————————
+   Weekly card
+———————————————————————————————————————— */
+.lumen-landing .week-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: 72px;
+  align-items: center;
+}
+.lumen-landing .wcard {
+  background: var(--ll-card);
+  border: 1px solid var(--ll-hairline);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px rgba(25, 25, 23, 0.04),
+    0 12px 40px -18px rgba(25, 25, 23, 0.12);
+  padding: 26px;
+}
+.lumen-landing .wcard-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+.lumen-landing .wcard h3 {
+  font-size: 19px;
+  font-weight: 700;
+  margin-top: 12px;
+}
+.lumen-landing .wcard .shape-label {
+  font-size: 13.5px;
+  color: var(--ll-muted);
+  margin-bottom: 14px;
+}
+.lumen-landing .wcard .summary {
+  font-size: 14px;
+  color: var(--ll-muted);
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+.lumen-landing .wstats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.lumen-landing .wstat {
+  background: #f6f6f3;
+  border-radius: 10px;
+  padding: 13px 15px;
+}
+.lumen-landing .wstat span {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ll-faint);
+  display: block;
+  margin-bottom: 3px;
+}
+.lumen-landing .wstat b {
+  font-size: 21px;
+  font-weight: 700;
+}
+.lumen-landing .wbar {
+  margin-bottom: 13px;
+}
+.lumen-landing .wbar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--ll-muted);
+  margin-bottom: 6px;
+}
+.lumen-landing .wbar-track {
+  height: 4px;
+  background: #ecece8;
+  border-radius: 99px;
+}
+.lumen-landing .wbar-fill {
+  height: 100%;
+  border-radius: 99px;
+}
+.lumen-landing .wcard .sit-with {
+  font-size: 13.5px;
+  color: var(--ll-muted);
+  font-style: italic;
+  border-top: 1px solid var(--ll-hairline-soft);
+  padding-top: 16px;
+  margin-top: 6px;
+}
+
+/* ————————————————————————————————————————
+   Sceptical Q&A
+———————————————————————————————————————— */
+.lumen-landing .qa {
+  max-width: 760px;
+}
+.lumen-landing .qa-item {
+  padding: 26px 0;
+  border-top: 1px solid var(--ll-hairline-soft);
+}
+.lumen-landing .qa-item:last-child {
+  border-bottom: 1px solid var(--ll-hairline-soft);
+}
+.lumen-landing .qa-item h3 {
+  font-family: var(--ll-serif);
+  font-weight: 500;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.lumen-landing .qa-item p {
+  font-size: 15px;
+  color: var(--ll-muted);
+  max-width: 64ch;
+}
+.lumen-landing .qa-item p b {
+  color: var(--ll-ink);
+  font-weight: 600;
+}
+
+/* ————————————————————————————————————————
+   Closing + footer
+———————————————————————————————————————— */
+.lumen-landing .closing {
+  text-align: center;
+  padding: 110px 0;
+}
+.lumen-landing .closing .mark-anim {
+  margin: 0 auto 34px;
+}
+.lumen-landing .closing h2 {
+  margin-bottom: 14px;
+}
+.lumen-landing .closing p {
+  color: var(--ll-muted);
+  margin-bottom: 32px;
+}
+
+.lumen-landing footer {
+  border-top: 1px solid var(--ll-hairline-soft);
+  padding: 34px 0 44px;
+}
+.lumen-landing .footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.lumen-landing .footer-inner .nav-brand .wm {
+  font-size: 13px;
+}
+.lumen-landing footer .fine {
+  font-size: 13px;
+  color: var(--ll-faint);
+}
+.lumen-landing footer .fine a {
+  color: var(--ll-faint);
+}
+
+/* ————————————————————————————————————————
+   Responsive
+———————————————————————————————————————— */
+@media (max-width: 900px) {
+  .lumen-landing .hero {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    padding: 56px 0 72px;
+  }
+  .lumen-landing .terms-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 32px;
+  }
+  .lumen-landing .steps {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .lumen-landing .signal-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .lumen-landing .modes-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .lumen-landing .week-grid {
+    grid-template-columns: 1fr;
+    gap: 44px;
+  }
+  .lumen-landing section {
+    padding: 68px 0;
+  }
+  .lumen-landing .nav-links a:not(.btn) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.lumen-landing) {
+    scroll-behavior: auto;
+  }
+  .lumen-landing .mark-anim .spin,
+  .lumen-landing .mark-anim .d {
+    animation: none;
+  }
+  .lumen-landing .mark-anim .d {
+    transform: translate(var(--rx), var(--ry));
+  }
+}
