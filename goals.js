@@ -72,6 +72,11 @@ const LumenGoals = (() => {
     // modal). This flag records that the one-time gentle pill pulse/hello has
     // already played, so we never replay it on later loads.
     setupInviteSeen: false,
+    // Records that the "How it works" tutorial has auto-run once. It opens a
+    // single time on first use (then hands off to setup) and is otherwise
+    // replay-only via the pill's "How it works" button. Synced so it doesn't
+    // re-fire on another device/tab.
+    tutorialSeen: false,
     // Timestamp (ms) the user last saw the "still the right goals?" prompt in
     // the weekly review. Drives a gentle ~monthly cadence so the invitation to
     // revisit setup never becomes a weekly nag.
@@ -327,6 +332,17 @@ const LumenGoals = (() => {
     return save({ setupInviteSeen: true });
   }
 
+  // Whether the first-run "How it works" tutorial has already auto-opened.
+  function isTutorialSeen() {
+    return Boolean(cache.tutorialSeen);
+  }
+
+  // Stamp the tutorial as auto-run once so it never re-opens on its own; the
+  // user can still replay it from the pill's "How it works" button.
+  function markTutorialSeen() {
+    return save({ tutorialSeen: true });
+  }
+
   // Gentle ~monthly cadence for the "still the right goals?" prompt in the
   // weekly review. True on the first eligible review and then only once every
   // 28 days — never a weekly nag.
@@ -371,6 +387,8 @@ const LumenGoals = (() => {
     isDigestUnseenThisWeek,
     markDigestSeen,
     markSetupInviteSeen,
+    isTutorialSeen,
+    markTutorialSeen,
     isSetupReviewDue,
     markSetupReviewSeen,
   };

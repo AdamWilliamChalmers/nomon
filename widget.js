@@ -61,6 +61,34 @@ const LumenWidget = (() => {
   let activeGuardHold = null;
   let guardHoldEventsBound = false;
 
+  // "How it works" is a coach-mark tour, NOT a blocking modal. It highlights the
+  // real controls inside the pill's popover one at a time (Modes, aims, goals,
+  // setup) with a small callout explaining each. The page dims behind, the
+  // popover stays bright, and the whole thing is user-initiated — launched from
+  // the pill (or once, the first time the user opens the pill). These three
+  // elements are siblings of the popover so the ring/tip can layer above it
+  // while the scrim dims only the page behind.
+  const TOUR_HTML = `
+      <div id="lumen-tour-scrim" class="lumen-tour-scrim"></div>
+      <div id="lumen-tour-ring" class="lumen-tour-ring" aria-hidden="true"></div>
+      <div id="lumen-tour-tip" class="lumen-tour-tip" role="dialog" aria-live="polite">
+        <button type="button" class="lumen-tour-close" id="lumen-tour-close" aria-label="End tour">×</button>
+        <div class="lumen-tour-kicker">How it works</div>
+        <h3 class="lumen-tour-title" id="lumen-tour-title"></h3>
+        <p class="lumen-tour-body" id="lumen-tour-body"></p>
+        <div class="lumen-tour-foot">
+          <span class="lumen-tour-count" id="lumen-tour-count"></span>
+          <div class="lumen-tour-actions">
+            <button type="button" class="lumen-tour-btn lumen-tour-btn--ghost lumen-hidden" id="lumen-tour-back">Back</button>
+            <button type="button" class="lumen-tour-btn" id="lumen-tour-next">Next</button>
+          </div>
+        </div>
+      </div>`;
+
+  let tourEventsBound = false;
+  let tourActive = false;
+  let tourIndex = 0;
+
   function ensureHideStyles() {
     if (document.getElementById("lumen-hide-styles")) return;
     const style = document.createElement("style");
@@ -89,6 +117,7 @@ const LumenWidget = (() => {
     if (document.getElementById("lumen-root")) {
       ensureReconsiderShell();
       ensureGuardHoldShell();
+      ensureTourShell();
       return;
     }
     const root = document.createElement("div");
@@ -127,6 +156,7 @@ const LumenWidget = (() => {
         <div class="lumen-popover-stat" title="Moments worth thinking through before asking"><span>Depth</span><span class="lumen-popover-stat-value" id="lumen-stat-depth">0</span></div>
         <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Lumen fills this in as you chat.</p>
         <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Set up Lumen →</button>
+        <button type="button" class="lumen-popover-howto" id="lumen-tutorial-cta">How it works</button>
         <label class="lumen-popover-label">Mode</label>
         <select id="lumen-mode-select" class="lumen-popover-select">
           <option value="ambient">Ambient</option>
@@ -263,11 +293,13 @@ const LumenWidget = (() => {
           </div>
         </div>
       </div>
+      ${TOUR_HTML}
     `;
     document.body.appendChild(root);
     bindRootEvents();
     bindReconsiderEvents();
     bindGuardHoldEvents();
+    bindTourEvents();
   }
 
   function ensureReconsiderShell() {
@@ -289,6 +321,13 @@ const LumenWidget = (() => {
     document.getElementById("lumen-root")?.insertAdjacentHTML("beforeend", GUARD_HOLD_HTML);
     guardHoldEventsBound = false;
     bindGuardHoldEvents();
+  }
+
+  function ensureTourShell() {
+    if (document.getElementById("lumen-tour-tip")) return;
+    document.getElementById("lumen-root")?.insertAdjacentHTML("beforeend", TOUR_HTML);
+    tourEventsBound = false;
+    bindTourEvents();
   }
 
   function bindRootEvents() {
@@ -341,6 +380,11 @@ const LumenWidget = (() => {
     document.getElementById("lumen-setup-cta")?.addEventListener("click", (event) => {
       event.stopPropagation();
       openSetup();
+    });
+
+    document.getElementById("lumen-tutorial-cta")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      startTour();
     });
 
     document.getElementById("lumen-llm-judge")?.addEventListener("change", (event) => {
@@ -403,7 +447,9 @@ const LumenWidget = (() => {
 
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
-      if (document.getElementById("lumen-weekly")?.classList.contains("lumen-weekly--open")) {
+      if (tourActive) {
+        endTour();
+      } else if (document.getElementById("lumen-weekly")?.classList.contains("lumen-weekly--open")) {
         closeWeeklyReview();
       } else if (popoverOpen) {
         closePopover();
@@ -861,6 +907,172 @@ const LumenWidget = (() => {
       pulseFabMark();
       LumenGoals.markSetupInviteSeen?.();
     }
+  }
+
+  // ── "How it works" coach-mark tour ────────────────────────────────────────
+  // Each step points at a real control inside the popover (or the pill itself)
+  // and explains it. Copy for the Modes step is composed from goals.js so it
+  // never drifts. This is launched by the user — never a load-time interrupt.
+  function tourModesBody() {
+    const modes = LumenGoals.listModes?.() || [];
+    const line = modes.map((m) => `${m.label} — ${m.blurb}`).join(" ");
+    return (
+      line ||
+      "Mode sets how present Lumen is, from a silent weekly digest to a brief hold before send."
+    );
+  }
+
+  const TOUR_STEPS = [
+    {
+      target: () => document.getElementById("lumen-fab"),
+      title: "This is Lumen",
+      body: "A quiet mirror for how you work with AI. The label shows your engagement today across every AI you use — click the pill any time to open this panel.",
+    },
+    {
+      target: () => document.getElementById("lumen-mode-select"),
+      title: "Modes — how present Lumen is",
+      body: tourModesBody,
+    },
+    {
+      target: () => document.getElementById("lumen-usecases"),
+      title: "What you use AI for",
+      body: "Everything starts switched on. Tap a chip to deselect what doesn't apply — it tunes how Lumen reads your prompts.",
+    },
+    {
+      target: () => document.getElementById("lumen-goals-input"),
+      title: "Protected goals",
+      body: "Add goals you want to keep doing yourself — one per line — or clear ones that aren't yours. Lumen only flags a mismatch against goals you set here.",
+    },
+    {
+      target: () => document.getElementById("lumen-setup-cta"),
+      title: "Guided setup, any time",
+      body: "Prefer a step-by-step walkthrough to set these up? Run guided setup here whenever you like.",
+    },
+    {
+      // Falls back to the digest container while its "Open weekly review →"
+      // button is still rendering (it's built asynchronously from history).
+      target: () =>
+        document.getElementById("lumen-digest-open") || document.getElementById("lumen-digest"),
+      title: "Open weekly review",
+      body: "After a few days, open your weekly review here — a calm recap of how you worked with AI across every tool, with a card you can share.",
+    },
+  ];
+
+  function positionTour() {
+    if (!tourActive) return;
+    const step = TOUR_STEPS[tourIndex];
+    const target = step?.target?.();
+    const ring = document.getElementById("lumen-tour-ring");
+    const tip = document.getElementById("lumen-tour-tip");
+    if (!target || !ring || !tip) return;
+
+    const r = target.getBoundingClientRect();
+    const pad = 6;
+    ring.style.top = `${r.top - pad}px`;
+    ring.style.left = `${r.left - pad}px`;
+    ring.style.width = `${r.width + pad * 2}px`;
+    ring.style.height = `${r.height + pad * 2}px`;
+
+    // Prefer placing the callout to the LEFT of the target (the popover hugs the
+    // right edge). Fall back to below, then above — always clamped on-screen.
+    const tipW = tip.offsetWidth || 288;
+    const tipH = tip.offsetHeight || 150;
+    const gap = 14;
+    const margin = 12;
+    let left = r.left - gap - tipW;
+    let top = r.top + r.height / 2 - tipH / 2;
+    if (left < margin) {
+      left = Math.min(Math.max(margin, r.left), window.innerWidth - tipW - margin);
+      top = r.bottom + gap;
+      if (top + tipH > window.innerHeight - margin) top = r.top - gap - tipH;
+    }
+    top = Math.min(Math.max(margin, top), window.innerHeight - tipH - margin);
+    left = Math.min(Math.max(margin, left), window.innerWidth - tipW - margin);
+    tip.style.top = `${top}px`;
+    tip.style.left = `${left}px`;
+  }
+
+  function showTourStep(i) {
+    tourIndex = Math.min(TOUR_STEPS.length - 1, Math.max(0, i));
+    const step = TOUR_STEPS[tourIndex];
+    const body = typeof step.body === "function" ? step.body() : step.body;
+    const titleEl = document.getElementById("lumen-tour-title");
+    const bodyEl = document.getElementById("lumen-tour-body");
+    const countEl = document.getElementById("lumen-tour-count");
+    if (titleEl) titleEl.textContent = step.title;
+    if (bodyEl) bodyEl.textContent = body;
+    if (countEl) countEl.textContent = `${tourIndex + 1} / ${TOUR_STEPS.length}`;
+    document.getElementById("lumen-tour-back")?.classList.toggle("lumen-hidden", tourIndex === 0);
+    const nextBtn = document.getElementById("lumen-tour-next");
+    if (nextBtn) nextBtn.textContent = tourIndex === TOUR_STEPS.length - 1 ? "Done" : "Next";
+
+    // Bring the target into view inside the scrollable popover, then measure.
+    const target = step.target?.();
+    try {
+      target?.scrollIntoView({ block: "center", inline: "nearest" });
+    } catch (_) {
+      // older engines: ignore
+    }
+    requestAnimationFrame(() => requestAnimationFrame(positionTour));
+  }
+
+  function startTour() {
+    ensureRoot();
+    // The tour spotlights controls inside the popover, so make sure it's open.
+    if (!popoverOpen) {
+      renderPopover();
+      document.getElementById("lumen-popover")?.classList.add("lumen-popover--open");
+      popoverOpen = true;
+    }
+    tourActive = true;
+    tourIndex = 0;
+    document.getElementById("lumen-root")?.classList.add("lumen-touring");
+    // Dedup listeners (same fn reference) so replaying never stacks handlers.
+    window.removeEventListener("resize", positionTour);
+    window.addEventListener("resize", positionTour);
+    document.getElementById("lumen-popover")?.removeEventListener("scroll", positionTour);
+    document.getElementById("lumen-popover")?.addEventListener("scroll", positionTour);
+    showTourStep(0);
+  }
+
+  function endTour() {
+    tourActive = false;
+    document.getElementById("lumen-root")?.classList.remove("lumen-touring");
+    window.removeEventListener("resize", positionTour);
+    document.getElementById("lumen-popover")?.removeEventListener("scroll", positionTour);
+  }
+
+  function bindTourEvents() {
+    if (tourEventsBound) return;
+    if (!document.getElementById("lumen-tour-tip")) return;
+    tourEventsBound = true;
+
+    document.getElementById("lumen-tour-close")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      endTour();
+    });
+    document.getElementById("lumen-tour-back")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      showTourStep(tourIndex - 1);
+    });
+    document.getElementById("lumen-tour-next")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (tourIndex >= TOUR_STEPS.length - 1) endTour();
+      else showTourStep(tourIndex + 1);
+    });
+    // Clicking the dimmed page ends the tour (the popover stays open).
+    document.getElementById("lumen-tour-scrim")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      endTour();
+    });
+  }
+
+  // First run only: the very first time the user opens the pill, run the tour
+  // once so it's discovered in context — never a blocking load-time modal.
+  function maybeAutoStartTour() {
+    if (LumenGoals.isTutorialSeen?.()) return;
+    LumenGoals.markTutorialSeen?.();
+    requestAnimationFrame(() => startTour());
   }
 
   // Gate for developer-only popover controls (e.g. the Backend URL override).
@@ -1832,9 +2044,13 @@ const LumenWidget = (() => {
         hideDigestToast();
         observeDigestView();
       }
+      // First time the pill is opened, run the highlight tour once (in context,
+      // never a load-time interrupt).
+      maybeAutoStartTour();
     } else {
       popover.classList.remove("lumen-popover--open");
       stopObservingDigestView();
+      if (tourActive) endTour();
     }
   }
 
@@ -1842,6 +2058,7 @@ const LumenWidget = (() => {
     popoverOpen = false;
     document.getElementById("lumen-popover")?.classList.remove("lumen-popover--open");
     stopObservingDigestView();
+    if (tourActive) endTour();
   }
 
   // Repaint the popover's live stats (Messages, etc.) if it's currently open —
@@ -2179,6 +2396,7 @@ const LumenWidget = (() => {
     updateBadge,
     refreshPopover,
     showOnboardingIfNeeded,
+    startTour,
     injectMessageUI,
     maybeShowDigestReady,
     showGuardHold,

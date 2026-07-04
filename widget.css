@@ -1031,6 +1031,28 @@
   background: transparent;
 }
 
+/* Quiet "How it works" replay link — sits just under the setup CTA and opens
+   the explanatory tutorial. Deliberately lighter than the setup button. */
+#lumen-root .lumen-popover-howto {
+  margin-top: 0;
+  margin-bottom: 8px;
+  width: 100%;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: var(--lm-radius-sm);
+  border: 0.5px solid transparent;
+  background: transparent;
+  color: var(--lm-slate);
+  font-family: var(--lm-font);
+  font-size: 12px;
+  font-weight: 600;
+  transition: color var(--lm-transition-fast), background var(--lm-transition-fast);
+}
+#lumen-root .lumen-popover-howto:hover {
+  color: var(--lm-dusk);
+  background: var(--lm-mist-lt);
+}
+
 /* Compact "What you use AI for" chips inside the popover. */
 #lumen-root .lumen-popover-usecases {
   display: flex;
@@ -1510,6 +1532,160 @@
   #lumen-root .lumen-onboarding-panel { animation: none; }
   #lumen-root .lumen-onboarding-option:hover,
   #lumen-root .lumen-onboarding-btn:hover { transform: none; }
+}
+
+/* ── "How it works" coach-mark tour (spotlights real controls in the pill) ── */
+/* The scrim dims only the page: it sits below the popover + FAB (both max z),
+   while the ring + tip layer above the popover to highlight each control. */
+#lumen-root .lumen-tour-scrim,
+#lumen-root .lumen-tour-ring,
+#lumen-root .lumen-tour-tip {
+  display: none;
+}
+#lumen-root.lumen-touring .lumen-tour-scrim,
+#lumen-root.lumen-touring .lumen-tour-ring,
+#lumen-root.lumen-touring .lumen-tour-tip {
+  display: block;
+}
+
+#lumen-root .lumen-tour-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  background: rgba(26, 24, 37, 0.42);
+  pointer-events: auto;
+}
+
+#lumen-root .lumen-tour-ring {
+  position: fixed;
+  z-index: 2147483647;
+  border-radius: 12px;
+  border: 2px solid var(--lm-mismatch);
+  box-shadow:
+    0 0 0 4px var(--lm-mismatch-tint),
+    0 0 0 2px rgba(255, 255, 255, 0.7) inset,
+    0 8px 24px -8px rgba(26, 24, 37, 0.4);
+  background: transparent;
+  pointer-events: none;
+  transition: top 0.22s ease, left 0.22s ease, width 0.22s ease, height 0.22s ease;
+}
+
+#lumen-root .lumen-tour-tip {
+  position: fixed;
+  z-index: 2147483647;
+  width: min(288px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 16px 18px 14px;
+  background: var(--lm-surface);
+  border: 0.5px solid var(--lm-border);
+  border-radius: 14px;
+  box-shadow:
+    0 24px 48px -16px rgba(26, 24, 37, 0.32),
+    0 8px 20px -12px rgba(26, 24, 37, 0.2);
+  color: var(--lm-dusk);
+  pointer-events: auto;
+  animation: lumen-onboard-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#lumen-root .lumen-tour-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--lm-haze);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color var(--lm-transition-fast), background var(--lm-transition-fast);
+}
+#lumen-root .lumen-tour-close:hover {
+  color: var(--lm-dusk);
+  background: var(--lm-mist-lt);
+}
+
+#lumen-root .lumen-tour-kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lm-depth);
+  margin-bottom: 6px;
+}
+#lumen-root .lumen-tour-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lm-dusk);
+  margin: 0 0 6px;
+  padding-right: 20px;
+}
+#lumen-root .lumen-tour-body {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--lm-slate);
+  margin: 0;
+}
+
+#lumen-root .lumen-tour-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+#lumen-root .lumen-tour-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lm-haze);
+  font-variant-numeric: tabular-nums;
+}
+#lumen-root .lumen-tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#lumen-root .lumen-tour-btn {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 9px;
+  border: none;
+  background: var(--lm-dusk);
+  color: #f4f3f8;
+  font-family: var(--lm-font);
+  box-shadow: 0 6px 16px -8px rgba(26, 24, 37, 0.5);
+  transition: transform var(--lm-transition-fast), box-shadow var(--lm-transition-fast);
+}
+#lumen-root .lumen-tour-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -8px rgba(26, 24, 37, 0.55);
+}
+#lumen-root .lumen-tour-btn:active {
+  transform: translateY(0);
+}
+#lumen-root .lumen-tour-btn--ghost {
+  background: transparent;
+  border: 1px solid var(--lm-border-strong);
+  color: var(--lm-slate);
+  box-shadow: none;
+}
+#lumen-root .lumen-tour-btn--ghost:hover {
+  border-color: var(--lm-dusk);
+  color: var(--lm-dusk);
+  transform: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #lumen-root .lumen-tour-ring { transition: none; }
+  #lumen-root .lumen-tour-tip { animation: none; }
+  #lumen-root .lumen-tour-btn:hover { transform: none; }
 }
 
 #lumen-root .lumen-hidden {
