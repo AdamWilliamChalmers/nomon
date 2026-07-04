@@ -240,6 +240,10 @@ html:has(.lumen-landing) {
 .lumen-landing .nav-links a:hover {
   color: var(--ll-ink);
 }
+.lumen-landing .nav-links a.btn-primary,
+.lumen-landing .nav-links a.btn-primary:hover {
+  color: var(--ll-paper);
+}
 
 .lumen-landing .btn {
   display: inline-block;
