@@ -19,6 +19,9 @@ const LumenWidget = (() => {
   // recompute) and the toast teaser.
   let weeklyContext = null;
   let fabDrag = { active: false, moved: false, suppressClick: false, pointerId: null, offsetX: 0, offsetY: 0 };
+  // Assigned by bindOnboardingEvents so openSetup() can prefill + reset + open
+  // the guided setup cards on demand (first-run invitation or later editing).
+  let openOnboardingPanel = null;
 
   const OVERLAY_HTML = `
       <div id="lumen-reconsider" class="lumen-reconsider">
@@ -105,6 +108,7 @@ const LumenWidget = (() => {
           <span id="lumen-fab-trend" class="lumen-fab-trend lumen-hidden" aria-hidden="true"></span>
         </span>
         <span id="lumen-fab-digest" aria-hidden="true"></span>
+        <span id="lumen-fab-setup" aria-hidden="true"></span>
       </div>
       <div id="lumen-popover">
         <div class="lumen-popover-head">
@@ -123,19 +127,27 @@ const LumenWidget = (() => {
         <div class="lumen-popover-stat" title="Prompts that conflicted with a goal you set"><span>Mismatch</span><span class="lumen-popover-stat-value" id="lumen-stat-mismatch">0</span></div>
         <div class="lumen-popover-stat" title="Moments worth thinking through before asking"><span>Depth</span><span class="lumen-popover-stat-value" id="lumen-stat-depth">0</span></div>
         <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Lumen fills this in as you chat.</p>
+        <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Finish setting up Lumen →</button>
         <label class="lumen-popover-label">Mode</label>
         <select id="lumen-mode-select" class="lumen-popover-select">
           <option value="ambient">Ambient</option>
           <option value="ghost">Ghost</option>
           <option value="active">Active</option>
-          <option value="focus">Focus</option>
           <option value="guard">Guard</option>
         </select>
         <p class="lumen-popover-hint" id="lumen-mode-hint"></p>
+        <label class="lumen-popover-label">What you use AI for</label>
+        <div class="lumen-popover-usecases" id="lumen-usecases">
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Research" /><span>Research</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Writing" /><span>Writing</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Coding" /><span>Coding</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Learning" /><span>Learning</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Admin" /><span>Admin</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Creative work" /><span>Creative work</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Work tasks" /><span>Work tasks</span></label>
+        </div>
         <label class="lumen-popover-label">Protected goals</label>
         <textarea id="lumen-goals-input" class="lumen-popover-goals" placeholder="One goal per line"></textarea>
-        <label class="lumen-popover-label">Focus goal (this session)</label>
-        <input id="lumen-focus-input" class="lumen-popover-focus" type="text" placeholder="Today I'm trying to…" />
         <label class="lumen-popover-check">
           <input type="checkbox" id="lumen-llm-judge" />
           LLM second opinion · catches subtle hand-offs (on)
@@ -235,10 +247,8 @@ const LumenWidget = (() => {
               <option value="ambient">Ambient — subtle inline cues (default)</option>
               <option value="ghost">Ghost — weekly digest only, nothing in-session</option>
               <option value="active">Active — inline cues + reflection cards</option>
-              <option value="focus">Focus — Active, plus a session goal</option>
               <option value="guard">Guard — optional hold before send on clear goal conflicts</option>
             </select>
-            <input id="lumen-onboarding-focus" class="lumen-hidden" type="text" placeholder="Today I'm trying to…" />
             <p class="lumen-popover-hint lumen-hidden" id="lumen-onboarding-guard-hint" style="margin-top:14px;">Guard is optional — a fifth mode you opt into. Lumen stays a mirror by default. If you choose Guard, send pauses briefly when a prompt clearly conflicts with a protected goal you wrote. Always bypassable; add at least one goal in the previous step.</p>
             <p class="lumen-popover-hint" style="margin-top:14px;">Smarter detection is on: borderline prompts are sent to Lumen's backend for an LLM second opinion, so subtle hand-offs the local rules miss still get caught. Turn it off any time in the pill to stay fully on-device.</p>
           </div>
@@ -319,8 +329,16 @@ const LumenWidget = (() => {
       LumenGoals.save({ protectedGoals: goals });
     });
 
-    document.getElementById("lumen-focus-input")?.addEventListener("change", (event) => {
-      LumenGoals.save({ focusGoal: event.target.value.trim() || null });
+    document.getElementById("lumen-usecases")?.addEventListener("change", () => {
+      const useCases = Array.from(
+        document.querySelectorAll("#lumen-usecases input:checked")
+      ).map((input) => input.value);
+      LumenGoals.setUseCases(useCases);
+    });
+
+    document.getElementById("lumen-setup-cta")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openSetup();
     });
 
     document.getElementById("lumen-llm-judge")?.addEventListener("change", (event) => {
@@ -689,7 +707,6 @@ const LumenWidget = (() => {
     const skipBtn = document.getElementById("lumen-onboarding-skip");
     const progress = panel?.querySelector(".lumen-onboarding-progress");
     const modeSelect = document.getElementById("lumen-onboarding-mode");
-    const focusInput = document.getElementById("lumen-onboarding-focus");
     const guardHint = document.getElementById("lumen-onboarding-guard-hint");
 
     const TOTAL_STEPS = 3;
@@ -709,14 +726,45 @@ const LumenWidget = (() => {
       progress?.setAttribute("aria-valuenow", String(step));
     }
 
+    // Pre-fill the cards from whatever is already saved, so reopening setup to
+    // edit answers shows the user's current choices rather than a blank slate.
+    function prefill() {
+      const goals = LumenGoals.get();
+      const useCases = new Set(goals.useCases || []);
+      document.querySelectorAll("#lumen-use-cases input").forEach((input) => {
+        input.checked = useCases.has(input.value);
+      });
+      const presetValues = new Set(
+        Array.from(document.querySelectorAll("#lumen-goal-presets input")).map((i) => i.value)
+      );
+      const protectedGoals = goals.protectedGoals || [];
+      document.querySelectorAll("#lumen-goal-presets input").forEach((input) => {
+        input.checked = protectedGoals.includes(input.value);
+      });
+      const custom = protectedGoals.filter((goal) => !presetValues.has(goal));
+      const typed = document.getElementById("lumen-onboarding-goals");
+      if (typed) typed.value = custom.join("\n");
+      if (modeSelect) modeSelect.value = goals.mode || "ambient";
+      guardHint?.classList.toggle("lumen-hidden", (goals.mode || "ambient") !== "guard");
+    }
+
+    // Exposed to the module so openSetup() can prefill, reset to step 1, and
+    // open the guided cards on explicit user action (never auto-opened).
+    openOnboardingPanel = () => {
+      prefill();
+      showStep(1);
+      panel.classList.add("lumen-onboarding--open");
+    };
+
     modeSelect?.addEventListener("change", () => {
-      focusInput.classList.toggle("lumen-hidden", modeSelect.value !== "focus");
       guardHint?.classList.toggle("lumen-hidden", modeSelect.value !== "guard");
     });
 
     skipBtn?.addEventListener("click", () => {
       LumenGoals.skipOnboarding();
       panel.classList.remove("lumen-onboarding--open");
+      markSetupPending(false);
+      syncSettingsUI();
     });
 
     backBtn?.addEventListener("click", () => {
@@ -742,7 +790,6 @@ const LumenWidget = (() => {
         .filter(Boolean);
       const protectedGoals = Array.from(new Set([...presetGoals, ...typedGoals]));
       const mode = modeSelect.value;
-      const focusGoal = mode === "focus" ? focusInput.value.trim() : null;
 
       if (mode === "guard" && !protectedGoals.length) {
         guardHint.textContent =
@@ -752,25 +799,52 @@ const LumenWidget = (() => {
       }
 
       LumenGoals.completeOnboarding({ useCases, protectedGoals, mode });
-      if (focusGoal) LumenGoals.save({ focusGoal });
       panel.classList.remove("lumen-onboarding--open");
+      markSetupPending(false);
       syncSettingsUI();
     });
 
     showStep(1);
   }
 
+  // Set/clear the quiet "setup available" affordance on the pill. This is the
+  // whole first-run surface now — a subtle dot, never a blocking overlay.
+  function markSetupPending(pending) {
+    const fab = document.getElementById("lumen-fab");
+    if (fab) fab.dataset.setupPending = pending ? "true" : "false";
+  }
+
+  // The only path that opens the guided setup cards — always user-initiated
+  // (first-run pill invitation or the "Review/Finish setup" popover button).
+  function openSetup() {
+    ensureRoot();
+    closePopover();
+    if (openOnboardingPanel) {
+      openOnboardingPanel();
+    } else {
+      document.getElementById("lumen-onboarding")?.classList.add("lumen-onboarding--open");
+    }
+  }
+
+  // First run is a quiet invitation, not a wall. Instead of auto-opening the
+  // setup cards over the AI site (the old blocking modal), we mark the pill with
+  // a subtle "setup available" dot and play one gentle hello pulse the first
+  // time only. Lumen otherwise runs on Ambient defaults from message one; the
+  // user opens setup when they choose (via the pill CTA).
   function showOnboardingIfNeeded() {
     const goals = LumenGoals.get();
     if (goals.onboardingComplete) return;
-    document.getElementById("lumen-onboarding")?.classList.add("lumen-onboarding--open");
+    markSetupPending(true);
+    if (!goals.setupInviteSeen) {
+      pulseFabMark();
+      LumenGoals.markSetupInviteSeen?.();
+    }
   }
 
   function syncSettingsUI() {
     const goals = LumenGoals.get();
     const modeSelect = document.getElementById("lumen-mode-select");
     const goalsInput = document.getElementById("lumen-goals-input");
-    const focusInput = document.getElementById("lumen-focus-input");
     const judgeToggle = document.getElementById("lumen-llm-judge");
     const studyToggle = document.getElementById("lumen-study-participant");
     const shareToggle = document.getElementById("lumen-share-data");
@@ -779,7 +853,20 @@ const LumenWidget = (() => {
     const base = LumenConfig.webAppUrl(goals.webAppUrl);
     if (modeSelect) modeSelect.value = goals.mode;
     if (goalsInput) goalsInput.value = goals.protectedGoals.join("\n");
-    if (focusInput) focusInput.value = goals.focusGoal || "";
+
+    const useCases = new Set(goals.useCases || []);
+    document.querySelectorAll("#lumen-usecases input").forEach((input) => {
+      input.checked = useCases.has(input.value);
+    });
+
+    const setupCta = document.getElementById("lumen-setup-cta");
+    if (setupCta) {
+      setupCta.textContent = goals.onboardingComplete
+        ? "Review setup →"
+        : "Finish setting up Lumen →";
+      setupCta.classList.toggle("lumen-popover-setup-cta--pending", !goals.onboardingComplete);
+    }
+
     if (judgeToggle) judgeToggle.checked = Boolean(goals.llmJudgeEnabled);
     if (studyToggle) studyToggle.checked = Boolean(goals.studyParticipant);
     if (shareToggle) shareToggle.checked = Boolean(goals.shareAnonymisedData);
@@ -975,6 +1062,19 @@ const LumenWidget = (() => {
   function renderSparkline(scores) {
     // Single implementation lives in sparkline.js (loaded before widget.js).
     return globalThis.LumenSparkline?.render?.(scores || []) ?? "";
+  }
+
+  // Escape user-typed text (e.g. protected goals) before it goes into innerHTML.
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (ch) => {
+      switch (ch) {
+        case "&": return "&amp;";
+        case "<": return "&lt;";
+        case ">": return "&gt;";
+        case '"': return "&quot;";
+        default: return "&#39;";
+      }
+    });
   }
 
   async function renderTrend() {
@@ -1468,6 +1568,24 @@ const LumenWidget = (() => {
       }</div>`;
     };
 
+    // Gentle, ~monthly invitation to revisit setup — folded into the weekly
+    // review the user already chose to open, never a separate interrupt.
+    const reviewDue = LumenGoals.isSetupReviewDue();
+    const goals = LumenGoals.get().protectedGoals || [];
+    const setupBlock = reviewDue
+      ? `<div class="lumen-weekly-setup">
+           <p class="lumen-weekly-label">Still the right goals?</p>
+           <p class="lumen-weekly-text">${
+             goals.length
+               ? goals.map((g) => escapeHtml(g)).join(" · ")
+               : "You haven't set any goals to protect yet."
+           }</p>
+           <button type="button" class="lumen-weekly-setup-btn" id="lumen-weekly-setup">${
+             goals.length ? "Update setup →" : "Set up goals →"
+           }</button>
+         </div>`
+      : "";
+
     body.innerHTML = `
       ${
         hasTrend
@@ -1492,9 +1610,21 @@ const LumenWidget = (() => {
       }
       <p class="lumen-weekly-label">Mismatch</p>
       <p class="lumen-weekly-text">${digest.mismatchSummary}</p>
+      ${setupBlock}
       <p class="lumen-weekly-label">Sit with</p>
       <p class="lumen-weekly-prompt">${digest.prompt}</p>
     `;
+
+    if (reviewDue) {
+      // Stamp now so the invitation won't reappear for ~a month, regardless of
+      // whether the user acts on it.
+      LumenGoals.markSetupReviewSeen();
+      document.getElementById("lumen-weekly-setup")?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        closeWeeklyReview();
+        openSetup();
+      });
+    }
   }
 
   async function openWeeklyReview() {
@@ -1767,7 +1897,7 @@ const LumenWidget = (() => {
       };
     }
 
-    // Only the loop reconsider overlay reaches here (active/focus mode, sustained
+    // Only the loop reconsider overlay reaches here (active/guard mode, sustained
     // passivity). Hand-off and Depth never gate the answer.
     if (evaluation.overlayType && !dismissedReconsider.has(msg.id)) {
       const isFresh = msg.timestamp && Date.now() - msg.timestamp < 8000;

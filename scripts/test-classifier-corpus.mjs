@@ -62,7 +62,6 @@ function resolve(text, { goals = {}, prior = [] } = {}) {
     mode: "active",
     useCases: [],
     protectedGoals: [],
-    focusGoal: null,
     ...goals,
   });
   const messages = build(text, prior);

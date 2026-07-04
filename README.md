@@ -12,13 +12,13 @@ Cognitive fitness layer for AI — four signals, no red, no judgment.
 
 The four named signals (Loop, Drift, Mismatch, Depth) plus **Hand-off**, the
 first-message delegation cue. None of them ever hide or delay the AI response;
-only the Loop *reconsider* overlay (Active/Focus mode, sustained passivity) is a
+only the Loop *reconsider* overlay (Active/Guard mode, sustained passivity) is a
 heavier interrupt.
 
 | Signal | Colour | In-session |
 |--------|--------|------------|
 | **Hand-off** | Light blue | Strip only — "what do you already know?" on early full-task delegation |
-| **Loop** | Green | Strip + contextual nudge; reconsider overlay only in Active/Focus at high intensity |
+| **Loop** | Green | Strip + contextual nudge; reconsider overlay only in Active/Guard at high intensity |
 | **Drift** | Amber | Strip label only (full analysis in popover digest) |
 | **Mismatch** | Purple | Strip + card quoting *your* protected goals |
 | **Depth** | Blue | Strip + additive invitation card (never blocks AI response) |
@@ -30,7 +30,6 @@ heavier interrupt.
 | **Ghost** | No in-session signals |
 | **Ambient** | Loop + Drift strips |
 | **Active** | All signals + Mismatch/Depth cards |
-| **Focus** | Active + session goal calibrates Loop/Mismatch/Depth |
 | **Guard** | Active + optional pre-send hold on clear goal conflicts (opt-in, always bypassable) |
 
 ## Architecture
@@ -55,7 +54,6 @@ content.js            — adapter bootstrap
 ## v3.1 additions (from lumen_v3_design.md)
 
 - Use-case Loop calibration (Research / Writing / Admin / etc.)
-- Focus mode signal calibration via session goal
 - Week-over-week Drift (+ passive acceptance trend)
 - Loop contextual strip nudges by dominant sub-signal
 - Mismatch high-frequency card copy; "My goal changed" removes goal

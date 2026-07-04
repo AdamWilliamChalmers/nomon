@@ -138,11 +138,11 @@ into an engagement rate, surfaced as a "Your responses" line in the digest
 - _(this session)_ Created planning doc.
 - **P0.1 done** — badge now shows Engagement (`100 − passive`), higher = better;
   colour + tooltip + sparkline aligned (`widget.js`, `sparkline.js`).
-- **P0.2 done** — overlays are active/focus-only (ambient = strips only, matching
+- **P0.2 done** — overlays are active/guard-only (ambient = strips only, matching
   spec); hand-off and Depth never gate; Depth card no longer hides the AI
   response; judge no longer routes hand-off to the overlay (`engine.js`,
   `widget.js`, `judge.js`). _Decision:_ kept the Loop reconsider overlay for
-  Active/Focus + sustained passivity (the one justified pattern-interrupt).
+  Active/Guard + sustained passivity (the one justified pattern-interrupt).
 - **P0.3 done** — `scripts/smoke-test-shipped.mjs` exercises the real root engine
   (7 cases incl. FP guards + seamless guarantees); all green.
 - **P0.4 done** — hand-off documented as a first-class signal in `manifest.json`

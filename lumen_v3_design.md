@@ -98,9 +98,6 @@ Free text, with examples: "I want to write my own first drafts." "I want to be t
 | Ghost | No in-session signals at all. Weekly digest only. |
 | Ambient (default) | Quiet strips. No banners. Loop and Drift only. |
 | Active | All four signals. Cards for Mismatch and Depth. |
-| Focus | User specifies a session goal before starting. All signals calibrated to that goal. |
-
-The **Focus mode** deserves special mention. Before a session, the user types: "Today I'm trying to learn about X" or "I'm working on Y and I want to stay in the driver's seat." Lumen uses this as context for the entire session — all four signals are interpreted relative to that declared intention, making the feedback far more accurate and far less likely to fire inappropriately.
 
 ---
 
@@ -229,5 +226,3 @@ The digest is the most important product moment for retention and genuine value 
 5. **Drift never appears as a banner or card.** It is a strip label only in-session. The full analysis belongs in the digest. Longitudinal signals presented in real-time create anxiety without providing useful context.
 
 6. **The reflection textarea is never required.** Every card has a "Skip" or "Continue" path that is as prominent as the reflective path. The choice is always the user's.
-
-7. **Focus mode is the premium experience.** When a user declares a session intention, everything gets better: Loop is calibrated to their stated task, Mismatch references their specific goal, Depth prompts are tailored to their context. This is the feature that converts free users to Pro.

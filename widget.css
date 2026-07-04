@@ -326,9 +326,9 @@
 
 /* ── Per-mode FAB looks — a glance tells you which mode you're in ── */
 /* The four-dot mark keeps its fixed brand colours; the pill gets a matching
-   accent border + ring so Ambient / Active / Focus / Guard / Ghost are
-   obviously different. Active = green (most present). Focus / Guard = lavender
-   (a goal is live). Ghost = faded + dashed (in-session invisible). */
+   accent border + ring so Ambient / Active / Guard / Ghost are obviously
+   different. Active = green (most present). Guard = lavender (a goal is live).
+   Ghost = faded + dashed (in-session invisible). */
 #lumen-root #lumen-fab[data-mode="active"] {
   border-color: var(--lm-loop);
   box-shadow: 0 0 0 3px var(--lm-loop-tint), 0 2px 10px rgba(26, 24, 37, 0.08);
@@ -336,15 +336,6 @@
 #lumen-root #lumen-fab[data-mode="active"]:hover {
   border-color: var(--lm-loop);
   box-shadow: 0 0 0 3px var(--lm-loop-tint), 0 4px 16px rgba(26, 24, 37, 0.14);
-}
-
-#lumen-root #lumen-fab[data-mode="focus"] {
-  border-color: var(--lm-mismatch);
-  box-shadow: 0 0 0 3px var(--lm-mismatch-tint), 0 2px 10px rgba(26, 24, 37, 0.08);
-}
-#lumen-root #lumen-fab[data-mode="focus"]:hover {
-  border-color: var(--lm-mismatch);
-  box-shadow: 0 0 0 3px var(--lm-mismatch-tint), 0 4px 16px rgba(26, 24, 37, 0.14);
 }
 
 #lumen-root #lumen-fab[data-mode="ghost"] {
@@ -397,6 +388,30 @@
   0% { box-shadow: 0 0 0 0 rgba(123, 92, 191, 0.45); }
   70% { box-shadow: 0 0 0 7px rgba(123, 92, 191, 0); }
   100% { box-shadow: 0 0 0 0 rgba(123, 92, 191, 0); }
+}
+
+/* ── First-run "setup available" indicator ── */
+/* A calm, static blue dot inviting the user to set Lumen up. Deliberately does
+   NOT pulse forever — the one gentle hello pulse plays once on the mark itself
+   (pulseFabMark), keeping the pill a mirror, not a nag. Cleared once setup is
+   completed or skipped. Digest-ready takes visual priority when both are set. */
+#lumen-root #lumen-fab-setup {
+  display: none;
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lm-depth);
+  border: 2px solid var(--lm-surface);
+}
+#lumen-root #lumen-fab[data-setup-pending="true"] #lumen-fab-setup {
+  display: block;
+}
+#lumen-root #lumen-fab[data-digest-ready="true"] #lumen-fab-setup,
+#lumen-root #lumen-fab[data-paused="true"] #lumen-fab-setup {
+  display: none;
 }
 
 /* The "popup" itself — anchored above the FAB, clickable to view the digest.
@@ -651,6 +666,34 @@
   padding-left: 12px;
   border-left: 2px solid var(--lm-mismatch);
 }
+/* Gentle "still the right goals?" invitation, shown ~monthly inside the review. */
+#lumen-root .lumen-weekly-setup {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--lm-radius-sm);
+  border: 0.5px solid var(--lm-border);
+  background: var(--lm-depth-tint);
+}
+#lumen-root .lumen-weekly-setup .lumen-weekly-label {
+  margin-top: 0;
+}
+#lumen-root .lumen-weekly-setup-btn {
+  margin-top: 8px;
+  cursor: pointer;
+  padding: 7px 12px;
+  border-radius: var(--lm-radius-sm);
+  border: 0.5px solid var(--lm-depth);
+  background: transparent;
+  color: var(--lm-depth-text);
+  font-family: var(--lm-font);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background var(--lm-transition-fast);
+}
+#lumen-root .lumen-weekly-setup-btn:hover {
+  background: var(--lm-surface);
+}
+
 #lumen-root .lumen-weekly-actions {
   display: flex;
   gap: 10px;
@@ -956,6 +999,84 @@
   color: var(--lm-haze);
   cursor: pointer;
   text-decoration: underline;
+}
+
+/* "Finish / Review setup" entry point — the only way into the guided cards. */
+#lumen-root .lumen-popover-setup-cta {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  width: 100%;
+  cursor: pointer;
+  padding: 9px 12px;
+  border-radius: var(--lm-radius-sm);
+  border: 0.5px solid var(--lm-border-strong);
+  background: transparent;
+  color: var(--lm-slate);
+  font-family: var(--lm-font);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background var(--lm-transition-fast), border-color var(--lm-transition-fast), color var(--lm-transition-fast);
+}
+#lumen-root .lumen-popover-setup-cta:hover {
+  background: var(--lm-depth-tint);
+  border-color: var(--lm-depth);
+  color: var(--lm-depth-text);
+}
+/* First-run (not yet completed) gets a gentle depth-blue accent to match the
+   pill's setup dot; once completed it's a neutral "Review setup" link. */
+#lumen-root .lumen-popover-setup-cta--pending {
+  border-color: var(--lm-depth);
+  color: var(--lm-depth-text);
+  background: var(--lm-depth-tint);
+}
+
+/* Compact "What you use AI for" chips inside the popover. */
+#lumen-root .lumen-popover-usecases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#lumen-root .lumen-usecase-chip {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--lm-border);
+  background: var(--lm-cloud);
+  cursor: pointer;
+  font-size: 11.5px;
+  line-height: 1;
+  color: var(--lm-slate);
+  user-select: none;
+  transition: border-color var(--lm-transition-fast), background var(--lm-transition-fast), color var(--lm-transition-fast);
+}
+#lumen-root .lumen-usecase-chip:hover {
+  border-color: var(--lm-border-strong);
+  background: var(--lm-surface);
+}
+#lumen-root .lumen-usecase-chip:has(input:checked) {
+  border-color: var(--lm-depth);
+  background: var(--lm-depth-tint);
+  color: var(--lm-depth-text);
+  font-weight: 600;
+}
+#lumen-root .lumen-usecase-chip span {
+  display: block;
+  pointer-events: none;
+}
+#lumen-root .lumen-usecase-chip input[type="checkbox"] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
 }
 
 #lumen-root .lumen-popover-divider {

@@ -325,10 +325,10 @@ const LumenEngine = (() => {
 
   function shouldShowOverlay(messageIndex, framing, loopScore, exempt, mode, confidenceLevel) {
     // The reconsider overlay is the one heavier interrupt. Per spec it only
-    // belongs in active/focus modes (ambient = strips only, ghost = nothing).
+    // belongs in active/guard modes (ambient = strips only, ghost = nothing).
     // Hand-off and Depth never gate the AI response — they surface as a strip
     // or an additive card so the experience stays seamless.
-    if (mode !== "active" && mode !== "focus" && mode !== "guard") return null;
+    if (mode !== "active" && mode !== "guard") return null;
     if (exempt) return null;
     if (confidenceLevel === "gray" || confidenceLevel === "low") return null;
     if (messageIndex > 2 && loopScore >= 70) return "loop";
@@ -374,9 +374,6 @@ const LumenEngine = (() => {
     let score = applyPostProcessing(raw, msg.text, messages, index, {
       priorLoopScores: context?.priorLoopScores,
     });
-    if (goals.mode === "focus") {
-      score = applyFocusCalibration(score, msg.text, goals.focusGoal);
-    }
     score = applyTaskTypeModifier(score, taskType, {
       sessionSensitivity: context?.sessionSensitivity,
       taskTypeExempt: context?.taskTypeExempt,
@@ -406,23 +403,6 @@ const LumenEngine = (() => {
       calibration.loopThreshold = 42;
     }
     return calibration;
-  }
-
-  function applyFocusCalibration(loopScore, text, focusGoal) {
-    if (!focusGoal) return loopScore;
-    const focus = focusGoal.toLowerCase();
-    let adjusted = loopScore;
-
-    if (focus.includes("learn") && /help me learn|i want to understand|explain/i.test(text)) {
-      adjusted -= 15;
-    }
-    if (focus.includes("research") && /summarize|find|source|paper|literature/i.test(text)) {
-      adjusted -= 12;
-    }
-    if ((focus.includes("driver") || focus.includes("draft")) && hasUserProvidedContext(text)) {
-      adjusted -= 15;
-    }
-    return Math.max(0, adjusted);
   }
 
   function weekStart(dateStr) {

@@ -9,7 +9,6 @@ const LumenGoals = (() => {
     { value: "ambient", label: "Ambient", blurb: "Subtle inline cues beside your messages — never a pop-up. The default." },
     { value: "ghost", label: "Ghost", blurb: "Nothing in-session — you only get the weekly digest." },
     { value: "active", label: "Active", blurb: "Inline cues plus reflection cards when it matters." },
-    { value: "focus", label: "Focus", blurb: "Active, plus a goal you declare for this session." },
     {
       value: "guard",
       label: "Guard",
@@ -24,7 +23,6 @@ const LumenGoals = (() => {
     paused: false,
     useCases: [],
     protectedGoals: [],
-    focusGoal: null,
     // On by default: the LLM "second opinion" catches the subtle hand-offs the
     // local rules miss. It sends only borderline prompts to the configured
     // backend — disclosed in onboarding + settings, and toggleable from the pill
@@ -44,6 +42,14 @@ const LumenGoals = (() => {
     // the user opens the digest or dismisses it. Synced so the nudge doesn't
     // re-fire on every device.
     lastDigestSeenWeek: null,
+    // First-run setup is now a quiet, optional invitation (not a blocking
+    // modal). This flag records that the one-time gentle pill pulse/hello has
+    // already played, so we never replay it on later loads.
+    setupInviteSeen: false,
+    // Timestamp (ms) the user last saw the "still the right goals?" prompt in
+    // the weekly review. Drives a gentle ~monthly cadence so the invitation to
+    // revisit setup never becomes a weekly nag.
+    lastSetupReviewAt: null,
     // Runtime-only: set by fetchJudgeCapability(), never persisted.
     judgeAvailable: false,
   };
@@ -57,6 +63,10 @@ const LumenGoals = (() => {
 
   function apply(data) {
     cache = { ...DEFAULTS, ...data };
+    // Focus mode was removed; migrate anyone still on it (and its session goal)
+    // to Active — the mode Focus was built on top of.
+    if (cache.mode === "focus") cache.mode = "active";
+    delete cache.focusGoal;
     return cache;
   }
 
@@ -120,7 +130,14 @@ const LumenGoals = (() => {
   }
 
   function skipOnboarding() {
-    return save({ onboardingComplete: true, mode: "ambient", protectedGoals: [] });
+    // Skipping just dismisses the setup flow — it must never wipe answers the
+    // user may have already set inline (mode, protected goals, use cases).
+    // Lumen simply runs on whatever is currently configured (Ambient default).
+    return save({ onboardingComplete: true, mode: cache.mode || "ambient" });
+  }
+
+  function setUseCases(useCases) {
+    return save({ useCases: Array.isArray(useCases) ? useCases : [] });
   }
 
   function removeProtectedGoal(goal) {
@@ -137,7 +154,7 @@ const LumenGoals = (() => {
   }
 
   function isActive() {
-    return cache.mode === "active" || cache.mode === "focus" || cache.mode === "guard";
+    return cache.mode === "active" || cache.mode === "guard";
   }
 
   function isPaused() {
@@ -278,12 +295,34 @@ const LumenGoals = (() => {
     return save({ lastDigestSeenWeek: currentIsoWeek() });
   }
 
+  // One-time record that the gentle first-run pill hello has played, so it
+  // never repeats on later page loads.
+  function markSetupInviteSeen() {
+    return save({ setupInviteSeen: true });
+  }
+
+  // Gentle ~monthly cadence for the "still the right goals?" prompt in the
+  // weekly review. True on the first eligible review and then only once every
+  // 28 days — never a weekly nag.
+  const SETUP_REVIEW_INTERVAL_MS = 28 * 24 * 60 * 60 * 1000;
+  function isSetupReviewDue(now = Date.now()) {
+    const last = cache.lastSetupReviewAt;
+    if (!last) return true;
+    return now - last >= SETUP_REVIEW_INTERVAL_MS;
+  }
+
+  // Stamp the setup-review prompt as shown so it won't reappear for ~a month.
+  function markSetupReviewSeen(now = Date.now()) {
+    return save({ lastSetupReviewAt: now });
+  }
+
   return {
     get,
     load,
     save,
     completeOnboarding,
     skipOnboarding,
+    setUseCases,
     removeProtectedGoal,
     addTaskTypeExemption,
     getTaskTypeExemptions,
@@ -305,6 +344,9 @@ const LumenGoals = (() => {
     currentIsoWeek,
     isDigestUnseenThisWeek,
     markDigestSeen,
+    markSetupInviteSeen,
+    isSetupReviewDue,
+    markSetupReviewSeen,
   };
 })();
 

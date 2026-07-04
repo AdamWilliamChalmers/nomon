@@ -26,14 +26,11 @@ let currentGoals = {
   mode: "active",
   useCases: [],
   protectedGoals: [],
-  focusGoal: null,
 };
 sandbox.LumenGoals = {
   get: () => ({ ...currentGoals }),
   isActive: () =>
-    currentGoals.mode === "active" ||
-    currentGoals.mode === "focus" ||
-    currentGoals.mode === "guard",
+    currentGoals.mode === "active" || currentGoals.mode === "guard",
   isGhost: () => currentGoals.mode === "ghost",
   isGuard: () => currentGoals.mode === "guard",
   isPaused: () => false,
@@ -55,7 +52,7 @@ const mk = (role, text, tOffsetMs = 0) => ({
 });
 
 function evaluate({ goals = {}, messages }) {
-  currentGoals = { mode: "active", useCases: [], protectedGoals: [], focusGoal: null, ...goals };
+  currentGoals = { mode: "active", useCases: [], protectedGoals: [], ...goals };
   const index = messages.length - 1;
   return Engine.evaluateMessage(messages[index], messages, index, {
     history: [],

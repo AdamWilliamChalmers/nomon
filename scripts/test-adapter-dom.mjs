@@ -35,7 +35,15 @@ function loadAdapter(globalName, adapterFile, html, hostname, pathname = "/") {
     document: window.document,
     Node: window.Node,
     Event: window.Event,
+    InputEvent: window.InputEvent,
+    KeyboardEvent: window.KeyboardEvent,
     MutationObserver: window.MutationObserver,
+    // Adapters reference these DOM constructors as globals (e.g. the native
+    // value-setter trick in setChatInputText and the input/keydown events it
+    // dispatches); expose them so the sandbox mirrors a real content-script
+    // global scope.
+    HTMLTextAreaElement: window.HTMLTextAreaElement,
+    HTMLInputElement: window.HTMLInputElement,
   };
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
