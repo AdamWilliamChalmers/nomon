@@ -37,7 +37,7 @@
         "https://agent.minimax.io/*",
         "https://chat.minimax.io/*",
         "https://chat.minimaxi.com/*",
-        "https://huggingface.co/chat/*",
+        "https://huggingface.co/*",
         "https://www.doubao.com/*",
         "https://doubao.com/*"
       ]

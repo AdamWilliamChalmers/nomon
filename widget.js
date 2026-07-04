@@ -119,7 +119,6 @@ const LumenWidget = (() => {
         <label class="lumen-popover-label" title="Your engagement across recent days — a mirror to notice trends, not a target to chase">Recent days</label>
         <div class="lumen-popover-sparkline" id="lumen-trend-sparkline"></div>
         <p class="lumen-popover-hint lumen-hidden" id="lumen-trend-empty">A few days of use and your trend shows up here.</p>
-        <a id="lumen-dashboard-link" class="lumen-popover-link" href="https://lumen.so/dashboard" target="_blank" rel="noopener">See full trends on lumen.so ↗</a>
         <div class="lumen-popover-stat" title="Your prompts today across ChatGPT, Gemini, Claude, and other connected tools"><span>Messages</span><span class="lumen-popover-stat-value" id="lumen-stat-messages">0</span></div>
         <div class="lumen-popover-stat" title="Whole tasks you asked AI to do from scratch"><span>Hand-offs</span><span class="lumen-popover-stat-value" id="lumen-stat-handoff">0</span></div>
         <div class="lumen-popover-stat" title="Stretches of passive back-and-forth without questions"><span>Loops</span><span class="lumen-popover-stat-value" id="lumen-stat-loop">0</span></div>
@@ -127,7 +126,7 @@ const LumenWidget = (() => {
         <div class="lumen-popover-stat" title="Prompts that conflicted with a goal you set"><span>Mismatch</span><span class="lumen-popover-stat-value" id="lumen-stat-mismatch">0</span></div>
         <div class="lumen-popover-stat" title="Moments worth thinking through before asking"><span>Depth</span><span class="lumen-popover-stat-value" id="lumen-stat-depth">0</span></div>
         <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Lumen fills this in as you chat.</p>
-        <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Finish setting up Lumen →</button>
+        <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Set up Lumen →</button>
         <label class="lumen-popover-label">Mode</label>
         <select id="lumen-mode-select" class="lumen-popover-select">
           <option value="ambient">Ambient</option>
@@ -152,18 +151,20 @@ const LumenWidget = (() => {
           <input type="checkbox" id="lumen-llm-judge" />
           LLM second opinion · catches subtle hand-offs (on)
         </label>
+        <p class="lumen-popover-hint" id="lumen-judge-hint">On by default · catches subtle hand-offs the rules miss · sends only borderline prompts for a smarter check · cached per message · turn off to stay fully on-device</p>
         <label class="lumen-popover-check">
           <input type="checkbox" id="lumen-study-participant" />
           Calibration study — post-session survey
         </label>
         <label class="lumen-popover-check">
           <input type="checkbox" id="lumen-share-data" />
-          Share anonymised session summary (off by default)
+          Share anonymised session summary (on by default)
         </label>
-        <label class="lumen-popover-label">Backend URL (for judge / calibration / sharing)</label>
-        <input id="lumen-backend-input" class="lumen-popover-focus" type="text" placeholder="http://localhost:3000" />
-        <p class="lumen-popover-hint" id="lumen-judge-hint">On by default · catches subtle hand-offs the rules miss · sends only borderline prompts to your backend for a smarter check · cached per message · turn off to stay fully on-device</p>
-        <a id="lumen-calibration-link" class="lumen-popover-link" href="https://lumen.so/calibration" target="_blank" rel="noopener">Signal calibration dashboard ↗</a>
+        <div id="lumen-advanced" class="lumen-advanced lumen-hidden">
+          <label class="lumen-popover-label">Backend URL (for judge / calibration / sharing)</label>
+          <input id="lumen-backend-input" class="lumen-popover-focus" type="text" placeholder="http://localhost:3000" />
+          <p class="lumen-popover-hint">Developer setting. Set localStorage <code>lumenDev=1</code> to show this.</p>
+        </div>
         <p class="lumen-popover-hint">Drag the Lumen pill to move it out of the way.</p>
         <button class="lumen-popover-reset" id="lumen-reset-session">Reset session</button>
         <div class="lumen-popover-divider"></div>
@@ -201,6 +202,7 @@ const LumenWidget = (() => {
       ${GUARD_HOLD_HTML}
       <div id="lumen-onboarding" class="lumen-onboarding">
         <div class="lumen-onboarding-panel">
+          <button type="button" class="lumen-onboarding-close" id="lumen-onboarding-close" aria-label="Close setup">×</button>
           <div class="lumen-onboarding-head">
             <span class="lumen-onboarding-mark" aria-hidden="true">
               <span class="lm-d lm-d-green"></span>
@@ -244,16 +246,16 @@ const LumenWidget = (() => {
           <div class="lumen-onboarding-step lumen-hidden" data-step="3">
             <h2>How visible should Lumen be?</h2>
             <select id="lumen-onboarding-mode">
-              <option value="ambient">Ambient — subtle inline cues (default)</option>
+              <option value="active">Active — inline cues + reflection cards (default)</option>
+              <option value="ambient">Ambient — subtle inline cues only</option>
               <option value="ghost">Ghost — weekly digest only, nothing in-session</option>
-              <option value="active">Active — inline cues + reflection cards</option>
               <option value="guard">Guard — optional hold before send on clear goal conflicts</option>
             </select>
             <p class="lumen-popover-hint lumen-hidden" id="lumen-onboarding-guard-hint" style="margin-top:14px;">Guard is optional — a fifth mode you opt into. Lumen stays a mirror by default. If you choose Guard, send pauses briefly when a prompt clearly conflicts with a protected goal you wrote. Always bypassable; add at least one goal in the previous step.</p>
             <p class="lumen-popover-hint" style="margin-top:14px;">Smarter detection is on: borderline prompts are sent to Lumen's backend for an LLM second opinion, so subtle hand-offs the local rules miss still get caught. Turn it off any time in the pill to stay fully on-device.</p>
           </div>
           <div class="lumen-onboarding-actions">
-            <button id="lumen-onboarding-skip" class="lumen-onboarding-btn lumen-onboarding-btn--ghost">Skip</button>
+            <button id="lumen-onboarding-skip" class="lumen-onboarding-btn lumen-onboarding-btn--ghost">Not now</button>
             <div class="lumen-onboarding-actions-right">
               <button id="lumen-onboarding-back" class="lumen-onboarding-btn lumen-onboarding-btn--ghost lumen-hidden">Back</button>
               <button id="lumen-onboarding-next" class="lumen-onboarding-btn">Continue</button>
@@ -705,6 +707,7 @@ const LumenWidget = (() => {
     const nextBtn = document.getElementById("lumen-onboarding-next");
     const backBtn = document.getElementById("lumen-onboarding-back");
     const skipBtn = document.getElementById("lumen-onboarding-skip");
+    const closeBtn = document.getElementById("lumen-onboarding-close");
     const progress = panel?.querySelector(".lumen-onboarding-progress");
     const modeSelect = document.getElementById("lumen-onboarding-mode");
     const guardHint = document.getElementById("lumen-onboarding-guard-hint");
@@ -728,24 +731,28 @@ const LumenWidget = (() => {
 
     // Pre-fill the cards from whatever is already saved, so reopening setup to
     // edit answers shows the user's current choices rather than a blank slate.
+    // On a fresh setup (nothing saved yet), every option starts selected — the
+    // user opts out by deselecting or adds their own via the text field.
     function prefill() {
       const goals = LumenGoals.get();
       const useCases = new Set(goals.useCases || []);
+      const useCasesDefaultAll = !goals.onboardingComplete && useCases.size === 0;
       document.querySelectorAll("#lumen-use-cases input").forEach((input) => {
-        input.checked = useCases.has(input.value);
+        input.checked = useCasesDefaultAll || useCases.has(input.value);
       });
       const presetValues = new Set(
         Array.from(document.querySelectorAll("#lumen-goal-presets input")).map((i) => i.value)
       );
       const protectedGoals = goals.protectedGoals || [];
+      const goalsDefaultAll = !goals.onboardingComplete && protectedGoals.length === 0;
       document.querySelectorAll("#lumen-goal-presets input").forEach((input) => {
-        input.checked = protectedGoals.includes(input.value);
+        input.checked = goalsDefaultAll || protectedGoals.includes(input.value);
       });
       const custom = protectedGoals.filter((goal) => !presetValues.has(goal));
       const typed = document.getElementById("lumen-onboarding-goals");
       if (typed) typed.value = custom.join("\n");
-      if (modeSelect) modeSelect.value = goals.mode || "ambient";
-      guardHint?.classList.toggle("lumen-hidden", (goals.mode || "ambient") !== "guard");
+      if (modeSelect) modeSelect.value = goals.mode || "active";
+      guardHint?.classList.toggle("lumen-hidden", (goals.mode || "active") !== "guard");
     }
 
     // Exposed to the module so openSetup() can prefill, reset to step 1, and
@@ -760,11 +767,26 @@ const LumenWidget = (() => {
       guardHint?.classList.toggle("lumen-hidden", modeSelect.value !== "guard");
     });
 
-    skipBtn?.addEventListener("click", () => {
-      LumenGoals.skipOnboarding();
+    // Dismiss the setup card without committing to it. Lumen stays UN-set-up:
+    // onboarding is left incomplete and the quiet "setup available" dot lingers
+    // on the pill so the user can pick it up later. This is the shared exit for
+    // the ×, the backdrop, Escape, and the "Not now" button.
+    function dismissSetup() {
       panel.classList.remove("lumen-onboarding--open");
-      markSetupPending(false);
+      if (!LumenGoals.get().onboardingComplete) markSetupPending(true);
       syncSettingsUI();
+    }
+
+    skipBtn?.addEventListener("click", dismissSetup);
+    closeBtn?.addEventListener("click", dismissSetup);
+    // Backdrop click (outside the card) dismisses; clicks inside the card don't.
+    panel?.addEventListener("click", (event) => {
+      if (event.target === panel) dismissSetup();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && panel?.classList.contains("lumen-onboarding--open")) {
+        dismissSetup();
+      }
     });
 
     backBtn?.addEventListener("click", () => {
@@ -841,6 +863,19 @@ const LumenWidget = (() => {
     }
   }
 
+  // Gate for developer-only popover controls (e.g. the Backend URL override).
+  // Off for normal users; devs flip it on once via the console.
+  function isDevMode() {
+    try {
+      return (
+        localStorage.getItem("lumenDev") === "1" ||
+        /[?&]lumendev=1\b/.test(location.search)
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   function syncSettingsUI() {
     const goals = LumenGoals.get();
     const modeSelect = document.getElementById("lumen-mode-select");
@@ -849,7 +884,6 @@ const LumenWidget = (() => {
     const studyToggle = document.getElementById("lumen-study-participant");
     const shareToggle = document.getElementById("lumen-share-data");
     const backendInput = document.getElementById("lumen-backend-input");
-    const calibrationLink = document.getElementById("lumen-calibration-link");
     const base = LumenConfig.webAppUrl(goals.webAppUrl);
     if (modeSelect) modeSelect.value = goals.mode;
     if (goalsInput) goalsInput.value = goals.protectedGoals.join("\n");
@@ -863,7 +897,7 @@ const LumenWidget = (() => {
     if (setupCta) {
       setupCta.textContent = goals.onboardingComplete
         ? "Review setup →"
-        : "Finish setting up Lumen →";
+        : "Set up Lumen →";
       setupCta.classList.toggle("lumen-popover-setup-cta--pending", !goals.onboardingComplete);
     }
 
@@ -871,7 +905,9 @@ const LumenWidget = (() => {
     if (studyToggle) studyToggle.checked = Boolean(goals.studyParticipant);
     if (shareToggle) shareToggle.checked = Boolean(goals.shareAnonymisedData);
     if (backendInput) backendInput.value = base;
-    if (calibrationLink) calibrationLink.href = `${base}/calibration`;
+    // Backend URL is a developer setting — hidden from the normal popover.
+    // Reveal it with localStorage lumenDev=1 (or ?lumendev=1 in the URL).
+    document.getElementById("lumen-advanced")?.classList.toggle("lumen-hidden", !isDevMode());
 
     const pauseBtn = document.getElementById("lumen-pause-toggle");
     if (pauseBtn) {
@@ -1099,11 +1135,6 @@ const LumenWidget = (() => {
     document.getElementById("lumen-sparkline").innerHTML = renderSparkline(
       (session.loopScores || []).map((s) => 100 - s)
     );
-    const dashLink = document.getElementById("lumen-dashboard-link");
-    if (dashLink) {
-      const goals = globalThis.LumenGoals?.get?.() || {};
-      dashLink.href = `${LumenConfig.webAppUrl(goals.webAppUrl)}/dashboard`;
-    }
     document.getElementById("lumen-stat-messages").textContent = String(session.messageCount);
     document.getElementById("lumen-stat-handoff").textContent = String(session.handoffCount || 0);
     document.getElementById("lumen-stat-loop").textContent = String(session.loopCount);

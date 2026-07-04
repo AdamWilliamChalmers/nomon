@@ -6,9 +6,9 @@ const LumenGoals = (() => {
   // nudges, and the FAB's look, not just "visibility". Copy lives here so the
   // popover helper line, onboarding, and landing page stay in sync.
   const MODES = [
-    { value: "ambient", label: "Ambient", blurb: "Subtle inline cues beside your messages — never a pop-up. The default." },
+    { value: "ambient", label: "Ambient", blurb: "Subtle inline cues beside your messages — never a pop-up." },
     { value: "ghost", label: "Ghost", blurb: "Nothing in-session — you only get the weekly digest." },
-    { value: "active", label: "Active", blurb: "Inline cues plus reflection cards when it matters." },
+    { value: "active", label: "Active", blurb: "Inline cues plus reflection cards when it matters. The default." },
     {
       value: "guard",
       label: "Guard",
@@ -16,13 +16,35 @@ const LumenGoals = (() => {
     },
   ];
 
+  // Everything is opt-OUT by default: a fresh user starts with every AI use
+  // case and every protected goal switched on, and trims down what doesn't
+  // apply (rather than having to opt in). These must mirror the option lists in
+  // the onboarding cards / popover so "select all" and "the defaults" match.
+  const DEFAULT_USE_CASES = [
+    "Research",
+    "Writing",
+    "Coding",
+    "Learning",
+    "Admin",
+    "Creative work",
+    "Work tasks",
+  ];
+  const DEFAULT_PROTECTED_GOALS = [
+    "Write my own first drafts",
+    "Make my own decisions",
+    "Understand the code, not just copy it",
+    "Do my own analysis and reasoning",
+    "Think independently on strategy",
+    "Form my own arguments before asking",
+  ];
+
   const DEFAULTS = {
     onboardingComplete: false,
-    mode: "ambient",
+    mode: "active",
     // True off-switch: pauses tracking and nudges everywhere until resumed.
     paused: false,
-    useCases: [],
-    protectedGoals: [],
+    useCases: [...DEFAULT_USE_CASES],
+    protectedGoals: [...DEFAULT_PROTECTED_GOALS],
     // On by default: the LLM "second opinion" catches the subtle hand-offs the
     // local rules miss. It sends only borderline prompts to the configured
     // backend — disclosed in onboarding + settings, and toggleable from the pill
@@ -30,10 +52,14 @@ const LumenGoals = (() => {
     llmJudgeEnabled: true,
     judgeApiUrl: LumenConfig.judgeApiUrl(),
     webAppUrl: LumenConfig.webAppUrl(),
-    studyParticipant: false,
-    // Privacy-by-default: no session data leaves the device unless the user
-    // explicitly opts in. Gates postSessionSummary egress (see session.js).
-    shareAnonymisedData: false,
+    // On by default (opt-out): the user is enrolled in the calibration study
+    // (post-session survey) unless they turn it off in the pill.
+    studyParticipant: true,
+    // On by default (opt-out): anonymised session summaries are shared with the
+    // backend unless the user turns this off. Gates postSessionSummary egress
+    // (see session.js). NOTE: this sends data off-device by default — make sure
+    // the consent/disclosure copy reflects that.
+    shareAnonymisedData: true,
     crowdCalibration: null,
     fabPosition: null,
     // ISO week (e.g. "2026-W27") the user last viewed or dismissed their weekly
@@ -125,15 +151,15 @@ const LumenGoals = (() => {
       onboardingComplete: true,
       useCases: useCases || [],
       protectedGoals: protectedGoals || [],
-      mode: mode || "ambient",
+      mode: mode || "active",
     });
   }
 
   function skipOnboarding() {
     // Skipping just dismisses the setup flow — it must never wipe answers the
     // user may have already set inline (mode, protected goals, use cases).
-    // Lumen simply runs on whatever is currently configured (Ambient default).
-    return save({ onboardingComplete: true, mode: cache.mode || "ambient" });
+    // Lumen simply runs on whatever is currently configured (Active default).
+    return save({ onboardingComplete: true, mode: cache.mode || "active" });
   }
 
   function setUseCases(useCases) {

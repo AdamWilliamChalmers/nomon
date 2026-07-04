@@ -525,15 +525,15 @@
   border-radius: var(--lm-radius-sm);
   border: 0.5px solid var(--lm-border-strong);
   background: transparent;
-  color: var(--lm-mismatch);
+  color: var(--lm-depth);
   font-family: var(--lm-font);
   font-size: 12.5px;
   font-weight: 600;
   transition: background var(--lm-transition-fast), border-color var(--lm-transition-fast);
 }
 #lumen-root .lumen-digest-open:hover {
-  background: var(--lm-mismatch-tint);
-  border-color: var(--lm-mismatch);
+  background: var(--lm-depth-tint);
+  border-color: var(--lm-depth);
 }
 
 /* ── Weekly review overlay (the "moment": a focused card, not settings) ── */
@@ -1001,7 +1001,9 @@
   text-decoration: underline;
 }
 
-/* "Finish / Review setup" entry point — the only way into the guided cards. */
+/* "Set up / Review setup" entry point — the only way into the guided cards.
+   Styled to match the "Open weekly review" button (.lumen-digest-open) below so
+   the two popover CTAs read as one consistent pair: a clean blue outline. */
 #lumen-root .lumen-popover-setup-cta {
   margin-top: 4px;
   margin-bottom: 4px;
@@ -1011,23 +1013,22 @@
   border-radius: var(--lm-radius-sm);
   border: 0.5px solid var(--lm-border-strong);
   background: transparent;
-  color: var(--lm-slate);
+  color: var(--lm-depth);
   font-family: var(--lm-font);
   font-size: 12.5px;
   font-weight: 600;
-  transition: background var(--lm-transition-fast), border-color var(--lm-transition-fast), color var(--lm-transition-fast);
+  transition: background var(--lm-transition-fast), border-color var(--lm-transition-fast);
 }
 #lumen-root .lumen-popover-setup-cta:hover {
   background: var(--lm-depth-tint);
   border-color: var(--lm-depth);
-  color: var(--lm-depth-text);
 }
-/* First-run (not yet completed) gets a gentle depth-blue accent to match the
-   pill's setup dot; once completed it's a neutral "Review setup" link. */
+/* Same clean outline whether setup is pending or already done — the FAB's
+   corner dot and the button label carry the "not yet set up" cue instead. */
 #lumen-root .lumen-popover-setup-cta--pending {
-  border-color: var(--lm-depth);
-  color: var(--lm-depth-text);
-  background: var(--lm-depth-tint);
+  border-color: var(--lm-border-strong);
+  color: var(--lm-depth);
+  background: transparent;
 }
 
 /* Compact "What you use AI for" chips inside the popover. */
@@ -1255,12 +1256,36 @@
   to { opacity: 1; transform: none; }
 }
 
-/* Header — brand mark + step progress */
+/* Close (×) — dismisses setup without committing; Lumen stays un-set-up. */
+#lumen-root .lumen-onboarding-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--lm-haze);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color var(--lm-transition-fast), background var(--lm-transition-fast);
+}
+#lumen-root .lumen-onboarding-close:hover {
+  color: var(--lm-dusk);
+  background: var(--lm-mist-lt);
+}
+
+/* Header — brand mark + step progress. Right padding keeps the progress pips
+   clear of the absolutely-positioned close (×) button. */
 #lumen-root .lumen-onboarding-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 18px;
+  padding-right: 30px;
 }
 
 #lumen-root .lumen-onboarding-mark {

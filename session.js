@@ -621,7 +621,8 @@ const LumenSession = (() => {
   }
 
   function postSessionSummary() {
-    // Egress is opt-in only. With consent off, scoring stays entirely local.
+    // Egress is on by default (opt-out): sharing is gated on shareAnonymisedData,
+    // which now defaults true. If the user turns it off, scoring stays local.
     const goals = globalThis.LumenGoals?.get?.() || {};
     if (!goals.shareAnonymisedData) return;
 
