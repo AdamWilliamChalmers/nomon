@@ -104,31 +104,64 @@ function parseJudgeJson(content: string): JudgeVerdict {
   return { ...parsed, source: "llm" };
 }
 
-export async function anthropicJudge(body: JudgeRequest, apiKey: string): Promise<JudgeVerdict> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+// Both OpenAI and xAI expose the same Chat Completions shape, so a single
+// caller serves both — only the base URL, model, and key differ.
+async function chatCompletionsJudge(
+  body: JudgeRequest,
+  opts: { apiKey: string; baseUrl: string; model: string; provider: string },
+): Promise<JudgeVerdict> {
+  const res = await fetch(`${opts.baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+      Authorization: `Bearer ${opts.apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model: opts.model,
+      temperature: 0.1,
       max_tokens: 256,
-      system: JUDGE_SYSTEM,
-      messages: [{ role: "user", content: judgeUserPayload(body) }],
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: JUDGE_SYSTEM },
+        { role: "user", content: judgeUserPayload(body) },
+      ],
     }),
   });
 
-  if (!res.ok) throw new Error(`Anthropic ${res.status}`);
+  if (!res.ok) throw new Error(`${opts.provider} ${res.status}`);
   const data = await res.json();
-  const content = data.content?.find((block: { type: string }) => block.type === "text")?.text;
-  if (!content) throw new Error("Anthropic empty response");
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error(`${opts.provider} empty response`);
   return parseJudgeJson(content);
 }
 
+// Primary judge.
+export function openaiJudge(body: JudgeRequest, apiKey: string): Promise<JudgeVerdict> {
+  return chatCompletionsJudge(body, {
+    apiKey,
+    baseUrl: "https://api.openai.com/v1",
+    model: process.env.OPENAI_JUDGE_MODEL || "gpt-4o-mini",
+    provider: "openai",
+  });
+}
+
+// Secondary judge — xAI is OpenAI-compatible. Model is overridable via
+// XAI_MODEL so a deprecated/renamed Grok tier can be repointed without a
+// code change; default is a cheap Grok tier.
+export function xaiJudge(body: JudgeRequest, apiKey: string): Promise<JudgeVerdict> {
+  return chatCompletionsJudge(body, {
+    apiKey,
+    baseUrl: "https://api.x.ai/v1",
+    model: process.env.XAI_MODEL || "grok-3-mini",
+    provider: "xai",
+  });
+}
+
+// Tertiary judge — Gemini uses its own generateContent shape (not OpenAI-
+// compatible), so it can't share chatCompletionsJudge. Model is overridable
+// via GEMINI_MODEL.
 export async function geminiJudge(body: JudgeRequest, apiKey: string): Promise<JudgeVerdict> {
-  const model = "gemini-3.1-flash-lite";
+  const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
@@ -145,35 +178,11 @@ export async function geminiJudge(body: JudgeRequest, apiKey: string): Promise<J
     },
   );
 
-  if (!res.ok) throw new Error(`Gemini ${res.status}`);
+  if (!res.ok) throw new Error(`gemini ${res.status}`);
   const data = await res.json();
   const content = data.candidates?.[0]?.content?.parts
     ?.map((part: { text?: string }) => part.text ?? "")
     .join("");
-  if (!content) throw new Error("Gemini empty response");
-  return parseJudgeJson(content);
-}
-
-export async function openaiJudge(body: JudgeRequest, apiKey: string): Promise<JudgeVerdict> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: JUDGE_SYSTEM },
-        { role: "user", content: judgeUserPayload(body) },
-      ],
-    }),
-  });
-
-  if (!res.ok) throw new Error(`OpenAI ${res.status}`);
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error("gemini empty response");
   return parseJudgeJson(content);
 }

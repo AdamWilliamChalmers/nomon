@@ -111,7 +111,7 @@ scripts/               — Node/jsdom test suites + icon generation (NOT shipped
 
 - **Pages:** `/` (landing), `/dashboard` (weekly card + self-comparison, Pro-gated), `/card/[userId]` (public shareable card), `/community` (opt-in "shapes" feed), `/calibration`, `/signup` (age-gated 13+), `/survey`, `/upgrade` (Pro checkout), `/family/consent`, `/family/parent`.
 - **API routes:** `session` (extension ingest), `judge` (LLM cascade), `card`, `digest` (Monday cron), `feedback`, `survey`, `calibration/weights`, `me` + `v1/me` (user/Pro status), `user`, `upgrade` (Polar webhook), `lumi/learned`, and the `family/*` set.
-- **LLM judge cascade** (`web/lib/judge.ts`): tries Anthropic (`claude-haiku`) → OpenAI (`gpt-4o-mini`) → Gemini (whichever keys exist), falling back to a local regex `heuristicJudge`. A capability probe lets the extension auto-enable the judge only when a key is configured.
+- **LLM judge cascade** (`web/lib/judge.ts`): tries OpenAI (`gpt-4o-mini`) → Gemini (`gemini-3.1-flash-lite`) → xAI (`grok-3-mini`, all keys optional), falling back to a local regex `heuristicJudge`. A capability probe lets the extension auto-enable the judge only when a key is configured. The endpoint is rate-limited per-IP with a global daily budget cap (`web/lib/rateLimit.ts`) to prevent denial-of-wallet abuse.
 - **"Shapes"** (`web/lib/shapes.ts`): weekly personas — Explorer, Thinker, Maker, Delegator, Balanced — derived from question/depth/delegate rates.
 
 ### Database (Supabase / Postgres, `web/supabase/schema.sql`)
@@ -130,7 +130,7 @@ Aggregate-only, privacy-first tables: `users` (incl. `pro`, `polar_order_id`, `a
 
 **Infra:** Render (primary host, `lumen-web-vscp.onrender.com`, `rootDir: web`) with a Vercel config also present. GitHub Actions for CI tests + a weekly cron for digests. `.githooks/pre-commit` runs the suites locally.
 
-**Third-party integrations (all optional):** Supabase (DB), Resend (email), Polar.sh (one-time Pro payments, HMAC-verified webhooks), and three LLM providers (Anthropic / OpenAI / Gemini) for the optional judge.
+**Third-party integrations (all optional):** Supabase (DB), Resend (email), Polar.sh (one-time Pro payments, HMAC-verified webhooks), and three LLM providers (OpenAI / xAI / Gemini) for the optional judge.
 
 **Testing:** Node + jsdom smoke/e2e suites in `scripts/` (~135 assertion checks): shipped-engine smoke test, adapter host-matching/conformance, real-DOM adapter parsing, and a full end-to-end pipeline rendered into a mock ChatGPT DOM.
 

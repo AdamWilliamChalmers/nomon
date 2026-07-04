@@ -38,11 +38,26 @@ services:
         sync: false
 
       # --- Optional: LLM judge cascade (leave blank to run rule-based only) ---
-      - key: ANTHROPIC_API_KEY
-        sync: false
+      # Cascade order: OpenAI (gpt-4o-mini) -> Gemini -> xAI (Grok) -> heuristic.
       - key: OPENAI_API_KEY
         sync: false
+      - key: XAI_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
+        sync: false
+      # Optional model overrides (repoint without a code change).
+      - key: OPENAI_JUDGE_MODEL
+        sync: false
+      - key: XAI_MODEL
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+
+      # --- Judge abuse guards (rate limit + denial-of-wallet budget cap) ---
+      # Defaults live in web/lib/rateLimit.ts; set to override.
+      - key: JUDGE_IP_PER_MIN
+        sync: false
+      - key: JUDGE_DAILY_BUDGET
         sync: false
 
       # --- Optional: Polar payments (Phase 2+) ---
