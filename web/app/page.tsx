@@ -71,8 +71,8 @@ export default function HomePage() {
           </div>
 
           <p className="hero-fine">
-            Works with ChatGPT, Claude, Gemini, Grok, Copilot and Perplexity · Everything stays on
-            your device
+            Works with ChatGPT, Claude, Gemini, Grok, Copilot, Perplexity, Mistral, Meta AI,
+            DeepSeek, Qwen, Kimi and MiniMax · Everything stays on your device
           </p>
         </div>
 
@@ -209,7 +209,7 @@ export default function HomePage() {
           <p className="section-intro" style={{ marginBottom: 36 }}>
             Your habits with AI aren&rsquo;t per-tool, so the mirror isn&rsquo;t either. Lumen works
             inside the chat interfaces you already use, and your weekly card reflects all of them
-            together — switching tools never resets the picture.
+            together. Switching tools never resets the picture.
           </p>
           <ul className="ai-list" aria-label="Supported AI tools">
             <li>ChatGPT</li>
@@ -218,6 +218,12 @@ export default function HomePage() {
             <li>Grok</li>
             <li>Copilot</li>
             <li>Perplexity</li>
+            <li>Mistral</li>
+            <li>Meta AI</li>
+            <li>DeepSeek</li>
+            <li>Qwen</li>
+            <li>Kimi</li>
+            <li>MiniMax</li>
           </ul>
         </div>
       </section>

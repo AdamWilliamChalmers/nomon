@@ -1813,6 +1813,13 @@ const LumenWidget = (() => {
     stopObservingDigestView();
   }
 
+  // Repaint the popover's live stats (Messages, etc.) if it's currently open —
+  // called when the shared session changes underneath us so an open popover
+  // reflects activity from other AI tabs without being reopened.
+  function refreshPopover() {
+    if (popoverOpen) renderPopover();
+  }
+
   function shouldShowSignal(signal, evaluation) {
     const mode = LumenGoals.get().mode;
     if (mode === "ghost") return false;
@@ -2139,6 +2146,7 @@ const LumenWidget = (() => {
   return {
     init,
     updateBadge,
+    refreshPopover,
     showOnboardingIfNeeded,
     injectMessageUI,
     maybeShowDigestReady,

@@ -25,6 +25,46 @@ const LumenSession = (() => {
   let session = defaultSession();
   let digestLog = { depthMoments: [], mismatchEvents: [] };
 
+  // What we last read from / wrote to storage. Used to compute this tab's own
+  // deltas so save() can merge them onto the freshest stored value instead of
+  // clobbering concurrent increments from other AI tabs (last-writer-wins).
+  let persisted = clone(session);
+
+  // Persistence is serialised through this promise chain so overlapping
+  // read-merge-write cycles (rapid messages, cross-tab events) never interleave.
+  let syncChain = Promise.resolve();
+
+  // Subscribers notified whenever the shared live session changes underneath us
+  // (e.g. another AI tab records a message). Lets the FAB/popover repaint
+  // without a full page reload.
+  const changeListeners = new Set();
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  // Order-independent serialisation (sorted keys) so two tabs that built the
+  // same counts in a different insertion order still compare equal — otherwise
+  // the write/notify guards would ping-pong forever.
+  function stableStringify(value) {
+    if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+    if (value && typeof value === "object") {
+      return `{${Object.keys(value)
+        .sort()
+        .map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`)
+        .join(",")}}`;
+    }
+    return JSON.stringify(value);
+  }
+
+  // Fingerprint of the mergeable content only. platform/sessionDate are
+  // last-writer, tab-local fields — excluding them stops harmless writes from
+  // bouncing between tabs on those fields alone.
+  function sharedFingerprint(s) {
+    const { platform, sessionDate, ...rest } = s;
+    return stableStringify(rest);
+  }
+
   function sessionStorageKey() {
     return `lumen_session_${new Date().toISOString().slice(0, 10)}`;
   }
@@ -39,7 +79,43 @@ const LumenSession = (() => {
 
   function apply(data) {
     session = { ...defaultSession(), ...data };
+    // Loading establishes a clean baseline: nothing here is a local delta.
+    persisted = clone(session);
     return session;
+  }
+
+  function notifyChange() {
+    changeListeners.forEach((cb) => {
+      try {
+        cb(session);
+      } catch (_) {
+        // a listener throwing must not stop the others
+      }
+    });
+  }
+
+  function onChange(cb) {
+    if (typeof cb !== "function") return () => {};
+    changeListeners.add(cb);
+    return () => changeListeners.delete(cb);
+  }
+
+  // Re-read + reconcile the shared session from storage. Used on tab
+  // focus/visibility so a tab that was in the background catches up (also
+  // covers SPA navigation between conversations on the same site).
+  function refresh() {
+    return sync();
+  }
+
+  // Live cross-tab updates: when another AI tab writes the shared daily key,
+  // reconcile so this tab's FAB catches up without a full page reload. Our own
+  // writes echo here too, but sync() is a no-op when nothing actually changed.
+  if (chrome?.storage?.onChanged?.addListener) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "session" && areaName !== "local") return;
+      if (!changes?.[sessionStorageKey()]) return;
+      sync();
+    });
   }
 
   function loadDigestLog() {
@@ -164,12 +240,156 @@ const LumenSession = (() => {
 
   function writeLiveSession(key, data) {
     const payload = { [key]: data };
+    const ops = [];
     if (chrome?.storage?.session?.set) {
-      chrome.storage.session.set(payload, () => void chrome.runtime?.lastError);
+      ops.push(
+        new Promise((resolve) =>
+          chrome.storage.session.set(payload, () => {
+            void chrome.runtime?.lastError;
+            resolve();
+          })
+        )
+      );
     }
     if (chrome?.storage?.local?.set) {
-      chrome.storage.local.set(payload, () => void chrome.runtime?.lastError);
+      ops.push(
+        new Promise((resolve) =>
+          chrome.storage.local.set(payload, () => {
+            void chrome.runtime?.lastError;
+            resolve();
+          })
+        )
+      );
     }
+    return Promise.all(ops);
+  }
+
+  // Additive counter maps (task-type tallies): merged = stored + this tab's own
+  // change since it last persisted, per key.
+  function mergeCountMap(stored = {}, base = {}, current = {}) {
+    const out = { ...stored };
+    new Set([...Object.keys(out), ...Object.keys(base), ...Object.keys(current)]).forEach((k) => {
+      const delta = (current[k] || 0) - (base[k] || 0);
+      const value = Math.max(0, (out[k] || 0) + delta);
+      if (value) out[k] = value;
+      else delete out[k];
+    });
+    return out;
+  }
+
+  // Sensitivity is multiplicative (each "wrong" halves it), so carry this tab's
+  // change across as a ratio rather than a difference.
+  function mergeRatioMap(stored = {}, base = {}, current = {}) {
+    const out = { ...stored };
+    new Set([...Object.keys(base), ...Object.keys(current)]).forEach((k) => {
+      const from = base[k] ?? 1;
+      const to = current[k] ?? 1;
+      if (from === 0) {
+        out[k] = to;
+        return;
+      }
+      const ratio = to / from;
+      if (ratio !== 1) out[k] = (out[k] ?? 1) * ratio;
+    });
+    return out;
+  }
+
+  function feedbackKey(f) {
+    return `${f.messageId}|${f.timestamp}|${f.signalType}`;
+  }
+
+  // Feedback is append-only: keep everything already in storage, then add the
+  // entries this tab created since it last persisted (deduped by identity).
+  function mergeFeedback(stored = [], base = [], current = []) {
+    const out = stored.slice();
+    const have = new Set(out.map(feedbackKey));
+    const baseHave = new Set(base.map(feedbackKey));
+    current.forEach((f) => {
+      const key = feedbackKey(f);
+      if (!baseHave.has(key) && !have.has(key)) {
+        out.push(f);
+        have.add(key);
+      }
+    });
+    return out;
+  }
+
+  // Reconcile our in-memory session with the freshest stored value: union the
+  // append-only sets, apply this tab's counter deltas (session vs persisted) on
+  // top of stored, and recompute derived fields. Order preserved: stored's
+  // messages first, then any this tab scored since it last persisted.
+  function mergeSession(stored) {
+    const merged = { ...defaultSession() };
+
+    const idToScore = new Map();
+    const orderedIds = [];
+    const addPair = (id, score) => {
+      if (idToScore.has(id)) return;
+      idToScore.set(id, typeof score === "number" ? score : 0);
+      orderedIds.push(id);
+    };
+    (stored.scoredMessageIds || []).forEach((id, i) => addPair(id, (stored.loopScores || [])[i]));
+
+    const persistedIds = new Set(persisted.scoredMessageIds || []);
+    (session.scoredMessageIds || []).forEach((id, i) => {
+      if (!persistedIds.has(id)) addPair(id, (session.loopScores || [])[i]);
+    });
+
+    merged.scoredMessageIds = orderedIds;
+    merged.loopScores = orderedIds.map((id) => idToScore.get(id));
+    merged.messageCount = orderedIds.length;
+    merged.sessionScore = merged.loopScores.length
+      ? Math.round(merged.loopScores.reduce((a, b) => a + b, 0) / merged.loopScores.length)
+      : 0;
+
+    ["loopCount", "handoffCount", "driftCount", "mismatchCount", "depthCount"].forEach((k) => {
+      const delta = (session[k] || 0) - (persisted[k] || 0);
+      merged[k] = Math.max(0, (stored[k] || 0) + delta);
+    });
+
+    merged.taskTypeCounts = mergeCountMap(stored.taskTypeCounts, persisted.taskTypeCounts, session.taskTypeCounts);
+    merged.taskTypeWrongCounts = mergeCountMap(
+      stored.taskTypeWrongCounts,
+      persisted.taskTypeWrongCounts,
+      session.taskTypeWrongCounts
+    );
+    merged.sessionSensitivity = mergeRatioMap(
+      stored.sessionSensitivity,
+      persisted.sessionSensitivity,
+      session.sessionSensitivity
+    );
+    merged.feedback = mergeFeedback(stored.feedback, persisted.feedback, session.feedback);
+
+    // platform/sessionDate stay this tab's own (they are last-writer fields).
+    merged.platform = session.platform;
+    merged.sessionDate = session.sessionDate;
+    return merged;
+  }
+
+  // One serialised read-merge-write cycle. Adopts the merged result in memory
+  // (so this tab sees other AIs' activity), writes back only when the shared
+  // content actually changed, and notifies subscribers to repaint.
+  function sync() {
+    syncChain = syncChain
+      .then(() =>
+        readLiveSession(sessionStorageKey()).then((raw) => {
+          const stored = { ...defaultSession(), ...(raw || {}) };
+          const before = sharedFingerprint(session);
+          const merged = mergeSession(stored);
+          const mergedPrint = sharedFingerprint(merged);
+
+          session = merged;
+          persisted = clone(merged);
+
+          if (mergedPrint !== before) notifyChange();
+          if (mergedPrint !== sharedFingerprint(stored)) {
+            return writeLiveSession(sessionStorageKey(), merged);
+          }
+          return undefined;
+        })
+      )
+      .catch(() => {});
+    return syncChain;
   }
 
   function load() {
@@ -183,7 +403,7 @@ const LumenSession = (() => {
   }
 
   function save() {
-    writeLiveSession(sessionStorageKey(), session);
+    return sync();
   }
 
   function bumpSignalCount(signal, delta) {
@@ -444,9 +664,15 @@ const LumenSession = (() => {
 
   function reset() {
     session = defaultSession();
+    persisted = clone(session);
     document.querySelectorAll(".lumen-strip, .lumen-card, .lumen-why").forEach((el) => el.remove());
     document.querySelectorAll(".lumen-ai-hidden").forEach((el) => el.classList.remove("lumen-ai-hidden"));
-    save();
+    // Explicit clear overwrites the shared key (no merge) so the reset actually
+    // sticks; other tabs pick up the emptied session via storage.onChanged.
+    const cleared = clone(session);
+    syncChain = syncChain
+      .then(() => writeLiveSession(sessionStorageKey(), cleared))
+      .catch(() => {});
   }
 
   return {
@@ -454,6 +680,8 @@ const LumenSession = (() => {
     getDigestLog,
     load,
     save,
+    refresh,
+    onChange,
     recordMessage,
     reviseMessageSignal,
     recordFeedback,

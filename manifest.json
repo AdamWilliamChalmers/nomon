@@ -25,7 +25,17 @@
         "https://x.com/*",
         "https://copilot.microsoft.com/*",
         "https://www.perplexity.ai/*",
-        "https://perplexity.ai/*"
+        "https://perplexity.ai/*",
+        "https://chat.mistral.ai/*",
+        "https://www.meta.ai/*",
+        "https://meta.ai/*",
+        "https://chat.deepseek.com/*",
+        "https://chat.qwen.ai/*",
+        "https://www.kimi.com/*",
+        "https://kimi.com/*",
+        "https://kimi.moonshot.cn/*",
+        "https://chat.minimax.io/*",
+        "https://chat.minimaxi.com/*"
       ]
     }
   ],
@@ -40,7 +50,17 @@
         "https://x.com/i/grok*",
         "https://copilot.microsoft.com/*",
         "https://www.perplexity.ai/*",
-        "https://perplexity.ai/*"
+        "https://perplexity.ai/*",
+        "https://chat.mistral.ai/*",
+        "https://www.meta.ai/*",
+        "https://meta.ai/*",
+        "https://chat.deepseek.com/*",
+        "https://chat.qwen.ai/*",
+        "https://www.kimi.com/*",
+        "https://kimi.com/*",
+        "https://kimi.moonshot.cn/*",
+        "https://chat.minimax.io/*",
+        "https://chat.minimaxi.com/*"
       ],
       "js": [
         "config.js",
@@ -51,6 +71,12 @@
         "adapters/grok.js",
         "adapters/copilot.js",
         "adapters/perplexity.js",
+        "adapters/mistral.js",
+        "adapters/meta.js",
+        "adapters/deepseek.js",
+        "adapters/qwen.js",
+        "adapters/kimi.js",
+        "adapters/minimax.js",
         "rules.js",
         "net.js",
         "nudges.js",

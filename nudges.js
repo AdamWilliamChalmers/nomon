@@ -220,6 +220,16 @@ const LumenNudges = (() => {
     "copilot.microsoft.com": "Copilot",
     "perplexity.ai": "Perplexity",
     "www.perplexity.ai": "Perplexity",
+    "chat.mistral.ai": "Mistral",
+    "meta.ai": "Meta AI",
+    "www.meta.ai": "Meta AI",
+    "chat.deepseek.com": "DeepSeek",
+    "chat.qwen.ai": "Qwen",
+    "kimi.com": "Kimi",
+    "www.kimi.com": "Kimi",
+    "kimi.moonshot.cn": "Kimi",
+    "chat.minimax.io": "MiniMax",
+    "chat.minimaxi.com": "MiniMax",
   };
 
   function prettyPlatform(host) {

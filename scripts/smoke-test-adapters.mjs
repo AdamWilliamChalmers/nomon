@@ -25,6 +25,12 @@ for (const file of [
   "adapters/grok.js",
   "adapters/copilot.js",
   "adapters/perplexity.js",
+  "adapters/mistral.js",
+  "adapters/meta.js",
+  "adapters/deepseek.js",
+  "adapters/qwen.js",
+  "adapters/kimi.js",
+  "adapters/minimax.js",
 ]) {
   vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), sandbox);
 }
@@ -35,6 +41,12 @@ const gemini = sandbox.LumenAdapterGemini;
 const grok = sandbox.LumenAdapterGrok;
 const copilot = sandbox.LumenAdapterCopilot;
 const perplexity = sandbox.LumenAdapterPerplexity;
+const mistral = sandbox.LumenAdapterMistral;
+const meta = sandbox.LumenAdapterMeta;
+const deepseek = sandbox.LumenAdapterDeepSeek;
+const qwen = sandbox.LumenAdapterQwen;
+const kimi = sandbox.LumenAdapterKimi;
+const minimax = sandbox.LumenAdapterMiniMax;
 const allAdapters = [
   ["chatgpt", chatgpt],
   ["claude", claude],
@@ -42,6 +54,12 @@ const allAdapters = [
   ["grok", grok],
   ["copilot", copilot],
   ["perplexity", perplexity],
+  ["mistral", mistral],
+  ["meta", meta],
+  ["deepseek", deepseek],
+  ["qwen", qwen],
+  ["kimi", kimi],
+  ["minimax", minimax],
 ];
 
 function matchesOn(adapter, hostname, pathname = "/") {
@@ -78,6 +96,21 @@ assert("copilot does NOT match chatgpt.com", !matchesOn(copilot, "chatgpt.com"))
 assert("perplexity matches perplexity.ai", matchesOn(perplexity, "perplexity.ai"));
 assert("perplexity matches www.perplexity.ai", matchesOn(perplexity, "www.perplexity.ai"));
 assert("perplexity does NOT match chatgpt.com", !matchesOn(perplexity, "chatgpt.com"));
+assert("mistral matches chat.mistral.ai", matchesOn(mistral, "chat.mistral.ai"));
+assert("mistral does NOT match chatgpt.com", !matchesOn(mistral, "chatgpt.com"));
+assert("meta matches meta.ai", matchesOn(meta, "meta.ai"));
+assert("meta matches www.meta.ai", matchesOn(meta, "www.meta.ai"));
+assert("meta does NOT match chatgpt.com", !matchesOn(meta, "chatgpt.com"));
+assert("deepseek matches chat.deepseek.com", matchesOn(deepseek, "chat.deepseek.com"));
+assert("deepseek does NOT match chatgpt.com", !matchesOn(deepseek, "chatgpt.com"));
+assert("qwen matches chat.qwen.ai", matchesOn(qwen, "chat.qwen.ai"));
+assert("qwen does NOT match chatgpt.com", !matchesOn(qwen, "chatgpt.com"));
+assert("kimi matches kimi.com", matchesOn(kimi, "kimi.com"));
+assert("kimi matches kimi.moonshot.cn", matchesOn(kimi, "kimi.moonshot.cn"));
+assert("kimi does NOT match chatgpt.com", !matchesOn(kimi, "chatgpt.com"));
+assert("minimax matches chat.minimax.io", matchesOn(minimax, "chat.minimax.io"));
+assert("minimax matches chat.minimaxi.com", matchesOn(minimax, "chat.minimaxi.com"));
+assert("minimax does NOT match chatgpt.com", !matchesOn(minimax, "chatgpt.com"));
 
 // Exactly one adapter should claim each host (no overlap).
 const hostCases = [
@@ -90,6 +123,15 @@ const hostCases = [
   ["copilot.microsoft.com", "/"],
   ["perplexity.ai", "/"],
   ["www.perplexity.ai", "/"],
+  ["chat.mistral.ai", "/"],
+  ["meta.ai", "/"],
+  ["www.meta.ai", "/"],
+  ["chat.deepseek.com", "/"],
+  ["chat.qwen.ai", "/"],
+  ["kimi.com", "/"],
+  ["kimi.moonshot.cn", "/"],
+  ["chat.minimax.io", "/"],
+  ["chat.minimaxi.com", "/"],
 ];
 for (const [host, pathname] of hostCases) {
   const claimers = allAdapters.filter(([, a]) => matchesOn(a, host, pathname)).length;
@@ -122,7 +164,19 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "u
 const cs = manifest.content_scripts[0];
 assert("manifest loads chatgpt adapter", cs.js.includes("adapters/chatgpt.js"));
 assert("manifest loads base factory", cs.js.includes("adapters/base.js"));
-for (const a of ["claude", "gemini", "grok", "copilot", "perplexity"]) {
+for (const a of [
+  "claude",
+  "gemini",
+  "grok",
+  "copilot",
+  "perplexity",
+  "mistral",
+  "meta",
+  "deepseek",
+  "qwen",
+  "kimi",
+  "minimax",
+]) {
   assert(`manifest loads ${a} adapter`, cs.js.includes(`adapters/${a}.js`));
   assert(
     `base loads before ${a} (factory available)`,
@@ -136,12 +190,20 @@ for (const host of [
   "x.com/i/grok",
   "copilot.microsoft.com",
   "perplexity.ai",
+  "chat.mistral.ai",
+  "meta.ai",
+  "chat.deepseek.com",
+  "chat.qwen.ai",
+  "kimi.com",
+  "kimi.moonshot.cn",
+  "chat.minimax.io",
+  "chat.minimaxi.com",
 ]) {
   assert(`manifest matches ${host}`, cs.matches.some((m) => m.includes(host)));
 }
 assert(
   "all adapters load before content.js",
-  cs.js.indexOf("adapters/perplexity.js") < cs.js.indexOf("content.js")
+  cs.js.indexOf("adapters/minimax.js") < cs.js.indexOf("content.js")
 );
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -11,6 +11,12 @@
       g.LumenAdapterGrok,
       g.LumenAdapterCopilot,
       g.LumenAdapterPerplexity,
+      g.LumenAdapterMistral,
+      g.LumenAdapterMeta,
+      g.LumenAdapterDeepSeek,
+      g.LumenAdapterQwen,
+      g.LumenAdapterKimi,
+      g.LumenAdapterMiniMax,
     ].filter(Boolean);
   }
 
@@ -294,6 +300,24 @@
 
     // Show badge + onboarding immediately — don't wait on storage
     LumenWidget.init();
+
+    // Keep this tab's FAB/popover in sync with the shared daily session. Another
+    // AI tab (or this one via SPA navigation) can bump the "Today across all AIs"
+    // totals; repaint here so the numbers update live instead of only on reload.
+    LumenSession.onChange(() => {
+      LumenWidget.updateBadge();
+      LumenWidget.refreshPopover?.();
+    });
+
+    // Background tabs miss some storage events; re-read the shared session when
+    // the tab becomes visible or regains focus so it catches up on return.
+    const resync = () => {
+      if (document.visibilityState === "hidden") return;
+      Promise.resolve(LumenSession.refresh?.()).catch(() => {});
+    };
+    document.addEventListener("visibilitychange", resync);
+    window.addEventListener("focus", resync);
+    window.addEventListener("pageshow", resync);
 
     // Wire up message detection FIRST so prompts always register, even if the
     // async loads below are slow, blocked, or throw (e.g. the localhost web
