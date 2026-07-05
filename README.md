@@ -1,4 +1,4 @@
-# Lumen v3.1
+# Nomon v3.6
 
 Cognitive fitness layer for AI — four signals, no red, no judgment.
 

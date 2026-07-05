@@ -7,7 +7,7 @@ type LumenMarkProps = {
 };
 
 /**
- * Lumen mark — four dots in a T formation: green / amber / purple across the
+ * Nomon mark — four dots in a T formation: green / amber / purple across the
  * top, blue below centre. Pure CSS (no SVG) so it scales and animates crisply
  * at any size. Each dot carries its rest (T) and expanded (diamond) offsets as
  * custom properties; the processing loop converges, pulses, orbits, and returns.
@@ -25,7 +25,7 @@ export default function LumenMark({
   size = 40,
   animate = "none",
   className = "",
-  title = "Lumen",
+  title = "Nomon",
 }: LumenMarkProps) {
   const d = size * 0.25;
   const animClass =

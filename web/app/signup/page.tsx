@@ -41,7 +41,7 @@ export default function SignupPage() {
   return (
     <main className="max-w-md mx-auto px-6 py-12">
       <BrandLogo variant="full" height={56} className="mb-6" />
-      <h1 className="text-2xl font-bold mb-2">Create your Lumen account</h1>
+      <h1 className="text-2xl font-bold mb-2">Create your Nomon account</h1>
       <p className="text-sm text-gray-600 mb-8">
         Minimum age 13. Ages 13–17 require a parent/guardian to confirm before activation.
       </p>
@@ -81,8 +81,8 @@ export default function SignupPage() {
 
         {tooYoung && (
           <p className="text-sm text-amber-800 bg-amber-50 p-3 rounded-lg">
-            Lumen is not available for under-13s. This is a content-filter / screen-time product
-            category — not what Lumen builds.
+            Nomon is not available for under-13s. This is a content-filter / screen-time product
+            category — not what Nomon builds.
           </p>
         )}
 
@@ -130,7 +130,7 @@ export default function SignupPage() {
       )}
 
       <p className="text-xs text-gray-400 mt-8">
-        <Link href="/">← Back to Lumen</Link>
+        <Link href="/">← Back to Nomon</Link>
       </p>
     </main>
   );

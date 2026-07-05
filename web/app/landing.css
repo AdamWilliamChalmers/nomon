@@ -3,7 +3,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap");
 
 /* ============================================================
-   Lumen marketing landing page.
+   Nomon marketing landing page.
    Every rule is namespaced under `.lumen-landing` so this warm-paper
    design never leaks into the app routes (dashboard, community, …),
    which keep the diffuse `--lm-*` system.

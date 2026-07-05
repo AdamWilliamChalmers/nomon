@@ -70,7 +70,7 @@ const LumenNudges = (() => {
 
   function getHandOffOverlayCopy(taskType) {
     return {
-      kicker: "Lumen · hand-off",
+      kicker: "Nomon · hand-off",
       title: "Before you hand this over",
       body: `You're asking for ${taskTypePhrase(taskType)} in one go — which is fine. Even a rough paragraph first changes what you get back.`,
       draftLabel: "I'll draft something",
@@ -82,7 +82,7 @@ const LumenNudges = (() => {
 
   function getLoopOverlayCopy() {
     return {
-      kicker: "Lumen · loop",
+      kicker: "Nomon · loop",
       title: "Still evaluating?",
       body: "Last few messages: short requests, long responses, no questions back. Not a problem — just worth noticing. Still tracking the reasoning?",
       draftLabel: "Let me think first",
@@ -105,14 +105,14 @@ const LumenNudges = (() => {
     if (mismatchCount >= 3) {
       return {
         title: "You said something different",
-        body: `When you set up Lumen, you said: "${goal}". You've handed this over ${mismatchCount} times today. Still the plan?`,
+        body: `When you set up Nomon, you said: "${goal}". You've handed this over ${mismatchCount} times today. Still the plan?`,
         keepLabel: "Still my goal",
         continueLabel: "My goal changed — stop flagging",
       };
     }
     return {
       title: "You said something different",
-      body: `When you set up Lumen, you said: "${goal}". This prompt hands that over. Still the plan?`,
+      body: `When you set up Nomon, you said: "${goal}". This prompt hands that over. Still the plan?`,
       keepLabel: "Still my goal",
       continueLabel: "My goal changed — stop flagging",
     };
@@ -139,7 +139,7 @@ const LumenNudges = (() => {
 
   function getDepthOverlayCopy(taskType) {
     return {
-      kicker: "Lumen · depth",
+      kicker: "Nomon · depth",
       title: "This one might be worth thinking through",
       body: "This is the kind of question where your instinct matters. Worth a thought before you read the answer?",
       draftLabel: "Let me think first",
@@ -165,9 +165,9 @@ const LumenNudges = (() => {
   // paused) against the times they skipped or bypassed.
   function getGuardHoldCopy(goal) {
     return {
-      kicker: "Lumen · guard",
+      kicker: "Nomon · guard",
       title: "This hands over something you wanted to protect",
-      body: `When you set up Lumen, you said: "${goal}". This prompt delegates that. You can always send anyway — Lumen is a mirror, not a lock.`,
+      body: `When you set up Nomon, you said: "${goal}". This prompt delegates that. You can always send anyway — Nomon is a mirror, not a lock.`,
       draftLabel: "Draft something first",
       sendAnywayLabel: "Send anyway",
       goalChangedLabel: "My goal changed — stop holding",
@@ -241,7 +241,7 @@ const LumenNudges = (() => {
   }
 
   // Roll the week's per-platform message counts into "ChatGPT 40 · Claude 12"
-  // style lines so users can see Lumen is tracking across every tool.
+  // style lines so users can see Nomon is tracking across every tool.
   function summarisePlatforms(week) {
     const totals = {};
     week.forEach((entry) => {
@@ -454,7 +454,7 @@ const LumenNudges = (() => {
           `Avg prompt length: ${Math.round(week.reduce((s, e) => s + e.avgPromptLength, 0) / week.length)} words`,
           `Passive replies: ${Math.round(week.reduce((s, e) => s + e.passiveRate, 0) / week.length * 100)}%`,
         ]
-      : ["Not enough data yet — keep chatting with Lumen active."];
+      : ["Not enough data yet — keep chatting with Nomon active."];
 
     return {
       headline,

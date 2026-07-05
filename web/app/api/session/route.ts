@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
   const { data: existingUser } = await supabase.from("users").select("id").eq("id", userId).maybeSingle();
 
   if (!existingUser) {
-    await supabase.from("users").upsert({ id: userId, display_name: "Lumen user" });
+    await supabase.from("users").upsert({ id: userId, display_name: "Nomon user" });
   }
 
   const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();

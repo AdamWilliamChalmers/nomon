@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   }
 
   const email = String(body.email || "").trim();
-  const displayName = String(body.displayName || "Lumen user").trim();
+  const displayName = String(body.displayName || "Nomon user").trim();
   const birthYear = Number(body.birthYear);
   const parentEmail = String(body.parentEmail || "").trim().toLowerCase();
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (isBelowMinimumAge(birthYear)) {
     return NextResponse.json(
       {
-        error: `Lumen is for ages ${FAMILY_LIMITS.minAge}+. Under-13 accounts are not supported.`,
+        error: `Nomon is for ages ${FAMILY_LIMITS.minAge}+. Under-13 accounts are not supported.`,
         code: "AGE_TOO_YOUNG",
       },
       { status: 403 }

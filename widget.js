@@ -26,7 +26,7 @@ const LumenWidget = (() => {
   const OVERLAY_HTML = `
       <div id="lumen-reconsider" class="lumen-reconsider">
         <div class="lumen-reconsider-panel lumen-signal-handoff">
-          <div class="lumen-reconsider-kicker" id="lumen-reconsider-kicker">Lumen · hand-off</div>
+          <div class="lumen-reconsider-kicker" id="lumen-reconsider-kicker">Nomon · hand-off</div>
           <h2 class="lumen-reconsider-title" id="lumen-reconsider-title">Start with your own version?</h2>
           <p class="lumen-reconsider-body" id="lumen-reconsider-body"></p>
           <div id="lumen-reconsider-choices" class="lumen-reconsider-actions">
@@ -43,7 +43,7 @@ const LumenWidget = (() => {
   const GUARD_HOLD_HTML = `
       <div id="lumen-guard-hold" class="lumen-guard-hold">
         <div class="lumen-guard-hold-panel">
-          <div class="lumen-guard-hold-kicker" id="lumen-guard-hold-kicker">Lumen · guard</div>
+          <div class="lumen-guard-hold-kicker" id="lumen-guard-hold-kicker">Nomon · guard</div>
           <h2 class="lumen-guard-hold-title" id="lumen-guard-hold-title">This hands over something you wanted to protect</h2>
           <p class="lumen-guard-hold-body" id="lumen-guard-hold-body"></p>
           <div id="lumen-guard-hold-choices" class="lumen-guard-hold-actions">
@@ -154,8 +154,8 @@ const LumenWidget = (() => {
         <div class="lumen-popover-stat" title="Conversations that wandered from your prompt"><span>Drift</span><span class="lumen-popover-stat-value" id="lumen-stat-drift">0</span></div>
         <div class="lumen-popover-stat" title="Prompts that conflicted with a goal you set"><span>Mismatch</span><span class="lumen-popover-stat-value" id="lumen-stat-mismatch">0</span></div>
         <div class="lumen-popover-stat" title="Moments worth thinking through before asking"><span>Depth</span><span class="lumen-popover-stat-value" id="lumen-stat-depth">0</span></div>
-        <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Lumen fills this in as you chat.</p>
-        <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Set up Lumen →</button>
+        <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Nomon fills this in as you chat.</p>
+        <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Set up Nomon →</button>
         <button type="button" class="lumen-popover-howto" id="lumen-tutorial-cta">How it works</button>
         <label class="lumen-popover-label">Mode</label>
         <select id="lumen-mode-select" class="lumen-popover-select">
@@ -195,7 +195,7 @@ const LumenWidget = (() => {
           <input id="lumen-backend-input" class="lumen-popover-focus" type="text" placeholder="http://localhost:3000" />
           <p class="lumen-popover-hint">Developer setting. Set localStorage <code>lumenDev=1</code> to show this.</p>
         </div>
-        <p class="lumen-popover-hint">Drag the Lumen pill to move it out of the way.</p>
+        <p class="lumen-popover-hint">Drag the Nomon pill to move it out of the way.</p>
         <button class="lumen-popover-reset" id="lumen-reset-session">Reset session</button>
         <div class="lumen-popover-divider"></div>
         <div class="lumen-popover-title">Why last flag</div>
@@ -219,7 +219,7 @@ const LumenWidget = (() => {
       <div id="lumen-weekly" class="lumen-weekly">
         <div class="lumen-weekly-panel">
           <button type="button" class="lumen-weekly-close" id="lumen-weekly-close" aria-label="Close">×</button>
-          <div class="lumen-weekly-kicker">Lumen · weekly review</div>
+          <div class="lumen-weekly-kicker">Nomon · weekly review</div>
           <h2 class="lumen-weekly-headline" id="lumen-weekly-headline">This week</h2>
           <div class="lumen-weekly-body" id="lumen-weekly-body"></div>
           <div class="lumen-weekly-actions">
@@ -247,8 +247,8 @@ const LumenWidget = (() => {
             </div>
           </div>
           <div class="lumen-onboarding-step" data-step="1">
-            <h2>Set up Lumen</h2>
-            <p>What do you mainly use AI for?</p>
+            <h2>Set up Nomon</h2>
+            <p>What do you use AI for? These are all on by default — switch off anything that doesn't fit.</p>
             <div class="lumen-onboarding-options" id="lumen-use-cases">
               <label class="lumen-onboarding-option"><input type="checkbox" value="Research" /><span>Research</span></label>
               <label class="lumen-onboarding-option"><input type="checkbox" value="Writing" /><span>Writing</span></label>
@@ -261,7 +261,7 @@ const LumenWidget = (() => {
           </div>
           <div class="lumen-onboarding-step lumen-hidden" data-step="2">
             <h2>Anything to protect?</h2>
-            <p>Optional. Pick any that apply — or add your own. Lumen only flags mismatch against goals you set yourself.</p>
+            <p>These are all on by default — switch off any that aren't yours, or add your own. Nomon only flags a mismatch against goals you set.</p>
             <div class="lumen-onboarding-options" id="lumen-goal-presets">
               <label class="lumen-onboarding-option"><input type="checkbox" value="Write my own first drafts" /><span>Write my own first drafts</span></label>
               <label class="lumen-onboarding-option"><input type="checkbox" value="Make my own decisions" /><span>Make my own decisions</span></label>
@@ -274,15 +274,15 @@ const LumenWidget = (() => {
             <textarea id="lumen-onboarding-goals" placeholder="One goal per line — e.g. I want to write my own first drafts."></textarea>
           </div>
           <div class="lumen-onboarding-step lumen-hidden" data-step="3">
-            <h2>How visible should Lumen be?</h2>
+            <h2>How visible should Nomon be?</h2>
             <select id="lumen-onboarding-mode">
               <option value="active">Active — inline cues + reflection cards (default)</option>
               <option value="ambient">Ambient — subtle inline cues only</option>
               <option value="ghost">Ghost — weekly digest only, nothing in-session</option>
               <option value="guard">Guard — optional hold before send on clear goal conflicts</option>
             </select>
-            <p class="lumen-popover-hint lumen-hidden" id="lumen-onboarding-guard-hint" style="margin-top:14px;">Guard is optional — a fifth mode you opt into. Lumen stays a mirror by default. If you choose Guard, send pauses briefly when a prompt clearly conflicts with a protected goal you wrote. Always bypassable; add at least one goal in the previous step.</p>
-            <p class="lumen-popover-hint" style="margin-top:14px;">Smarter detection is on: borderline prompts are sent to Lumen's backend for an LLM second opinion, so subtle hand-offs the local rules miss still get caught. Turn it off any time in the pill to stay fully on-device.</p>
+            <p class="lumen-popover-hint lumen-hidden" id="lumen-onboarding-guard-hint" style="margin-top:14px;">Guard is optional — a fifth mode you opt into. Nomon stays a mirror by default. If you choose Guard, send pauses briefly when a prompt clearly conflicts with a protected goal you wrote. Always bypassable; add at least one goal in the previous step.</p>
+            <p class="lumen-popover-hint" style="margin-top:14px;">Smarter detection is on: borderline prompts are sent to Nomon's backend for an LLM second opinion, so subtle hand-offs the local rules miss still get caught. Turn it off any time in the pill to stay fully on-device.</p>
           </div>
           <div class="lumen-onboarding-actions">
             <button id="lumen-onboarding-skip" class="lumen-onboarding-btn lumen-onboarding-btn--ghost">Not now</button>
@@ -813,7 +813,7 @@ const LumenWidget = (() => {
       guardHint?.classList.toggle("lumen-hidden", modeSelect.value !== "guard");
     });
 
-    // Dismiss the setup card without committing to it. Lumen stays UN-set-up:
+    // Dismiss the setup card without committing to it. Nomon stays UN-set-up:
     // onboarding is left incomplete and the quiet "setup available" dot lingers
     // on the pill so the user can pick it up later. This is the shared exit for
     // the ×, the backdrop, Escape, and the "Not now" button.
@@ -897,7 +897,7 @@ const LumenWidget = (() => {
   // First run is a quiet invitation, not a wall. Instead of auto-opening the
   // setup cards over the AI site (the old blocking modal), we mark the pill with
   // a subtle "setup available" dot and play one gentle hello pulse the first
-  // time only. Lumen otherwise runs on Ambient defaults from message one; the
+  // time only. Nomon otherwise runs on Ambient defaults from message one; the
   // user opens setup when they choose (via the pill CTA).
   function showOnboardingIfNeeded() {
     const goals = LumenGoals.get();
@@ -918,30 +918,30 @@ const LumenWidget = (() => {
     const line = modes.map((m) => `${m.label} — ${m.blurb}`).join(" ");
     return (
       line ||
-      "Mode sets how present Lumen is, from a silent weekly digest to a brief hold before send."
+      "Mode sets how present Nomon is, from a silent weekly digest to a brief hold before send."
     );
   }
 
   const TOUR_STEPS = [
     {
       target: () => document.getElementById("lumen-fab"),
-      title: "This is Lumen",
+      title: "This is Nomon",
       body: "A quiet mirror for how you work with AI. The label shows your engagement today across every AI you use — click the pill any time to open this panel.",
     },
     {
       target: () => document.getElementById("lumen-mode-select"),
-      title: "Modes — how present Lumen is",
+      title: "Modes — how present Nomon is",
       body: tourModesBody,
     },
     {
       target: () => document.getElementById("lumen-usecases"),
       title: "What you use AI for",
-      body: "Everything starts switched on. Tap a chip to deselect what doesn't apply — it tunes how Lumen reads your prompts.",
+      body: "Everything starts switched on. Tap a chip to deselect what doesn't apply — it tunes how Nomon reads your prompts.",
     },
     {
       target: () => document.getElementById("lumen-goals-input"),
       title: "Protected goals",
-      body: "Add goals you want to keep doing yourself — one per line — or clear ones that aren't yours. Lumen only flags a mismatch against goals you set here.",
+      body: "Add goals you want to keep doing yourself — one per line — or clear ones that aren't yours. Nomon only flags a mismatch against goals you set here.",
     },
     {
       target: () => document.getElementById("lumen-setup-cta"),
@@ -1109,7 +1109,7 @@ const LumenWidget = (() => {
     if (setupCta) {
       setupCta.textContent = goals.onboardingComplete
         ? "Review setup →"
-        : "Set up Lumen →";
+        : "Set up Nomon →";
       setupCta.classList.toggle("lumen-popover-setup-cta--pending", !goals.onboardingComplete);
     }
 
@@ -1269,7 +1269,7 @@ const LumenWidget = (() => {
 
     if (engagementEl) {
       if (paused) {
-        engagementEl.title = "Lumen is paused — click to open settings and resume";
+        engagementEl.title = "Nomon is paused — click to open settings and resume";
       } else if (!hasMessages) {
         engagementEl.title = "Engagement shows after your first message";
       } else {
@@ -1280,7 +1280,7 @@ const LumenWidget = (() => {
       engagementEl.setAttribute(
         "aria-label",
         paused
-          ? "Lumen paused"
+          ? "Nomon paused"
           : !hasMessages
             ? "Engagement not started"
             : `${engagementLabel(engagement)} today across all AIs${trend ? `, trending ${trend.dir}` : ""}`
@@ -1392,7 +1392,7 @@ const LumenWidget = (() => {
     const tools = LumenNudges.buildProfile(history);
     const contrast = LumenNudges.buildProfileContrast(history);
     if (!tools.length) {
-      el.innerHTML = `<p class="lumen-popover-hint">Lumen builds this as you use different AI tools across the week.</p>`;
+      el.innerHTML = `<p class="lumen-popover-hint">Nomon builds this as you use different AI tools across the week.</p>`;
       return;
     }
     const canShare = tools.some((t) => t.ready);
@@ -1489,7 +1489,7 @@ const LumenWidget = (() => {
     ctx.fillStyle = SHARE_PALETTE.dusk;
     ctx.font = font(34, 600);
     ctx.textBaseline = "middle";
-    ctx.fillText("Lumen", pad + 62, pad + 30);
+    ctx.fillText("Nomon", pad + 62, pad + 30);
 
     // Title
     ctx.fillStyle = SHARE_PALETTE.dusk;
@@ -1639,7 +1639,7 @@ const LumenWidget = (() => {
       <p class="lumen-digest-line">${digest.headline}</p>
       ${
         digest.platforms?.length
-          ? `<p class="lumen-digest-label" title="Lumen tracks every supported AI tool — this is your message split this week">Across tools</p>
+          ? `<p class="lumen-digest-label" title="Nomon tracks every supported AI tool — this is your message split this week">Across tools</p>
       <p class="lumen-digest-line">${digest.platforms.map((p) => `${p.name} ${p.count}`).join(" · ")}</p>`
           : ""
       }
@@ -1909,7 +1909,7 @@ const LumenWidget = (() => {
     ctx.fillStyle = SHARE_PALETTE.dusk;
     ctx.font = font(34, 600);
     ctx.textBaseline = "middle";
-    ctx.fillText("Lumen", pad + 62, pad + 30);
+    ctx.fillText("Nomon", pad + 62, pad + 30);
 
     ctx.textBaseline = "alphabetic";
     ctx.fillStyle = SHARE_PALETTE.dusk;
@@ -2338,7 +2338,7 @@ const LumenWidget = (() => {
         syncSettingsUI();
         // Brief confirmation so the (destructive) goal removal is visible,
         // then dismiss. The id is already suppressed so it won't re-inject.
-        card.innerHTML = `<div class="lumen-card-body">Got it — removed that goal. You can re-add it any time in Lumen settings.</div>`;
+        card.innerHTML = `<div class="lumen-card-body">Got it — removed that goal. You can re-add it any time in Nomon settings.</div>`;
         window.setTimeout(() => card.remove(), 2600);
       });
       anchor.insertAdjacentElement("afterend", card);

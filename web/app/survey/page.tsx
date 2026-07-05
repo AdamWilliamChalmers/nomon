@@ -57,7 +57,7 @@ function SurveyForm() {
       <div className="lm-surface p-6 max-w-lg mx-auto text-center">
         <p className="lm-page-title mb-2">Thank you</p>
         <p className="text-[13px] text-[var(--lm-secondary)] mb-6">
-          Your responses are paired with this session&apos;s Lumen scores for calibration research.
+          Your responses are paired with this session&apos;s Nomon scores for calibration research.
         </p>
         <Link href="/calibration" className="lm-btn lm-btn-primary inline-block">
           View calibration dashboard

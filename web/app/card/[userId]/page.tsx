@@ -47,7 +47,7 @@ function CardContent() {
             This user hasn&apos;t unlocked card sharing yet
           </p>
           <Link href="/" className="lm-link text-[12px]">
-            ← Back to Lumen
+            ← Back to Nomon
           </Link>
         </div>
       </main>
@@ -57,7 +57,7 @@ function CardContent() {
   return (
     <div className="flex justify-center p-8">
       <WeeklyCard
-        displayName="Lumen user"
+        displayName="Nomon user"
         weekLabel={`Week of ${week}`}
         shape={(card.shape as Shape) || "Balanced"}
         depthMoments={Number(card.depth_moments) || 0}

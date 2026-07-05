@@ -1,14 +1,14 @@
-# Lumen — Product Overview
+# Nomon — Product Overview
 
-> **One line:** Lumen is a cognitive-fitness layer for the AI era — a privacy-first browser extension (plus companion web app) that notices *when you stop critically evaluating* AI output and reflects it back to you. A mirror, not a nanny.
+> **One line:** Nomon is a cognitive-fitness layer for the AI era — a privacy-first browser extension (plus companion web app) that notices *when you stop critically evaluating* AI output and reflects it back to you. A mirror, not a nanny.
 
-_Last updated to reflect the shipped state: extension `v3.5.1`, web app `lumen-web 0.1.0` (Next.js 14)._
+_Last updated to reflect the shipped state: extension `v3.6.0`, web app `nomon-web 0.1.0` (Next.js 14). Production URL: `https://nomon-app.com`._
 
 ---
 
-## 1. What Lumen is
+## 1. What Nomon is
 
-Lumen sits quietly beneath your AI chats (ChatGPT, Claude, Gemini, Grok, Copilot, Perplexity) and reads the **structure of the conversation** — never its content, and nothing leaves your device by default. When it detects that you've stopped evaluating what the AI gives you, it surfaces a quiet inline "signal" under your message. Over a week, those signals roll up into a single, shareable card.
+Nomon sits quietly beneath your AI chats (ChatGPT, Claude, Gemini, Grok, Copilot, Perplexity) and reads the **structure of the conversation** — never its content, and nothing leaves your device by default. When it detects that you've stopped evaluating what the AI gives you, it surfaces a quiet inline "signal" under your message. Over a week, those signals roll up into a single, shareable card.
 
 It ships as two things:
 
@@ -128,7 +128,7 @@ Aggregate-only, privacy-first tables: `users` (incl. `pro`, `polar_order_id`, `a
 
 **Web app:** Next.js 14.2 (App Router), React 18.3, TypeScript 5, Tailwind CSS 3.4, `@supabase/supabase-js` 2.49 (DB + auth), `resend` 4.1 (digest email). Node pinned `>=20 <21`. Font: Plus Jakarta Sans.
 
-**Infra:** Render (primary host, `lumen-web-vscp.onrender.com`, `rootDir: web`) with a Vercel config also present. GitHub Actions for CI tests + a weekly cron for digests. `.githooks/pre-commit` runs the suites locally.
+**Infra:** Render (primary host, custom domain `nomon-app.com`, Starter plan, `rootDir: web`) with a Vercel config also present. GitHub Actions for CI tests + a weekly cron for digests. `.githooks/pre-commit` runs the suites locally.
 
 **Third-party integrations (all optional):** Supabase (DB), Resend (email), Polar.sh (one-time Pro payments, HMAC-verified webhooks), and three LLM providers (OpenAI / xAI / Gemini) for the optional judge.
 

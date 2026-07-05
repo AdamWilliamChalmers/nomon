@@ -21,7 +21,7 @@ export async function getUserFromToken(token: string): Promise<LumenUser | null>
   return {
     userId: data.id,
     pro: Boolean(data.pro),
-    displayName: data.display_name || "Lumen user",
+    displayName: data.display_name || "Nomon user",
   };
 }
 

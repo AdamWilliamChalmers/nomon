@@ -70,9 +70,9 @@ export async function POST(req: NextRequest) {
     if (resend && user.email) {
       const q = REFLECTION_QUESTIONS[new Date().getMonth() % REFLECTION_QUESTIONS.length];
       await resend.emails.send({
-        from: "Lumen <hello@lumen.so>",
+        from: "Nomon <hello@nomon-app.com>",
         to: user.email,
-        subject: `Your Lumen week — ${shape}`,
+        subject: `Your Nomon week — ${shape}`,
         html: `<p>${insightLine}</p><p><strong>Reflection:</strong> ${q}</p>`,
       });
       sent += 1;

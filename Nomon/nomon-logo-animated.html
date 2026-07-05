@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOMON — processing animation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:     #0A0A09;
+    --green:  #5BA85C;
+    --amber:  #E5A33D;
+    --purple: #8E44AD;
+    --blue:   #5B9BD5;
+    --white:  #F5F2EC;
+    --dur:    5s;
+    --ease:   cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  body {
+    background: var(--bg);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 100vh; gap: 72px; padding: 64px 32px;
+  }
+  .section-label {
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+    margin-bottom: 24px; text-align: center;
+  }
+  .row { display: flex; align-items: flex-end; gap: 44px; flex-wrap: wrap; justify-content: center; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .tag { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.28); }
+
+  .wm {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 400; letter-spacing: 0.32em;
+    text-transform: uppercase; color: var(--white);
+    line-height: 1; margin-left: 0.32em;
+  }
+
+  /* ─────────────────────────────────────────
+     NOMON PROCESSING ANIMATION
+
+     Structure:
+       .nomon-mark        — sized container (relative)
+         .nomon-spin      — full-size wrapper; rotates during the orbit phase
+           .d ×4          — dots with per-instance custom-property offsets
+
+     Per-dot custom properties (set inline on each instance):
+       --rx / --ry : rest offset from centre  (T formation)
+       --ex / --ey : expanded offset from centre (diamond formation)
+
+     Choreography — one 5s loop:
+       0–22%    rest — the static T formation
+       22–34%   converge into one (dots collide on the palindrome axis)
+       34–44%   pulse as a single body
+       44–54%   expand into four — diamond (N / E / S / W)
+       54–78%   orbit — the diamond rotates 360°
+       78–88%   converge again
+       88–100%  diverge back to the rest T formation
+
+     mix-blend-mode: screen makes overlapping dots bloom toward
+     white at the moment of collision. Dark backgrounds only.
+  ───────────────────────────────────────── */
+  .nomon-mark { position: relative; flex-shrink: 0; }
+  .nomon-spin {
+    position: absolute; inset: 0;
+    animation: nomon-spin var(--dur) var(--ease) infinite;
+  }
+  .nomon-mark .d {
+    position: absolute;
+    top: 50%; left: 50%;
+    border-radius: 50%;
+    mix-blend-mode: screen;
+    will-change: transform;
+    animation: nomon-cycle var(--dur) var(--ease) infinite;
+  }
+  .d-green  { background: var(--green);  }
+  .d-amber  { background: var(--amber);  }
+  .d-purple { background: var(--purple); }
+  .d-blue   { background: var(--blue);   }
+
+  @keyframes nomon-cycle {
+    0%, 22%   { transform: translate(var(--rx), var(--ry)) scale(1); }
+    32%        { transform: translate(0, 0) scale(0.88); }
+    39%        { transform: translate(0, 0) scale(1.28); }
+    44%        { transform: translate(0, 0) scale(0.94); }
+    54%, 76%  { transform: translate(var(--ex), var(--ey)) scale(1); }
+    86%        { transform: translate(0, 0) scale(0.85); }
+    100%       { transform: translate(var(--rx), var(--ry)) scale(1); }
+  }
+
+  @keyframes nomon-spin {
+    0%, 52%   { transform: rotate(0deg); }
+    80%, 100% { transform: rotate(360deg); }
+  }
+
+  .fab {
+    background: #161614;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .fab:hover  { border-color: rgba(255,255,255,0.22); transform: scale(1.04); }
+  .fab:active { transform: scale(0.97); }
+
+  .thinking-row { display: flex; align-items: center; gap: 14px; }
+  .thinking-text {
+    font-size: 14px; color: rgba(255,255,255,0.4);
+    animation: nomon-think-fade var(--dur) ease-in-out infinite;
+  }
+  @keyframes nomon-think-fade {
+    0%, 22%  { opacity: 0.4; }
+    39%       { opacity: 0.9; }
+    54%, 76% { opacity: 0.6; }
+    100%      { opacity: 0.4; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nomon-spin, .nomon-mark .d, .thinking-text { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ── 1. Hero — full lockup ── -->
+  <div>
+    <div class="section-label">Hero — processing loop</div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:36px;">
+
+      <div class="nomon-mark" style="width:150px; height:150px;">
+        <div class="nomon-spin">
+          <div class="d d-green"  style="width:38px;height:38px;margin:-19px 0 0 -19px; --rx:-56px; --ry:-30px; --ex:0px;   --ey:-52px;"></div>
+          <div class="d d-amber"  style="width:38px;height:38px;margin:-19px 0 0 -19px; --rx:0px;   --ry:-30px; --ex:52px;  --ey:0px;"></div>
+          <div class="d d-purple" style="width:38px;height:38px;margin:-19px 0 0 -19px; --rx:56px;  --ry:-30px; --ex:0px;   --ey:52px;"></div>
+          <div class="d d-blue"   style="width:38px;height:38px;margin:-19px 0 0 -19px; --rx:0px;   --ry:26px;  --ex:-52px; --ey:0px;"></div>
+        </div>
+      </div>
+
+      <span class="wm" style="font-size:36px;">Nomon</span>
+    </div>
+  </div>
+
+  <!-- ── 2. Horizontal lockup ── -->
+  <div>
+    <div class="section-label">Horizontal lockup</div>
+    <div style="display:flex; align-items:center; gap:18px;">
+      <div class="nomon-mark" style="width:46px; height:46px;">
+        <div class="nomon-spin">
+          <div class="d d-green"  style="width:12px;height:12px;margin:-6px 0 0 -6px; --rx:-17px; --ry:-9px; --ex:0px;   --ey:-16px;"></div>
+          <div class="d d-amber"  style="width:12px;height:12px;margin:-6px 0 0 -6px; --rx:0px;   --ry:-9px; --ex:16px;  --ey:0px;"></div>
+          <div class="d d-purple" style="width:12px;height:12px;margin:-6px 0 0 -6px; --rx:17px;  --ry:-9px; --ex:0px;   --ey:16px;"></div>
+          <div class="d d-blue"   style="width:12px;height:12px;margin:-6px 0 0 -6px; --rx:0px;   --ry:8px;  --ex:-16px; --ey:0px;"></div>
+        </div>
+      </div>
+      <span class="wm" style="font-size:26px;">Nomon</span>
+    </div>
+  </div>
+
+  <!-- ── 3. FAB variants ── -->
+  <div>
+    <div class="section-label">FAB — extension button</div>
+    <div class="row">
+
+      <div class="col">
+        <div class="fab" style="width:64px;height:64px;border-radius:18px;">
+          <div class="nomon-mark" style="width:36px;height:36px;">
+            <div class="nomon-spin">
+              <div class="d d-green"  style="width:9px;height:9px;margin:-4.5px 0 0 -4.5px; --rx:-13px; --ry:-7px; --ex:0px;   --ey:-12px;"></div>
+              <div class="d d-amber"  style="width:9px;height:9px;margin:-4.5px 0 0 -4.5px; --rx:0px;   --ry:-7px; --ex:12px;  --ey:0px;"></div>
+              <div class="d d-purple" style="width:9px;height:9px;margin:-4.5px 0 0 -4.5px; --rx:13px;  --ry:-7px; --ex:0px;   --ey:12px;"></div>
+              <div class="d d-blue"   style="width:9px;height:9px;margin:-4.5px 0 0 -4.5px; --rx:0px;   --ry:6px;  --ex:-12px; --ey:0px;"></div>
+            </div>
+          </div>
+        </div>
+        <span class="tag">64px</span>
+      </div>
+
+      <div class="col">
+        <div class="fab" style="width:56px;height:56px;border-radius:16px;">
+          <div class="nomon-mark" style="width:30px;height:30px;">
+            <div class="nomon-spin">
+              <div class="d d-green"  style="width:8px;height:8px;margin:-4px 0 0 -4px; --rx:-11px; --ry:-6px; --ex:0px;   --ey:-10px;"></div>
+              <div class="d d-amber"  style="width:8px;height:8px;margin:-4px 0 0 -4px; --rx:0px;   --ry:-6px; --ex:10px;  --ey:0px;"></div>
+              <div class="d d-purple" style="width:8px;height:8px;margin:-4px 0 0 -4px; --rx:11px;  --ry:-6px; --ex:0px;   --ey:10px;"></div>
+              <div class="d d-blue"   style="width:8px;height:8px;margin:-4px 0 0 -4px; --rx:0px;   --ry:5px;  --ex:-10px; --ey:0px;"></div>
+            </div>
+          </div>
+        </div>
+        <span class="tag">56px</span>
+      </div>
+
+      <div class="col">
+        <div class="fab" style="width:40px;height:40px;border-radius:12px;">
+          <div class="nomon-mark" style="width:22px;height:22px;">
+            <div class="nomon-spin">
+              <div class="d d-green"  style="width:6px;height:6px;margin:-3px 0 0 -3px; --rx:-8px; --ry:-4px; --ex:0px;  --ey:-7px;"></div>
+              <div class="d d-amber"  style="width:6px;height:6px;margin:-3px 0 0 -3px; --rx:0px;  --ry:-4px; --ex:7px;  --ey:0px;"></div>
+              <div class="d d-purple" style="width:6px;height:6px;margin:-3px 0 0 -3px; --rx:8px;  --ry:-4px; --ex:0px;  --ey:7px;"></div>
+              <div class="d d-blue"   style="width:6px;height:6px;margin:-3px 0 0 -3px; --rx:0px;  --ry:4px;  --ex:-7px; --ey:0px;"></div>
+            </div>
+          </div>
+        </div>
+        <span class="tag">40px</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 4. Thinking state ── -->
+  <div>
+    <div class="section-label">Thinking state — extension popup</div>
+    <div class="thinking-row">
+      <div class="nomon-mark" style="width:26px;height:26px;" aria-label="Nomon is processing">
+        <div class="nomon-spin">
+          <div class="d d-green"  style="width:7px;height:7px;margin:-3.5px 0 0 -3.5px; --rx:-9px; --ry:-5px; --ex:0px;  --ey:-8px;"></div>
+          <div class="d d-amber"  style="width:7px;height:7px;margin:-3.5px 0 0 -3.5px; --rx:0px;  --ry:-5px; --ex:8px;  --ey:0px;"></div>
+          <div class="d d-purple" style="width:7px;height:7px;margin:-3.5px 0 0 -3.5px; --rx:9px;  --ry:-5px; --ex:0px;  --ey:8px;"></div>
+          <div class="d d-blue"   style="width:7px;height:7px;margin:-3.5px 0 0 -3.5px; --rx:0px;  --ry:4px;  --ex:-8px; --ey:0px;"></div>
+        </div>
+      </div>
+      <span class="thinking-text">processing…</span>
+    </div>
+  </div>
+
+  <!-- ── 5. Scale reference ── -->
+  <div>
+    <div class="section-label">Scale reference</div>
+    <div class="row" style="gap:36px;">
+
+      <div class="col">
+        <div class="nomon-mark" style="width:96px;height:96px;">
+          <div class="nomon-spin">
+            <div class="d d-green"  style="width:24px;height:24px;margin:-12px 0 0 -12px; --rx:-36px; --ry:-19px; --ex:0px;   --ey:-33px;"></div>
+            <div class="d d-amber"  style="width:24px;height:24px;margin:-12px 0 0 -12px; --rx:0px;   --ry:-19px; --ex:33px;  --ey:0px;"></div>
+            <div class="d d-purple" style="width:24px;height:24px;margin:-12px 0 0 -12px; --rx:36px;  --ry:-19px; --ex:0px;   --ey:33px;"></div>
+            <div class="d d-blue"   style="width:24px;height:24px;margin:-12px 0 0 -12px; --rx:0px;   --ry:17px;  --ex:-33px; --ey:0px;"></div>
+          </div>
+        </div>
+        <span class="tag">96px</span>
+      </div>
+
+      <div class="col">
+        <div class="nomon-mark" style="width:64px;height:64px;">
+          <div class="nomon-spin">
+            <div class="d d-green"  style="width:16px;height:16px;margin:-8px 0 0 -8px; --rx:-24px; --ry:-13px; --ex:0px;   --ey:-22px;"></div>
+            <div class="d d-amber"  style="width:16px;height:16px;margin:-8px 0 0 -8px; --rx:0px;   --ry:-13px; --ex:22px;  --ey:0px;"></div>
+            <div class="d d-purple" style="width:16px;height:16px;margin:-8px 0 0 -8px; --rx:24px;  --ry:-13px; --ex:0px;   --ey:22px;"></div>
+            <div class="d d-blue"   style="width:16px;height:16px;margin:-8px 0 0 -8px; --rx:0px;   --ry:11px;  --ex:-22px; --ey:0px;"></div>
+          </div>
+        </div>
+        <span class="tag">64px</span>
+      </div>
+
+      <div class="col">
+        <div class="nomon-mark" style="width:40px;height:40px;">
+          <div class="nomon-spin">
+            <div class="d d-green"  style="width:10px;height:10px;margin:-5px 0 0 -5px; --rx:-15px; --ry:-8px; --ex:0px;   --ey:-14px;"></div>
+            <div class="d d-amber"  style="width:10px;height:10px;margin:-5px 0 0 -5px; --rx:0px;   --ry:-8px; --ex:14px;  --ey:0px;"></div>
+            <div class="d d-purple" style="width:10px;height:10px;margin:-5px 0 0 -5px; --rx:15px;  --ry:-8px; --ex:0px;   --ey:14px;"></div>
+            <div class="d d-blue"   style="width:10px;height:10px;margin:-5px 0 0 -5px; --rx:0px;   --ry:7px;  --ex:-14px; --ey:0px;"></div>
+          </div>
+        </div>
+        <span class="tag">40px</span>
+      </div>
+
+      <div class="col">
+        <div class="nomon-mark" style="width:24px;height:24px;">
+          <div class="nomon-spin">
+            <div class="d d-green"  style="width:6px;height:6px;margin:-3px 0 0 -3px; --rx:-9px; --ry:-5px; --ex:0px;  --ey:-8px;"></div>
+            <div class="d d-amber"  style="width:6px;height:6px;margin:-3px 0 0 -3px; --rx:0px;  --ry:-5px; --ex:8px;  --ey:0px;"></div>
+            <div class="d d-purple" style="width:6px;height:6px;margin:-3px 0 0 -3px; --rx:9px;  --ry:-5px; --ex:0px;  --ey:8px;"></div>
+            <div class="d d-blue"   style="width:6px;height:6px;margin:-3px 0 0 -3px; --rx:0px;  --ry:4px;  --ex:-8px; --ey:0px;"></div>
+          </div>
+        </div>
+        <span class="tag">24px</span>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

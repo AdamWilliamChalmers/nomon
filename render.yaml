@@ -1,14 +1,16 @@
 # Render Blueprint for the Lumen web app (Next.js 14 in /web).
 # Docs: https://render.com/docs/blueprint-spec
 #
-# Cron note: the weekly digest is NOT defined here. Render Cron Jobs require a
-# paid plan ($1/mo min). On the free tier we trigger the digest endpoints with a
-# scheduled GitHub Action instead (see .github/workflows/cron-digest.yml).
+# Cron note: the weekly digest is NOT defined here. Rather than add a separate
+# Render Cron Job service, we trigger the digest endpoints with a scheduled
+# GitHub Action (see .github/workflows/cron-digest.yml) — free and plan-agnostic.
 services:
   - type: web
     name: lumen-web
     runtime: node
-    plan: free
+    # Starter: no cold-start sleeping (unlike free), single instance by default —
+    # which keeps the in-memory judge rate limiter (web/lib/rateLimit.ts) correct.
+    plan: starter
     rootDir: web
     # --include=dev forces devDependencies (tailwindcss, postcss, typescript) to
     # install even when the platform sets NODE_ENV=production, which Next needs

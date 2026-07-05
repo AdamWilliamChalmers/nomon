@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     userId: user.id,
     pro: Boolean(user.pro),
-    displayName: user.display_name || "Lumen user",
+    displayName: user.display_name || "Nomon user",
     share_card_public: Boolean(user.share_card_public),
   });
 }

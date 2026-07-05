@@ -36,7 +36,7 @@ async function loadCommunityEntries(): Promise<CommunityEntry[]> {
       .maybeSingle();
 
     entries.push({
-      displayName: user.display_name || "Lumen user",
+      displayName: user.display_name || "Nomon user",
       shape: (summary?.shape as Shape) || "Balanced",
       sharedAt: summary?.created_at || new Date().toISOString(),
     });
@@ -58,7 +58,7 @@ export default async function CommunityPage() {
       <CommunityFeed entries={entries} sharedCount={entries.length} />
       <p className="text-center mt-8">
         <Link href="/" className="lm-link text-[12px]">
-          ← Back to Lumen
+          ← Back to Nomon
         </Link>
       </p>
     </main>

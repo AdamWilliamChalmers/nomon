@@ -22,7 +22,7 @@ export function buildParentWeeklyEmailHtml(input: {
     : "";
   return `
     <div style="font-family: system-ui, sans-serif; max-width: 480px; color: #111;">
-      <p style="font-size: 12px; color: #666; text-transform: uppercase;">Lumen Family</p>
+      <p style="font-size: 12px; color: #666; text-transform: uppercase;">Nomon Family</p>
       <h1 style="font-size: 20px;">${input.childName}'s week — ${input.shape}</h1>
       <p style="font-size: 14px; color: #444; font-style: italic;">${input.insightLine}</p>
       ${learnedBlock}

@@ -22,7 +22,7 @@ export default function CalibrationPage() {
         <p className="lm-label mb-2">Calibration study (Route 3)</p>
         <p className="text-[12px] text-[var(--lm-secondary)] mb-3">
           Participants opt in via the extension popover. Post-session surveys pair self-reported
-          engagement with Lumen scores.
+          engagement with Nomon scores.
         </p>
         <Link href="/survey" className="lm-link text-[12px]">
           Open survey form →

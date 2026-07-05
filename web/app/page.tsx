@@ -10,9 +10,9 @@ const CHROME_STORE_URL =
   process.env.NEXT_PUBLIC_CHROME_STORE_URL || "https://chromewebstore.google.com/";
 
 export const metadata: Metadata = {
-  title: "Lumen — AI should sharpen your thinking. Not replace it.",
+  title: "Nomon — AI should sharpen your thinking. Not replace it.",
   description:
-    "Lumen is a free Chrome extension that notices when you've stopped evaluating what AI gives you — and quietly reflects it back. A mirror, not a nanny.",
+    "Nomon is a free Chrome extension that notices when you've stopped evaluating what AI gives you — and quietly reflects it back. A mirror, not a nanny.",
 };
 
 export default function HomePage() {
@@ -22,9 +22,9 @@ export default function HomePage() {
       <nav>
         <div className="wrap nav-inner">
           <div className="nav-left">
-            <a className="nav-brand" href="#" aria-label="Lumen home">
+            <a className="nav-brand" href="#" aria-label="Nomon home">
               <span className="wm" style={{ fontSize: 14 }}>
-                Lumen
+                Nomon
               </span>
             </a>
             <span className="nav-tagline">A mirror, not a nanny</span>
@@ -55,7 +55,7 @@ export default function HomePage() {
           </h1>
 
           <p className="lede">
-            Lumen is a free browser extension that notices when you&rsquo;ve stopped evaluating what
+            Nomon is a free browser extension that notices when you&rsquo;ve stopped evaluating what
             the AI gives you &amp; quietly says so, in one line under your prompt.{" "}
             <strong>A mirror, not a nanny.</strong> It never interrupts, never blocks a reply, and
             never reads what you write.
@@ -77,7 +77,7 @@ export default function HomePage() {
         </div>
 
         {/* Demo: the product doing its thing */}
-        <div className="chat" aria-label="Example of Lumen in an AI chat">
+        <div className="chat" aria-label="Example of Nomon in an AI chat">
           <div className="chat-head">
             <div className="chat-head-left">
               <StaticMark size={18} />
@@ -93,7 +93,7 @@ export default function HomePage() {
               Should I take the new job or stay where I am? Just tell me what to do.
             </div>
             <div className="strip">
-              <span className="who">Lumen</span>
+              <span className="who">Nomon</span>
               <span className="dot-i bg-blue" />
               <span className="sig sig-blue">depth · worth thinking first?</span>
             </div>
@@ -171,7 +171,7 @@ export default function HomePage() {
             <div className="step">
               <div className="step-visual">
                 <div className="strip left" style={{ padding: 0 }}>
-                  <span className="who">Lumen</span>
+                  <span className="who">Nomon</span>
                   <span className="dot-i bg-green" />
                   <span className="sig sig-green">loop · still with it?</span>
                 </div>
@@ -207,7 +207,7 @@ export default function HomePage() {
         <div className="wrap">
           <h2>One mirror, every chat</h2>
           <p className="section-intro" style={{ marginBottom: 36 }}>
-            Your habits with AI aren&rsquo;t per-tool, so the mirror isn&rsquo;t either. Lumen works
+            Your habits with AI aren&rsquo;t per-tool, so the mirror isn&rsquo;t either. Nomon works
             inside the chat interfaces you already use, and your weekly card reflects all of them
             together. Switching tools never resets the picture.
           </p>
@@ -235,14 +235,14 @@ export default function HomePage() {
         <div className="wrap">
           <h2>Five signals, five meanings</h2>
           <p className="section-intro">
-            One warning light can&rsquo;t mean five different things — so Lumen doesn&rsquo;t use
+            One warning light can&rsquo;t mean five different things — so Nomon doesn&rsquo;t use
             one. Each signal has its own name, colour and voice, and reads as quiet data under your
             message. There is no red anywhere.
           </p>
 
           <div className="signal-row">
             <div className="strip left">
-              <span className="who">Lumen</span>
+              <span className="who">Nomon</span>
               <span className="dot-i bg-sky" />
               <span className="sig sig-sky">hand-off · what do you already know?</span>
             </div>
@@ -255,7 +255,7 @@ export default function HomePage() {
 
           <div className="signal-row">
             <div className="strip left">
-              <span className="who">Lumen</span>
+              <span className="who">Nomon</span>
               <span className="dot-i bg-green" />
               <span className="sig sig-green">loop · still with it?</span>
             </div>
@@ -268,7 +268,7 @@ export default function HomePage() {
 
           <div className="signal-row">
             <div className="strip left">
-              <span className="who">Lumen</span>
+              <span className="who">Nomon</span>
               <span className="dot-i bg-amber" />
               <span className="sig sig-amber">drift · fewer questions than last week</span>
             </div>
@@ -280,12 +280,12 @@ export default function HomePage() {
 
           <div className="signal-row">
             <div className="strip left">
-              <span className="who">Lumen</span>
+              <span className="who">Nomon</span>
               <span className="dot-i bg-rose" />
               <span className="sig sig-rose">mismatch · you said you&rsquo;d write this part</span>
             </div>
             <p className="meaning">
-              This conflicts with a goal <b>you</b> set. Lumen just quotes your past self back — it
+              This conflicts with a goal <b>you</b> set. Nomon just quotes your past self back — it
               never decides what you should protect.
               <span className="lives">Only ever fires on goals you wrote yourself.</span>
             </p>
@@ -293,7 +293,7 @@ export default function HomePage() {
 
           <div className="signal-row">
             <div className="strip left">
-              <span className="who">Lumen</span>
+              <span className="who">Nomon</span>
               <span className="dot-i bg-blue" />
               <span className="sig sig-blue">depth · worth thinking first?</span>
             </div>
@@ -390,7 +390,7 @@ export default function HomePage() {
         <div className="wrap">
           <h2>For the sceptical</h2>
           <p className="section-intro">
-            Fair questions, direct answers. Lumen exists to counter cognitive offloading — the
+            Fair questions, direct answers. Nomon exists to counter cognitive offloading — the
             well-studied habit of leaning on a tool until you stop thinking for yourself. And if a
             tool watches how you use AI, you should be suspicious of it by default. Here&rsquo;s
             exactly where the lines are.
@@ -400,7 +400,7 @@ export default function HomePage() {
             <div className="qa-item">
               <h3>Does it read my conversations?</h3>
               <p>
-                <b>No.</b> Lumen reads the shape of a conversation — message length,
+                <b>No.</b> Nomon reads the shape of a conversation — message length,
                 question-versus-command patterns, pace — never the words. Message text is not
                 stored, analysed as content, or transmitted.
               </p>
@@ -425,7 +425,7 @@ export default function HomePage() {
             <div className="qa-item">
               <h3>Is this a screen-time app?</h3>
               <p>
-                <b>No.</b> Lumen measures <b>how</b> you use AI, not how much. Use AI as often as you
+                <b>No.</b> Nomon measures <b>how</b> you use AI, not how much. Use AI as often as you
                 like — heavy use with your judgement engaged is exactly the point.
               </p>
             </div>
@@ -447,10 +447,10 @@ export default function HomePage() {
             <div className="qa-item">
               <h3>Who&rsquo;s behind this?</h3>
               <p>
-                <b>A researcher, not a growth team.</b> Lumen is built in Edinburgh by Dr Adam
+                <b>A researcher, not a growth team.</b> Nomon is built in Edinburgh by Dr Adam
                 Chalmers, a University of Edinburgh academic working on computational social science
                 and AI governance. All feedback can be directed to{" "}
-                <a href="mailto:hello@lumen.io">hello@lumen.io</a>.
+                <a href="mailto:hello@nomon-app.com">hello@nomon-app.com</a>.
               </p>
             </div>
           </div>
@@ -472,9 +472,9 @@ export default function HomePage() {
       {/* ═══════════ Footer ═══════════ */}
       <footer>
         <div className="wrap footer-inner">
-          <a className="nav-brand" href="#" aria-label="Lumen home">
+          <a className="nav-brand" href="#" aria-label="Nomon home">
             <StaticMark size={20} />
-            <span className="wm">Lumen</span>
+            <span className="wm">Nomon</span>
           </a>
           <p className="fine">
             Free extension · Ages 13+ · <a href="#">Privacy</a> · <a href="#">How scoring works</a>
@@ -511,7 +511,7 @@ function AnimMark({ size }: { size: number }) {
       className="mark-anim"
       style={{ width: size, height: size }}
       role="img"
-      aria-label="Lumen mark"
+      aria-label="Nomon mark"
     >
       <div className="spin">
         {ANIM_DOTS.map((d) => (

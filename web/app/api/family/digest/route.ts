@@ -39,11 +39,11 @@ export async function POST(req: NextRequest) {
       learnedMoment: learned,
     });
 
-    const subject = `${share.childDisplayName}'s Lumen week — ${shape}`;
+    const subject = `${share.childDisplayName}'s Nomon week — ${shape}`;
 
     if (resend) {
       await resend.emails.send({
-        from: "Lumen Family <hello@lumen.so>",
+        from: "Nomon Family <hello@nomon-app.com>",
         to: share.parentEmail,
         subject,
         html,

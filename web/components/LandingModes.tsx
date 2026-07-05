@@ -44,7 +44,7 @@ const MODES: Mode[] = [
       <>
         <div className="bubble">ok use that version</div>
         <div className="strip">
-          <span className="who">Lumen</span>
+          <span className="who">Nomon</span>
           <span className="dot-i bg-green" />
           <span className="sig sig-green">loop · still with it?</span>
         </div>
@@ -66,7 +66,7 @@ const MODES: Mode[] = [
           Should I take the new job or stay where I am? Just tell me what to do.
         </div>
         <div className="strip">
-          <span className="who">Lumen</span>
+          <span className="who">Nomon</span>
           <span className="dot-i bg-blue" />
           <span className="sig sig-blue">depth · worth thinking first?</span>
         </div>
@@ -103,7 +103,7 @@ const MODES: Mode[] = [
       <>
         <div className="bubble">Write the introduction chapter for me.</div>
         <div className="strip">
-          <span className="who">Lumen</span>
+          <span className="who">Nomon</span>
           <span className="dot-i bg-rose" />
           <span className="sig sig-rose">mismatch · held before send</span>
         </div>

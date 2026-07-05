@@ -1,4 +1,4 @@
-# lumen.so — Companion Web App
+# nomon-app.com — Companion Web App
 
 Next.js 14 + Supabase + Tailwind per `lumen_cursor_v3.md`.
 

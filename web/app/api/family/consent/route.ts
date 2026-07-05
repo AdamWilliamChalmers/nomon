@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     childUserId: row.childUserId,
     childEmail: row.childEmail,
     accountStatus: "active",
-    message: "Account activated. Your child can now use Lumen.",
+    message: "Account activated. Your child can now use Nomon.",
   });
 }
 

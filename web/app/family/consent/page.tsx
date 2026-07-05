@@ -31,7 +31,7 @@ function ConsentForm() {
     <div className="max-w-md mx-auto p-8">
       <h1 className="text-2xl font-bold mb-2">Parental consent</h1>
       <p className="text-sm text-gray-600 mb-6">
-        Your child (age 13–17) requested a Lumen account. Lumen collects behavioural signals only —
+        Your child (age 13–17) requested a Nomon account. Nomon collects behavioural signals only —
         not conversation content.
       </p>
 
@@ -65,7 +65,7 @@ function ConsentForm() {
       {status === "error" && <p className="text-red-600 text-sm mt-3">{message}</p>}
 
       <p className="text-xs text-gray-400 mt-6">
-        <Link href="/">Learn more about Lumen</Link>
+        <Link href="/">Learn more about Nomon</Link>
       </p>
     </div>
   );
