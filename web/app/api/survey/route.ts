@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkSurveyRateLimit, clientIp } from "@/lib/rateLimit";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { getSurveyAggregate, listSurveyResponses, pushSurveyResponse } from "@/lib/surveyMemory";
+
+const USER_ID_RE = /^[a-zA-Z0-9_-]{1,128}$/;
 
 function clampLikert(value: unknown) {
   const n = Number(value);
@@ -9,6 +12,14 @@ function clampLikert(value: unknown) {
 }
 
 export async function POST(req: NextRequest) {
+  const limit = checkSurveyRateLimit(clientIp(req));
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "rate_limited", scope: limit.reason },
+      { status: 429, headers: limit.retryAfter ? { "Retry-After": String(limit.retryAfter) } : {} },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -17,6 +28,9 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = String(body.userId || "anonymous");
+  if (!USER_ID_RE.test(userId)) {
+    return NextResponse.json({ error: "invalid userId" }, { status: 400 });
+  }
   const q1 = clampLikert(body.q1);
   const q2 = clampLikert(body.q2);
   const q3 = clampLikert(body.q3);

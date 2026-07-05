@@ -82,15 +82,40 @@ Rules:
 - none: administrative, factual, or unclear
 Never moralize. Be concise.`;
 
+const VALID_SIGNALS = new Set<JudgeSignal>(["handoff", "loop", "engaged", "none"]);
+const VALID_CONFIDENCE = new Set<JudgeConfidence>(["high", "medium", "low"]);
+
 function judgeUserPayload(body: JudgeRequest) {
+  const reasons = Array.isArray(body.ruleReasons) ? body.ruleReasons.slice(0, 10) : [];
   return JSON.stringify({
     messageIndex: body.messageIndex,
-    taskType: body.taskType,
+    taskType: typeof body.taskType === "string" ? body.taskType.slice(0, 64) : body.taskType,
     rulePrimary: body.rulePrimary,
-    ruleReasons: body.ruleReasons,
+    ruleReasons: reasons.map((r) => String(r).slice(0, 120)),
     loopScore: body.loopScore,
     prompt: body.text.slice(0, 2000),
   });
+}
+
+function validateJudgeVerdict(parsed: unknown): JudgeVerdict {
+  if (!parsed || typeof parsed !== "object") throw new Error("invalid verdict shape");
+  const obj = parsed as Record<string, unknown>;
+  const signal = String(obj.signal || "");
+  const confidence = String(obj.confidence || "");
+  if (!VALID_SIGNALS.has(signal as JudgeSignal)) throw new Error(`invalid signal: ${signal}`);
+  if (!VALID_CONFIDENCE.has(confidence as JudgeConfidence)) {
+    throw new Error(`invalid confidence: ${confidence}`);
+  }
+  const rationale =
+    typeof obj.rationale === "string" ? obj.rationale.slice(0, 500) : "No rationale provided.";
+  const delegation = typeof obj.delegation === "boolean" ? obj.delegation : false;
+  return {
+    signal: signal as JudgeSignal,
+    confidence: confidence as JudgeConfidence,
+    rationale,
+    delegation,
+    source: "llm",
+  };
 }
 
 function parseJudgeJson(content: string): JudgeVerdict {
@@ -100,8 +125,7 @@ function parseJudgeJson(content: string): JudgeVerdict {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start !== -1 && end !== -1 && end > start) raw = raw.slice(start, end + 1);
-  const parsed = JSON.parse(raw) as JudgeVerdict;
-  return { ...parsed, source: "llm" };
+  return validateJudgeVerdict(JSON.parse(raw));
 }
 
 // Both OpenAI and xAI expose the same Chat Completions shape, so a single

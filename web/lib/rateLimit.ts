@@ -20,7 +20,9 @@ interface Window {
 }
 
 const ipWindows = new Map<string, Window>();
+const scopedIpWindows = new Map<string, Window>();
 let globalDay: Window = { count: 0, resetAt: 0 };
+let judgeBudgetLoggedPct = 0;
 
 function envInt(name: string, fallback: number): number {
   const n = Number(process.env[name]);
@@ -41,13 +43,57 @@ export function clientIp(request: Request): string {
   return request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
+function sweepExpiredWindows(store: Map<string, Window>, now: number) {
+  if (store.size <= 10_000) return;
+  store.forEach((w, key) => {
+    if (now >= w.resetAt) store.delete(key);
+  });
+}
+
+function logJudgeBudgetUsage(count: number, cap: number) {
+  const pct = Math.floor((count / cap) * 100);
+  for (const threshold of [50, 80, 100]) {
+    if (pct >= threshold && judgeBudgetLoggedPct < threshold) {
+      judgeBudgetLoggedPct = threshold;
+      console.warn(
+        `[judge-budget] ${pct}% of daily cap used (${count}/${cap}). ` +
+          (threshold === 100 ? "Further judge calls will be rejected until reset." : ""),
+      );
+    }
+  }
+}
+
+/** Generic per-IP fixed-window limiter for unauthenticated extension APIs. */
+export function checkIpRateLimit(
+  scope: string,
+  ip: string,
+  perMin: number,
+): RateLimitResult {
+  const now = Date.now();
+  const key = `${scope}:${ip}`;
+  let win = scopedIpWindows.get(key);
+  if (!win || now >= win.resetAt) {
+    win = { count: 0, resetAt: now + MINUTE };
+    scopedIpWindows.set(key, win);
+  }
+  if (win.count >= perMin) {
+    return { ok: false, reason: "ip", retryAfter: Math.ceil((win.resetAt - now) / 1000) };
+  }
+  win.count += 1;
+  sweepExpiredWindows(scopedIpWindows, now);
+  return { ok: true };
+}
+
 export function checkJudgeRateLimit(ip: string): RateLimitResult {
   const now = Date.now();
   const perIpPerMin = envInt("JUDGE_IP_PER_MIN", 20);
   const globalPerDay = envInt("JUDGE_DAILY_BUDGET", 20_000);
 
   // Global daily budget — the wallet guard. Checked before anything else.
-  if (now >= globalDay.resetAt) globalDay = { count: 0, resetAt: now + DAY };
+  if (now >= globalDay.resetAt) {
+    globalDay = { count: 0, resetAt: now + DAY };
+    judgeBudgetLoggedPct = 0;
+  }
   if (globalDay.count >= globalPerDay) {
     return { ok: false, reason: "global", retryAfter: Math.ceil((globalDay.resetAt - now) / 1000) };
   }
@@ -64,13 +110,17 @@ export function checkJudgeRateLimit(ip: string): RateLimitResult {
 
   win.count += 1;
   globalDay.count += 1;
+  logJudgeBudgetUsage(globalDay.count, globalPerDay);
 
-  // Bound memory: sweep expired IP windows occasionally.
-  if (ipWindows.size > 10_000) {
-    ipWindows.forEach((w, key) => {
-      if (now >= w.resetAt) ipWindows.delete(key);
-    });
-  }
+  sweepExpiredWindows(ipWindows, now);
 
   return { ok: true };
+}
+
+export function checkSessionRateLimit(ip: string): RateLimitResult {
+  return checkIpRateLimit("session", ip, envInt("SESSION_IP_PER_MIN", 30));
+}
+
+export function checkSurveyRateLimit(ip: string): RateLimitResult {
+  return checkIpRateLimit("survey", ip, envInt("SURVEY_IP_PER_MIN", 10));
 }

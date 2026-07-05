@@ -1,9 +1,20 @@
 import { NextRequest } from "next/server";
 import { extensionJsonResponse, handleExtensionOptions } from "@/lib/extensionCors";
+import { checkSessionRateLimit, clientIp } from "@/lib/rateLimit";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { pushFeedback, listFeedbackRows, type FeedbackRow } from "@/lib/feedbackMemory";
 
 const memoryStore: Array<Record<string, unknown>> = [];
+const USER_ID_RE = /^[a-zA-Z0-9_-]{1,128}$/;
+
+function isValidUserId(userId: string): boolean {
+  return USER_ID_RE.test(userId);
+}
+
+function sanitizePromptSnippet(snippet: string | undefined): string | undefined {
+  if (!snippet) return undefined;
+  return snippet.slice(0, 200).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
+}
 
 function normalizeFeedbackRows(
   userId: string,
@@ -20,7 +31,10 @@ function normalizeFeedbackRows(
       taskType: String(row.taskType || "general"),
       verdict: String(row.verdict || "wrong"),
       score: typeof row.score === "number" ? row.score : undefined,
-      promptSnippet: typeof row.promptSnippet === "string" ? row.promptSnippet : undefined,
+      promptSnippet:
+        typeof row.promptSnippet === "string"
+          ? sanitizePromptSnippet(row.promptSnippet)
+          : undefined,
       platform,
       sessionDate,
     };
@@ -50,6 +64,15 @@ export async function OPTIONS(request: Request) {
 }
 
 export async function POST(req: NextRequest) {
+  const limit = checkSessionRateLimit(clientIp(req));
+  if (!limit.ok) {
+    return extensionJsonResponse(
+      req,
+      { error: "rate_limited", scope: limit.reason },
+      { status: 429, headers: limit.retryAfter ? { "Retry-After": String(limit.retryAfter) } : {} },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -60,6 +83,9 @@ export async function POST(req: NextRequest) {
   const userId = String(body.userId || "");
   if (!userId) {
     return extensionJsonResponse(req, { error: "userId required" }, { status: 400 });
+  }
+  if (!isValidUserId(userId)) {
+    return extensionJsonResponse(req, { error: "invalid userId" }, { status: 400 });
   }
 
   const sessionDate = String(body.sessionDate || new Date().toISOString().slice(0, 10));
