@@ -102,19 +102,22 @@ const LumenNudges = (() => {
   }
 
   function getMismatchCardCopy(goal, mismatchCount) {
+    const actions = {
+      keepLabel: "Still my goal",
+      dismissLabel: "Just this once",
+      removeLabel: "Remove this goal",
+    };
     if (mismatchCount >= 3) {
       return {
         title: "You said something different",
         body: `When you set up Nomon, you said: "${goal}". You've handed this over ${mismatchCount} times today. Still the plan?`,
-        keepLabel: "Still my goal",
-        continueLabel: "My goal changed — stop flagging",
+        ...actions,
       };
     }
     return {
       title: "You said something different",
       body: `When you set up Nomon, you said: "${goal}". This prompt hands that over. Still the plan?`,
-      keepLabel: "Still my goal",
-      continueLabel: "My goal changed — stop flagging",
+      ...actions,
     };
   }
 
@@ -172,7 +175,7 @@ const LumenNudges = (() => {
       body: `When you set up Nomon, you said: "${goal}". This prompt delegates that. You can always send anyway — Nomon is a mirror, not a lock.`,
       draftLabel: "Draft something first",
       sendAnywayLabel: "Send anyway",
-      goalChangedLabel: "My goal changed — stop holding",
+      goalChangedLabel: "Remove this goal from settings",
       draftPlaceholder: "Your rough draft — even one sentence…",
       submitLabel: "Add my draft and send",
     };
@@ -244,6 +247,22 @@ const LumenNudges = (() => {
     return (host || "").replace(/^www\./, "").replace(/\.(com|ai|google\.com)$/, "");
   }
 
+  // Merge aliases (chat.openai.com → chatgpt.com) so one tool doesn't eat
+  // multiple profile slots or hide lower-traffic tools behind a top-3 cap.
+  const PLATFORM_CANONICAL = {
+    "chat.openai.com": "chatgpt.com",
+    "www.perplexity.ai": "perplexity.ai",
+    "www.meta.ai": "meta.ai",
+    "www.kimi.com": "kimi.com",
+    "www.doubao.com": "doubao.com",
+    "m365.cloud.microsoft": "copilot.microsoft.com",
+    "copilot.cloud.microsoft": "copilot.microsoft.com",
+  };
+
+  function canonicalPlatformHost(host) {
+    return PLATFORM_CANONICAL[host] || host;
+  }
+
   // Roll the week's per-platform message counts into "ChatGPT 40 · Claude 12"
   // style lines so users can see Nomon is tracking across every tool.
   function summarisePlatforms(week) {
@@ -272,6 +291,7 @@ const LumenNudges = (() => {
   const PROFILE_WINDOW_DAYS = 14;
   const MIN_PROFILE_MESSAGES = 10;
   const MIN_PROFILE_SESSIONS = 2;
+  const MAX_PROFILE_TOOLS = 8;
 
   // Engine task types → the plain-language domain we show the user.
   const TASK_DOMAIN = {
@@ -314,6 +334,7 @@ const LumenNudges = (() => {
           ? { [entry.platform]: entry }
           : {};
       Object.entries(platforms).forEach(([host, snap]) => {
+        host = canonicalPlatformHost(host);
         const a =
           acc[host] ||
           (acc[host] = { messages: 0, sessions: 0, qSum: 0, plSum: 0, passSum: 0, signal: {}, task: {} });
@@ -415,11 +436,18 @@ const LumenNudges = (() => {
     const week = (history || []).slice(-windowDays);
     const acc = accumulateByPlatform(week);
 
-    return Object.entries(acc)
+    let tools = Object.entries(acc)
+      .filter(([, a]) => a.messages > 0)
       .map(([host, a]) => ({ host, name: prettyPlatform(host), ...a }))
-      .sort((x, y) => y.messages - x.messages)
-      .slice(0, 3)
-      .map((t) => {
+      .sort((x, y) => y.messages - x.messages);
+
+    const currentHost = opts.currentHost ? canonicalPlatformHost(opts.currentHost) : null;
+    if (currentHost && acc[currentHost]?.messages > 0 && !tools.some((t) => t.host === currentHost)) {
+      tools.push({ host: currentHost, name: prettyPlatform(currentHost), ...acc[currentHost] });
+      tools.sort((x, y) => y.messages - x.messages);
+    }
+
+    return tools.slice(0, MAX_PROFILE_TOOLS).map((t) => {
         if (t.messages < minMessages || t.sessions < minSessions) {
           return { name: t.name, ready: false, line: `Still learning how you use ${t.name}.` };
         }
@@ -491,6 +519,8 @@ const LumenNudges = (() => {
     summariseResponses,
     buildProfile,
     buildProfileContrast,
+    canonicalPlatformHost,
+    prettyPlatform,
     buildDigest,
   };
 })();

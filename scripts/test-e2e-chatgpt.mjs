@@ -163,8 +163,6 @@ assert("ghost mode reported by goals", LumenGoals.isGhost());
 // Reset to a never-set-up state and confirm showOnboardingIfNeeded() only marks
 // the pill (a subtle dot) rather than auto-opening the setup cards.
 LumenGoals.save({ onboardingComplete: false, setupInviteSeen: false });
-const fabReset = doc.getElementById("lumen-fab");
-if (fabReset) fabReset.dataset.setupPending = "false";
 doc.getElementById("lumen-onboarding")?.classList.remove("lumen-onboarding--open");
 
 LumenWidget.showOnboardingIfNeeded();
@@ -173,8 +171,8 @@ assert(
   !doc.getElementById("lumen-onboarding")?.classList.contains("lumen-onboarding--open")
 );
 assert(
-  "first run sets the quiet pill setup indicator",
-  doc.getElementById("lumen-fab")?.dataset.setupPending === "true"
+  "first run marks setup CTA as pending",
+  doc.getElementById("lumen-setup-cta")?.classList.contains("lumen-popover-setup-cta--pending")
 );
 
 // The setup cards open only on explicit user action (the popover CTA).
@@ -189,12 +187,11 @@ console.log(`\n${passed} passed, ${failed} failed`);
 console.log(`
 ── Manual QA (needs the extension loaded in your Chrome, logged into ChatGPT) ──
   1. chrome://extensions → Developer mode → Load unpacked → this repo root.
-  2. Open chatgpt.com on a fresh profile; confirm the Lumen pill appears with a
-     small blue "setup" dot and ONE gentle hello pulse — but NO blocking modal.
-     Reload the page: the dot persists, the pulse does not replay, still no modal.
-  2b. Open the pill → click "Finish setting up Lumen →"; the guided cards open.
-     Complete or Skip → the dot clears and never returns. Reopen the pill →
-     the button now reads "Review setup →" and reopens the cards pre-filled.
+  2. Open chatgpt.com on a fresh profile; confirm the Lumen pill appears with NO
+     blocking modal. Open the pill → "Set up Nomon →" has a very subtle pulse.
+     Reload: pulse persists until setup is completed or skipped, still no modal.
+  2b. Open the pill → click "Set up Nomon →"; the guided cards open.
+     Complete or Skip → the pulse stops; the button reads "Review setup →".
   2c. In the popover, toggle "What you use AI for" chips and edit "Protected
      goals"; reopen setup and confirm the cards reflect those edits.
   3. Send "write my essay on X" as msg 1 → expect a hand-off strip, NO modal,

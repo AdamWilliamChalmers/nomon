@@ -393,30 +393,6 @@
   100% { box-shadow: 0 0 0 0 rgba(123, 92, 191, 0); }
 }
 
-/* ── First-run "setup available" indicator ── */
-/* A calm, static blue dot inviting the user to set Lumen up. Deliberately does
-   NOT pulse forever — the one gentle hello pulse plays once on the mark itself
-   (pulseFabMark), keeping the pill a mirror, not a nag. Cleared once setup is
-   completed or skipped. Digest-ready takes visual priority when both are set. */
-#lumen-root #lumen-fab-setup {
-  display: none;
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--lm-depth);
-  border: 2px solid var(--lm-surface);
-}
-#lumen-root #lumen-fab[data-setup-pending="true"] #lumen-fab-setup {
-  display: block;
-}
-#lumen-root #lumen-fab[data-digest-ready="true"] #lumen-fab-setup,
-#lumen-root #lumen-fab[data-paused="true"] #lumen-fab-setup {
-  display: none;
-}
-
 /* The "popup" itself — anchored above the FAB, clickable to view the digest.
    Persists until View or dismiss (× marks the week seen). */
 #lumen-root .lumen-digest-toast {
@@ -839,9 +815,11 @@
   gap: 18px;
   align-items: center;
   margin-top: 2px;
+  flex-wrap: wrap;
 }
 #lumen-root .lumen-card--mismatch .lumen-card-btn,
-#lumen-root .lumen-card--mismatch .lumen-card-btn--secondary {
+#lumen-root .lumen-card--mismatch .lumen-card-btn--secondary,
+#lumen-root .lumen-card--mismatch .lumen-card-btn--ghost {
   background: transparent;
   border: none;
   padding: 2px 0;
@@ -854,11 +832,13 @@
   opacity: 1;
   text-decoration: underline;
 }
-#lumen-root .lumen-card--mismatch .lumen-card-btn--secondary {
+#lumen-root .lumen-card--mismatch .lumen-card-btn--secondary,
+#lumen-root .lumen-card--mismatch .lumen-card-btn--ghost {
   color: var(--lm-haze);
   font-weight: 500;
 }
-#lumen-root .lumen-card--mismatch .lumen-card-btn--secondary:hover {
+#lumen-root .lumen-card--mismatch .lumen-card-btn--secondary:hover,
+#lumen-root .lumen-card--mismatch .lumen-card-btn--ghost:hover {
   color: var(--lm-slate);
   text-decoration: underline;
 }
@@ -1026,12 +1006,19 @@
   background: var(--lm-depth-tint);
   border-color: var(--lm-depth);
 }
-/* Same clean outline whether setup is pending or already done — the FAB's
-   corner dot and the button label carry the "not yet set up" cue instead. */
+@keyframes lumen-setup-cta-pulse {
+  0%,
+  100% {
+    border-color: var(--lm-border-strong);
+    box-shadow: none;
+  }
+  50% {
+    border-color: rgba(52, 120, 197, 0.45);
+    box-shadow: 0 0 0 3px rgba(52, 120, 197, 0.06);
+  }
+}
 #lumen-root .lumen-popover-setup-cta--pending {
-  border-color: var(--lm-border-strong);
-  color: var(--lm-depth);
-  background: transparent;
+  animation: lumen-setup-cta-pulse 3.2s ease-in-out infinite;
 }
 
 /* Quiet "How it works" replay link — sits just under the setup CTA and opens

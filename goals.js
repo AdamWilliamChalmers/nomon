@@ -176,6 +176,25 @@ const LumenGoals = (() => {
     return save({ protectedGoals });
   }
 
+  function listPresetGoals() {
+    return [...DEFAULT_PROTECTED_GOALS];
+  }
+
+  function splitProtectedGoals(protectedGoals = []) {
+    const presetSet = new Set(DEFAULT_PROTECTED_GOALS);
+    return {
+      presetGoals: protectedGoals.filter((goal) => presetSet.has(goal)),
+      customGoals: protectedGoals.filter((goal) => !presetSet.has(goal)),
+    };
+  }
+
+  function mergeProtectedGoals({ presetGoals = [], customGoals = [] } = {}) {
+    const presetSet = new Set(DEFAULT_PROTECTED_GOALS);
+    const presets = presetGoals.filter((goal) => presetSet.has(goal));
+    const custom = customGoals.filter((goal) => goal && !presetSet.has(goal));
+    return Array.from(new Set([...presets, ...custom]));
+  }
+
   function isGhost() {
     return cache.mode === "ghost";
   }
@@ -366,6 +385,9 @@ const LumenGoals = (() => {
     skipOnboarding,
     setUseCases,
     removeProtectedGoal,
+    listPresetGoals,
+    splitProtectedGoals,
+    mergeProtectedGoals,
     addTaskTypeExemption,
     getTaskTypeExemptions,
     taskTypeLabel,

@@ -22,6 +22,8 @@ const LumenSession = (() => {
     taskTypeCounts: {},
     sessionDate: new Date().toISOString().slice(0, 10),
     platform: window.location.hostname,
+    // Per-host tallies for today's AI profile snapshot (cross-tab merged in sync()).
+    platformStats: {},
   });
 
   let session = defaultSession();
@@ -362,6 +364,11 @@ const LumenSession = (() => {
     );
     merged.feedback = mergeFeedback(stored.feedback, persisted.feedback, session.feedback);
     merged.messageSignals = mergeMessageSignals(stored.messageSignals, session.messageSignals);
+    merged.platformStats = mergePlatformStats(
+      stored.platformStats,
+      persisted.platformStats,
+      session.platformStats
+    );
 
     // platform/sessionDate stay this tab's own (they are last-writer fields).
     merged.platform = session.platform;
@@ -462,13 +469,78 @@ const LumenSession = (() => {
     if (existing?.primary && existing.primary !== frozen.primary) {
       bumpSignalCount(existing.primary, -1);
       bumpSignalCount(frozen.primary, 1);
+      shiftPlatformSignal(session.platform || window.location.hostname, existing.primary, frozen.primary);
     } else if (!existing?.primary) {
       bumpSignalCount(frozen.primary, 1);
+      addPlatformSignal(frozen.primary, evaluation.taskType);
     }
 
     session.messageSignals[messageId] = frozen;
     save();
     return true;
+  }
+
+  function emptyPlatformStat() {
+    return {
+      messageCount: 0,
+      signalCounts: { handoff: 0, loop: 0, mismatch: 0, depth: 0, drift: 0 },
+      taskTypeCounts: {},
+    };
+  }
+
+  function mergePlatformStats(stored = {}, base = {}, current = {}) {
+    const keys = new Set([
+      ...Object.keys(stored || {}),
+      ...Object.keys(base || {}),
+      ...Object.keys(current || {}),
+    ]);
+    const out = {};
+    keys.forEach((host) => {
+      const s = stored[host] || emptyPlatformStat();
+      const b = base[host] || emptyPlatformStat();
+      const c = current[host] || emptyPlatformStat();
+      const deltaMsg = (c.messageCount || 0) - (b.messageCount || 0);
+      out[host] = {
+        messageCount: Math.max(0, (s.messageCount || 0) + deltaMsg),
+        signalCounts: mergeCountMap(s.signalCounts, b.signalCounts, c.signalCounts),
+        taskTypeCounts: mergeCountMap(s.taskTypeCounts, b.taskTypeCounts, c.taskTypeCounts),
+      };
+    });
+    return out;
+  }
+
+  function sessionPlatformKey() {
+    const platform = session.platform || window.location.hostname;
+    return globalThis.LumenNudges?.canonicalPlatformHost?.(platform) || platform;
+  }
+
+  function bumpPlatformStat(signal, taskType) {
+    const platform = sessionPlatformKey();
+    if (!session.platformStats) session.platformStats = {};
+    if (!session.platformStats[platform]) session.platformStats[platform] = emptyPlatformStat();
+    const ps = session.platformStats[platform];
+    ps.messageCount += 1;
+    if (signal) ps.signalCounts[signal] = (ps.signalCounts[signal] || 0) + 1;
+    if (taskType) ps.taskTypeCounts[taskType] = (ps.taskTypeCounts[taskType] || 0) + 1;
+  }
+
+  function addPlatformSignal(signal, taskType) {
+    if (!signal && !taskType) return;
+    const platform = sessionPlatformKey();
+    if (!session.platformStats) session.platformStats = {};
+    if (!session.platformStats[platform]) session.platformStats[platform] = emptyPlatformStat();
+    const ps = session.platformStats[platform];
+    if (signal) ps.signalCounts[signal] = (ps.signalCounts[signal] || 0) + 1;
+    if (taskType) ps.taskTypeCounts[taskType] = (ps.taskTypeCounts[taskType] || 0) + 1;
+  }
+
+  function shiftPlatformSignal(platform, fromSignal, toSignal) {
+    if (!fromSignal || fromSignal === toSignal || !platform) return;
+    platform = globalThis.LumenNudges?.canonicalPlatformHost?.(platform) || platform;
+    if (!session.platformStats?.[platform]) return;
+    const ps = session.platformStats[platform];
+    if (fromSignal) ps.signalCounts[fromSignal] = Math.max(0, (ps.signalCounts[fromSignal] || 0) - 1);
+    if (toSignal) ps.signalCounts[toSignal] = (ps.signalCounts[toSignal] || 0) + 1;
   }
 
   function bumpSignalCount(signal, delta) {
@@ -491,6 +563,7 @@ const LumenSession = (() => {
     );
 
     bumpSignalCount(signal, 1);
+    bumpPlatformStat(signal, taskType);
     if (signal && evaluation) {
       session.messageSignals[messageId] = freezeStripEvaluation(evaluation);
     }
@@ -510,6 +583,7 @@ const LumenSession = (() => {
     if (!newSignal) return false;
     bumpSignalCount(previousSignal, -1);
     bumpSignalCount(newSignal, 1);
+    shiftPlatformSignal(session.platform || window.location.hostname, previousSignal, newSignal);
     if (evaluation) session.messageSignals[messageId] = freezeStripEvaluation(evaluation);
     save();
     return true;
@@ -603,19 +677,14 @@ const LumenSession = (() => {
 
   function saveSessionSnapshot(messages) {
     const date = new Date().toISOString().slice(0, 10);
-    const platform = session.platform || window.location.hostname;
+    const platform = sessionPlatformKey();
+    const ps = session.platformStats?.[platform] || emptyPlatformStat();
+    const domUserCount = messages.filter((m) => m.role === "user").length;
     const platformSnap = {
       ...computeSessionMetrics(messages),
-      messageCount: messages.filter((m) => m.role === "user").length,
-      // Cumulative for this platform/day — the AI Profile reads these to
-      // characterise how you work in each tool (lumen-ai-profile.md).
-      signalCounts: {
-        handoff: session.handoffCount || 0,
-        loop: session.loopCount || 0,
-        mismatch: session.mismatchCount || 0,
-        depth: session.depthCount || 0,
-      },
-      taskTypeCounts: { ...(session.taskTypeCounts || {}) },
+      messageCount: Math.max(ps.messageCount, domUserCount),
+      signalCounts: { ...ps.signalCounts },
+      taskTypeCounts: { ...(ps.taskTypeCounts || {}) },
     };
 
     return loadHistory().then((history) => {

@@ -52,7 +52,7 @@ const LumenWidget = (() => {
           <div id="lumen-guard-hold-choices" class="lumen-guard-hold-actions">
             <button type="button" class="lumen-guard-hold-btn" id="lumen-guard-hold-draft">Draft something first</button>
             <button type="button" class="lumen-guard-hold-btn lumen-guard-hold-btn--secondary" id="lumen-guard-hold-send">Send anyway</button>
-            <button type="button" class="lumen-guard-hold-btn lumen-guard-hold-btn--ghost" id="lumen-guard-hold-goal">My goal changed — stop holding</button>
+            <button type="button" class="lumen-guard-hold-btn lumen-guard-hold-btn--ghost" id="lumen-guard-hold-goal">Remove this goal from settings</button>
           </div>
           <div id="lumen-guard-hold-draft-mode" class="lumen-guard-hold-draft-mode lumen-hidden">
             <textarea id="lumen-guard-hold-textarea" class="lumen-guard-hold-textarea" placeholder="Your rough draft — even one sentence…"></textarea>
@@ -140,7 +140,6 @@ const LumenWidget = (() => {
           <span id="lumen-fab-trend" class="lumen-fab-trend lumen-hidden" aria-hidden="true"></span>
         </span>
         <span id="lumen-fab-digest" aria-hidden="true"></span>
-        <span id="lumen-fab-setup" aria-hidden="true"></span>
       </div>
       <div id="lumen-popover">
         <div class="lumen-popover-head">
@@ -180,7 +179,17 @@ const LumenWidget = (() => {
           <label class="lumen-usecase-chip"><input type="checkbox" value="Work tasks" /><span>Work tasks</span></label>
         </div>
         <label class="lumen-popover-label">Protected goals</label>
-        <textarea id="lumen-goals-input" class="lumen-popover-goals" placeholder="One goal per line"></textarea>
+        <p class="lumen-popover-hint" id="lumen-goals-hint">All on by default — tap to turn off what doesn't apply.</p>
+        <div class="lumen-popover-usecases" id="lumen-goal-chips">
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Write my own first drafts" /><span>Write my own first drafts</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Make my own decisions" /><span>Make my own decisions</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Understand the code, not just copy it" /><span>Understand my code</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Do my own analysis and reasoning" /><span>Do my own analysis</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Think independently on strategy" /><span>Think independently</span></label>
+          <label class="lumen-usecase-chip"><input type="checkbox" value="Form my own arguments before asking" /><span>Form my own arguments</span></label>
+        </div>
+        <label class="lumen-popover-label" style="margin-top:8px;">Add your own</label>
+        <textarea id="lumen-goals-custom" class="lumen-popover-goals" placeholder="One goal per line"></textarea>
         <label class="lumen-popover-check">
           <input type="checkbox" id="lumen-llm-judge" />
           LLM second opinion · catches subtle hand-offs (on)
@@ -334,6 +343,38 @@ const LumenWidget = (() => {
     bindTourEvents();
   }
 
+  let customGoalsSaveTimer = null;
+
+  function readPresetGoalsFromUI() {
+    return Array.from(document.querySelectorAll("#lumen-goal-chips input:checked")).map(
+      (input) => input.value
+    );
+  }
+
+  function readCustomGoalsFromUI() {
+    const customInput = document.getElementById("lumen-goals-custom");
+    if (!customInput) return [];
+    return customInput.value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  function saveProtectedGoalsFromUI() {
+    LumenGoals.save({
+      protectedGoals: LumenGoals.mergeProtectedGoals({
+        presetGoals: readPresetGoalsFromUI(),
+        customGoals: readCustomGoalsFromUI(),
+      }),
+    });
+    updateModeHint();
+  }
+
+  function scheduleCustomGoalsSave() {
+    window.clearTimeout(customGoalsSaveTimer);
+    customGoalsSaveTimer = window.setTimeout(saveProtectedGoalsFromUI, 400);
+  }
+
   function bindRootEvents() {
     bindFabDrag();
 
@@ -369,9 +410,17 @@ const LumenWidget = (() => {
       updateBadge();
     });
 
-    document.getElementById("lumen-goals-input")?.addEventListener("change", (event) => {
-      const goals = event.target.value.split("\n").map((line) => line.trim()).filter(Boolean);
-      LumenGoals.save({ protectedGoals: goals });
+    document.getElementById("lumen-goal-chips")?.addEventListener("change", () => {
+      saveProtectedGoalsFromUI();
+    });
+
+    document.getElementById("lumen-goals-custom")?.addEventListener("input", () => {
+      scheduleCustomGoalsSave();
+    });
+
+    document.getElementById("lumen-goals-custom")?.addEventListener("change", () => {
+      window.clearTimeout(customGoalsSaveTimer);
+      saveProtectedGoalsFromUI();
     });
 
     document.getElementById("lumen-usecases")?.addEventListener("change", () => {
@@ -817,13 +866,10 @@ const LumenWidget = (() => {
       guardHint?.classList.toggle("lumen-hidden", modeSelect.value !== "guard");
     });
 
-    // Dismiss the setup card without committing to it. Nomon stays UN-set-up:
-    // onboarding is left incomplete and the quiet "setup available" dot lingers
-    // on the pill so the user can pick it up later. This is the shared exit for
-    // the ×, the backdrop, Escape, and the "Not now" button.
+    // Dismiss the setup card without committing to it. Nomon stays un-set-up;
+    // the setup button keeps a quiet pulse until the user finishes or skips.
     function dismissSetup() {
       panel.classList.remove("lumen-onboarding--open");
-      if (!LumenGoals.get().onboardingComplete) markSetupPending(true);
       syncSettingsUI();
     }
 
@@ -872,22 +918,25 @@ const LumenWidget = (() => {
 
       LumenGoals.completeOnboarding({ useCases, protectedGoals, mode });
       panel.classList.remove("lumen-onboarding--open");
-      markSetupPending(false);
       syncSettingsUI();
     });
 
     showStep(1);
   }
 
-  // Set/clear the quiet "setup available" affordance on the pill. This is the
-  // whole first-run surface now — a subtle dot, never a blocking overlay.
-  function markSetupPending(pending) {
-    const fab = document.getElementById("lumen-fab");
-    if (fab) fab.dataset.setupPending = pending ? "true" : "false";
+  // First run is a quiet invitation, not a wall. The popover setup button carries
+  // a very subtle pulse until onboarding is complete or skipped.
+  function showOnboardingIfNeeded() {
+    const goals = LumenGoals.get();
+    if (goals.onboardingComplete) return;
+    if (!goals.setupInviteSeen) {
+      LumenGoals.markSetupInviteSeen?.();
+    }
+    syncSettingsUI();
   }
 
   // The only path that opens the guided setup cards — always user-initiated
-  // (first-run pill invitation or the "Review/Finish setup" popover button).
+  // (the "Set up / Review setup" popover button).
   function openSetup() {
     ensureRoot();
     closePopover();
@@ -895,21 +944,6 @@ const LumenWidget = (() => {
       openOnboardingPanel();
     } else {
       document.getElementById("lumen-onboarding")?.classList.add("lumen-onboarding--open");
-    }
-  }
-
-  // First run is a quiet invitation, not a wall. Instead of auto-opening the
-  // setup cards over the AI site (the old blocking modal), we mark the pill with
-  // a subtle "setup available" dot and play one gentle hello pulse the first
-  // time only. Nomon otherwise runs on Ambient defaults from message one; the
-  // user opens setup when they choose (via the pill CTA).
-  function showOnboardingIfNeeded() {
-    const goals = LumenGoals.get();
-    if (goals.onboardingComplete) return;
-    markSetupPending(true);
-    if (!goals.setupInviteSeen) {
-      pulseFabMark();
-      LumenGoals.markSetupInviteSeen?.();
     }
   }
 
@@ -943,9 +977,9 @@ const LumenWidget = (() => {
       body: "Everything starts switched on. Tap a chip to deselect what doesn't apply — it tunes how Nomon reads your prompts.",
     },
     {
-      target: () => document.getElementById("lumen-goals-input"),
+      target: () => document.getElementById("lumen-goal-chips"),
       title: "Protected goals",
-      body: "Add goals you want to keep doing yourself — one per line — or clear ones that aren't yours. Nomon only flags a mismatch against goals you set here.",
+      body: "Everything starts switched on. Tap a chip to turn off what doesn't apply, or add your own below. Nomon only flags a mismatch against goals you keep here.",
     },
     {
       target: () => document.getElementById("lumen-setup-cta"),
@@ -1095,14 +1129,22 @@ const LumenWidget = (() => {
   function syncSettingsUI() {
     const goals = LumenGoals.get();
     const modeSelect = document.getElementById("lumen-mode-select");
-    const goalsInput = document.getElementById("lumen-goals-input");
+    const customGoalsInput = document.getElementById("lumen-goals-custom");
     const judgeToggle = document.getElementById("lumen-llm-judge");
     const studyToggle = document.getElementById("lumen-study-participant");
     const shareToggle = document.getElementById("lumen-share-data");
     const backendInput = document.getElementById("lumen-backend-input");
     const base = LumenConfig.webAppUrl(goals.webAppUrl);
     if (modeSelect) modeSelect.value = goals.mode;
-    if (goalsInput) goalsInput.value = goals.protectedGoals.join("\n");
+
+    const storedGoals = goals.protectedGoals || [];
+    const presetSet = new Set(LumenGoals.listPresetGoals());
+    document.querySelectorAll("#lumen-goal-chips input").forEach((input) => {
+      input.checked = storedGoals.includes(input.value);
+    });
+    if (customGoalsInput && document.activeElement !== customGoalsInput) {
+      customGoalsInput.value = storedGoals.filter((goal) => !presetSet.has(goal)).join("\n");
+    }
 
     const useCases = new Set(goals.useCases || []);
     document.querySelectorAll("#lumen-usecases input").forEach((input) => {
@@ -1403,7 +1445,7 @@ const LumenWidget = (() => {
     const el = document.getElementById("lumen-profile");
     if (!el) return;
     const history = await LumenSession.loadHistory();
-    const tools = LumenNudges.buildProfile(history);
+    const tools = LumenNudges.buildProfile(history, { currentHost: window.location.hostname });
     const contrast = LumenNudges.buildProfileContrast(history);
     if (!tools.length) {
       el.innerHTML = `<p class="lumen-popover-hint">Nomon builds this as you use different AI tools across the week.</p>`;
@@ -2339,7 +2381,8 @@ const LumenWidget = (() => {
         <div class="lumen-card-title">${copy.title}</div>
         <div class="lumen-card-body">${copy.body}</div>
         <div class="lumen-card-actions">
-          <button class="lumen-card-btn lumen-card-btn--secondary" data-action="continue">${copy.continueLabel}</button>
+          <button class="lumen-card-btn lumen-card-btn--ghost" data-action="remove">${copy.removeLabel}</button>
+          <button class="lumen-card-btn lumen-card-btn--secondary" data-action="dismiss">${copy.dismissLabel}</button>
           <button class="lumen-card-btn" data-action="keep">${copy.keepLabel}</button>
         </div>
       `;
@@ -2348,13 +2391,16 @@ const LumenWidget = (() => {
         LumenSession.logMismatchEvent(evaluation.mismatch.goal, "kept");
         card.remove();
       });
-      card.querySelector('[data-action="continue"]')?.addEventListener("click", () => {
+      card.querySelector('[data-action="dismiss"]')?.addEventListener("click", () => {
+        dismissedMismatch.add(msgId);
+        LumenSession.logMismatchEvent(evaluation.mismatch.goal, "dismissed");
+        card.remove();
+      });
+      card.querySelector('[data-action="remove"]')?.addEventListener("click", () => {
         dismissedMismatch.add(msgId);
         LumenGoals.removeProtectedGoal(evaluation.mismatch.goal);
         LumenSession.logMismatchEvent(evaluation.mismatch.goal, "goal-changed");
         syncSettingsUI();
-        // Brief confirmation so the (destructive) goal removal is visible,
-        // then dismiss. The id is already suppressed so it won't re-inject.
         card.innerHTML = `<div class="lumen-card-body">Got it — removed that goal. You can re-add it any time in Nomon settings.</div>`;
         window.setTimeout(() => card.remove(), 2600);
       });
