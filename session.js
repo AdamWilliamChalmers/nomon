@@ -769,7 +769,7 @@ const LumenSession = (() => {
     const payload = buildSessionPayload();
     if (!payload.messageCount && !(payload.feedback?.length)) return;
 
-    const userId = localStorage.getItem("lumenUserId") || "anonymous";
+    const userId = globalThis.LumenUserId?.get?.() || "anonymous";
     const body = JSON.stringify({ userId, ...payload });
     const base = LumenConfig.webAppUrl(globalThis.LumenGoals?.get?.().webAppUrl);
 

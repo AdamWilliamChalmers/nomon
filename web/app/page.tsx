@@ -408,9 +408,10 @@ export default function HomePage() {
             <div className="qa-item">
               <h3>Does anything leave my computer?</h3>
               <p>
-                <b>Not unless you switch it on.</b> All scoring runs locally in your browser.
-                Contributing anonymised counts to research is off by default, opt-in, visible in a
-                transparency view, and revocable — with full deletion on request.
+                <b>Scoring stays on your device.</b> All signal detection runs locally in your
+                browser. Contributing anonymised counts to research is on by default — daily counts
+                and feedback snippets only, not full chats — and you can turn it off any time under
+                Privacy &amp; data in the pill.
               </p>
             </div>
             <div className="qa-item">
@@ -477,7 +478,8 @@ export default function HomePage() {
             <span className="wm">Nomon</span>
           </a>
           <p className="fine">
-            Free extension · Ages 13+ · <a href="#">Privacy</a> · <a href="#">How scoring works</a>
+            Free extension · Ages 13+ · <a href="/privacy">Privacy</a> ·{" "}
+            <a href="#signals">How scoring works</a>
           </p>
         </div>
       </footer>

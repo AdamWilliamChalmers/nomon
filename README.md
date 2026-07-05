@@ -4,6 +4,10 @@ Cognitive fitness layer for AI — four signals, no red, no judgment.
 
 ## Setup
 
+**Chrome Web Store:** see [CHROME_WEB_STORE.md](./CHROME_WEB_STORE.md). Build upload zip with `./scripts/package-extension.sh`.
+
+**Local development:**
+
 1. `chrome://extensions` → Developer mode → Load unpacked → this folder
 2. Open [chatgpt.com](https://chatgpt.com)
 3. Complete onboarding (optional — **Skip** → Ambient mode: Loop + Drift only)

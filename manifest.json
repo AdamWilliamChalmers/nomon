@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Nomon",
-  "version": "3.6.11",
-  "description": "Metacognitive engagement layer for AI — five signals (Hand-off, Loop, Drift, Mismatch, Depth) that notice when you stop evaluating, not how much you use AI.",
+  "version": "3.6.13",
+  "description": "Notices when you've stopped evaluating AI output — five quiet signals under your messages. A mirror, not a nanny.",
   "permissions": ["storage"],
   "host_permissions": [
     "https://nomon-app.com/*",
@@ -81,6 +81,7 @@
       ],
       "js": [
         "config.js",
+        "userId.js",
         "adapters/chatgpt.js",
         "adapters/base.js",
         "adapters/claude.js",
