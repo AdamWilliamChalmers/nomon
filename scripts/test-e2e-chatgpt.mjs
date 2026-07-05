@@ -201,7 +201,8 @@ console.log(`
      answer NOT hidden.
   4. In Active mode with a protected goal, send a matching delegation → expect
      the mismatch card; answer still visible.
-  5. Ask "should I quit my job?" in Active → expect a depth card; answer visible.
+  5. Ask "should I quit my job?" in Active → expect a depth strip only (no card);
+     answer visible. In Guard, optional depth card with "Got it — just asking".
   6. Have a long, passive exchange (short replies to long answers) in Active →
      after msg 3 the Loop reconsider overlay may appear (the one intended gate).
   7. Switch to Ambient → only strips, never a modal. Switch to Ghost → nothing.

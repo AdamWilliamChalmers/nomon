@@ -119,21 +119,23 @@ const LumenNudges = (() => {
   }
 
   function getDepthCardCopy(taskType, warm) {
+    const placeholder = DEPTH_PLACEHOLDERS[taskType] || DEPTH_PLACEHOLDERS.default;
+    // Guard-only card: the AI reply is never delayed, so copy must not imply a gate.
     if (warm) {
       return {
         title: "This one might be worth thinking through",
-        body: "This is the kind of question where your instinct matters. Worth a thought before you read the answer?",
-        placeholder: DEPTH_PLACEHOLDERS[taskType] || DEPTH_PLACEHOLDERS.default,
-        thinkLabel: "Let me think first",
-        skipLabel: "Skip",
+        body: "Your read matters here. Optional — jot a note while the answer loads.",
+        placeholder,
+        thinkLabel: "Add a note",
+        skipLabel: "Got it — just asking",
       };
     }
     return {
       title: "This one might be worth thinking through",
-      body: "This is the kind of question where your instinct matters. Worth a thought before you read the answer?",
-      placeholder: DEPTH_PLACEHOLDERS[taskType] || DEPTH_PLACEHOLDERS.default,
-      thinkLabel: "Let me think first",
-      skipLabel: "Skip",
+      body: "Your read matters here. Optional — jot a note while the answer loads.",
+      placeholder,
+      thinkLabel: "Add a note",
+      skipLabel: "Got it — just asking",
     };
   }
 
@@ -218,6 +220,8 @@ const LumenNudges = (() => {
     "grok.com": "Grok",
     "x.com": "Grok",
     "copilot.microsoft.com": "Copilot",
+    "m365.cloud.microsoft": "Copilot",
+    "copilot.cloud.microsoft": "Copilot",
     "perplexity.ai": "Perplexity",
     "www.perplexity.ai": "Perplexity",
     "chat.mistral.ai": "Mistral",

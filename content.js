@@ -250,7 +250,15 @@
         // Don't fabricate a time: live messages already carry the real send
         // moment; historical messages stay null so timing signals are skipped
         // and old messages are never treated as "fresh" (no overlay on load).
-        LumenSession.recordMessage(msg.id, evaluation.loopScore, evaluation.primary, evaluation.taskType);
+        LumenSession.recordMessage(
+          msg.id,
+          evaluation.loopScore,
+          evaluation.primary,
+          evaluation.taskType,
+          evaluation
+        );
+      } else if (evaluation.primary) {
+        LumenSession.upsertMessageSignal(msg.id, evaluation);
       }
 
       LumenWidget.injectMessageUI(msg, evaluation, adapter, { isNewMessage: !alreadyScored });
@@ -265,7 +273,7 @@
         g.LumenJudge?.classify(msg.text, evaluation).then((verdict) => {
           if (!verdict) return;
           const merged = g.LumenJudge.mergeVerdict(evaluation, verdict);
-          LumenSession.reviseMessageSignal(msg.id, evaluation.primary, merged.primary);
+          LumenSession.reviseMessageSignal(msg.id, evaluation.primary, merged.primary, merged);
           LumenWidget.injectMessageUI(msg, merged, adapter, {
             isNewMessage: false,
             fromJudge: true,

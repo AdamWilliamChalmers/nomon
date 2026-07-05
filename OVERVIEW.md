@@ -2,7 +2,7 @@
 
 > **One line:** Nomon is a cognitive-fitness layer for the AI era — a privacy-first browser extension (plus companion web app) that notices *when you stop critically evaluating* AI output and reflects it back to you. A mirror, not a nanny.
 
-_Last updated to reflect the shipped state: extension `v3.6.0`, web app `nomon-web 0.1.0` (Next.js 14). Production URL: `https://nomon-app.com`._
+_Last updated to reflect the shipped state: extension `v3.6.0`, web app `nomon-web` (Next.js 14). Production URL: `https://nomon-app.com`. Render service: rename to `nomon-web` in dashboard when ready._
 
 ---
 

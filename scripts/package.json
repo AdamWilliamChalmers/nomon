@@ -1,10 +1,10 @@
 {
-  "name": "lumen-scripts",
+  "name": "nomon-scripts",
   "private": true,
   "type": "module",
-  "description": "Local test tooling for the Lumen extension (not shipped).",
+  "description": "Local test tooling for the Nomon extension (not shipped).",
   "scripts": {
-    "test": "node smoke-test-shipped.mjs && node smoke-test-adapters.mjs && node test-adapter-dom.mjs && node test-e2e-chatgpt.mjs && node test-classifier-corpus.mjs && node test-handoff-matrix.mjs"
+    "test": "node smoke-test-shipped.mjs && node smoke-test-adapters.mjs && node test-adapter-dom.mjs && node test-e2e-chatgpt.mjs && node test-classifier-corpus.mjs"
   },
   "devDependencies": {
     "jsdom": "^24.1.0",

@@ -14,6 +14,8 @@ const ALLOWED_ORIGINS = new Set([
   "https://grok.com",
   "https://x.com",
   "https://copilot.microsoft.com",
+  "https://m365.cloud.microsoft",
+  "https://copilot.cloud.microsoft",
   "https://www.perplexity.ai",
   "https://perplexity.ai",
   "https://chat.mistral.ai",

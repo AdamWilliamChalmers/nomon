@@ -1,6 +1,6 @@
 const LumenWidget = (() => {
   const SIGNAL_COLORS = {
-    handoff: "#3478c5",
+    handoff: "#5eb0d9",
     loop: "#2d9e4e",
     drift: "#d4921a",
     mismatch: "#7b5cbf",
@@ -13,6 +13,9 @@ const LumenWidget = (() => {
   // "still my goal" or "my goal changed"). Without this, the card re-injects on
   // the next processing tick and the buttons appear to do nothing.
   let dismissedMismatch = new Set();
+  // Same pattern as dismissedMismatch — without this, Skip on a Depth card
+  // removes it once then injectMessageUI re-creates it on the next DOM tick.
+  let dismissedDepth = new Set();
   let activeReconsider = null;
   let lastEvaluation = null;
   // Cached digest + history for the weekly review overlay (so Share doesn't
@@ -144,6 +147,7 @@ const LumenWidget = (() => {
           <div class="lumen-popover-title">Today across all AIs</div>
           <button id="lumen-pause-toggle" class="lumen-popover-pause" type="button">Pause</button>
         </div>
+        <label class="lumen-popover-label" id="lumen-session-chart-label" title="Each bar is one message today — colour matches the signal on that prompt">Today's messages</label>
         <div class="lumen-popover-sparkline" id="lumen-sparkline"></div>
         <label class="lumen-popover-label" title="Your engagement across recent days — a mirror to notice trends, not a target to chase">Recent days</label>
         <div class="lumen-popover-sparkline" id="lumen-trend-sparkline"></div>
@@ -1307,9 +1311,14 @@ const LumenWidget = (() => {
     popover.style.left = "auto";
   }
 
-  function renderSparkline(scores) {
+  function renderSparkline(scores, barColors) {
     // Single implementation lives in sparkline.js (loaded before widget.js).
-    return globalThis.LumenSparkline?.render?.(scores || []) ?? "";
+    return globalThis.LumenSparkline?.render?.(scores || [], 120, 32, barColors) ?? "";
+  }
+
+  function signalBarColor(primary) {
+    if (primary && SIGNAL_COLORS[primary]) return SIGNAL_COLORS[primary];
+    return "#d8d7e0";
   }
 
   // Escape user-typed text (e.g. protected goals) before it goes into innerHTML.
@@ -1344,8 +1353,13 @@ const LumenWidget = (() => {
 
   function renderPopover() {
     const session = LumenSession.get();
+    const engagementScores = (session.loopScores || []).map((s) => 100 - s);
+    const barColors = (session.scoredMessageIds || []).map((id) =>
+      signalBarColor(session.messageSignals?.[id]?.primary)
+    );
     document.getElementById("lumen-sparkline").innerHTML = renderSparkline(
-      (session.loopScores || []).map((s) => 100 - s)
+      engagementScores,
+      barColors
     );
     document.getElementById("lumen-stat-messages").textContent = String(session.messageCount);
     document.getElementById("lumen-stat-handoff").textContent = String(session.handoffCount || 0);
@@ -2127,15 +2141,17 @@ const LumenWidget = (() => {
   function injectMessageUI(msg, evaluation, adapter, options = {}) {
     if (LumenGoals.isGhost()) return;
 
+    const stripEvaluation = LumenSession.getStripEvaluation(msg.id, evaluation);
+
     const wrapper = adapter.findUserMessageWrapper(msg.el);
     if (!wrapper) return;
 
     const bubble =
       wrapper.querySelector(".markdown, .prose, [class*='markdown']")?.parentElement || wrapper;
 
-    const strip = renderStrip(msg.id, evaluation, msg.text);
+    const strip = renderStrip(msg.id, stripEvaluation, msg.text);
     if (strip && !strip.isConnected) bubble.insertAdjacentElement("afterend", strip);
-    updateWhyLine(msg.id, evaluation);
+    updateWhyLine(msg.id, stripEvaluation);
 
     if (evaluation.primary) {
       lastEvaluation = {
@@ -2175,10 +2191,11 @@ const LumenWidget = (() => {
         pauseAi: Boolean(options.isNewMessage || isFresh),
       });
     } else if (
-      LumenGoals.isActive() &&
+      LumenGoals.isGuard() &&
       evaluation.primary === "depth" &&
       evaluation.depth?.active &&
-      evaluation.overlayType !== "depth"
+      evaluation.overlayType !== "depth" &&
+      !dismissedDepth.has(msg.id)
     ) {
       const isFresh = msg.timestamp && Date.now() - msg.timestamp < 120000;
       renderCard(msg.id, evaluation, strip || bubble, msg.el, adapter, {
@@ -2367,12 +2384,14 @@ const LumenWidget = (() => {
         card.querySelector(".lumen-card-reflection")?.focus();
       });
       card.querySelector('[data-action="skip"]')?.addEventListener("click", () => {
+        dismissedDepth.add(msgId);
         LumenSession.logDepthMoment(msgEl?.textContent || "", "skip");
         card.remove();
       });
       card.querySelector(".lumen-card-reflection")?.addEventListener("blur", () => {
         const text = card.querySelector(".lumen-card-reflection")?.value.trim();
         if (!text) return;
+        dismissedDepth.add(msgId);
         LumenSession.logDepthMoment(text, "reflected");
         card.remove();
       });

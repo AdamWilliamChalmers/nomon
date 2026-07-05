@@ -35,6 +35,10 @@
   --lumen-mismatch-tint:#ede9f8;
   --lumen-mismatch-text:#4a3680;
 
+  --lumen-handoff:      #5eb0d9;
+  --lumen-handoff-tint: #e8f4fb;
+  --lumen-handoff-text: #2a6a8a;
+
   --lumen-depth:        #3478c5;
   --lumen-depth-tint:   #e8f0fa;
   --lumen-depth-text:   #1a4880;

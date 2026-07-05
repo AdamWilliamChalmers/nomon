@@ -1,4 +1,4 @@
-# Render Blueprint for the Lumen web app (Next.js 14 in /web).
+# Render Blueprint for the Nomon web app (Next.js 14 in /web).
 # Docs: https://render.com/docs/blueprint-spec
 #
 # Cron note: the weekly digest is NOT defined here. Rather than add a separate
@@ -6,7 +6,7 @@
 # GitHub Action (see .github/workflows/cron-digest.yml) — free and plan-agnostic.
 services:
   - type: web
-    name: lumen-web
+    name: nomon-web
     runtime: node
     # Starter: no cold-start sleeping (unlike free), single instance by default —
     # which keeps the in-memory judge rate limiter (web/lib/rateLimit.ts) correct.

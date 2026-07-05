@@ -98,6 +98,18 @@ assert("grok matches x.com/i/grok path", matchesOn(grok, "x.com", "/i/grok"));
 assert("grok does NOT match x.com home", !matchesOn(grok, "x.com", "/home"));
 assert("grok does NOT match chatgpt.com", !matchesOn(grok, "chatgpt.com"));
 assert("copilot matches copilot.microsoft.com", matchesOn(copilot, "copilot.microsoft.com"));
+assert(
+  "copilot matches m365.cloud.microsoft/chat",
+  matchesOn(copilot, "m365.cloud.microsoft", "/chat/entity1-abc")
+);
+assert(
+  "copilot matches copilot.cloud.microsoft/chat",
+  matchesOn(copilot, "copilot.cloud.microsoft", "/chat/")
+);
+assert(
+  "copilot does NOT match m365.cloud.microsoft home",
+  !matchesOn(copilot, "m365.cloud.microsoft", "/")
+);
 assert("copilot does NOT match chatgpt.com", !matchesOn(copilot, "chatgpt.com"));
 assert("perplexity matches perplexity.ai", matchesOn(perplexity, "perplexity.ai"));
 assert("perplexity matches www.perplexity.ai", matchesOn(perplexity, "www.perplexity.ai"));
@@ -134,6 +146,8 @@ const hostCases = [
   ["grok.com", "/"],
   ["x.com", "/i/grok"],
   ["copilot.microsoft.com", "/"],
+  ["m365.cloud.microsoft", "/chat/entity1-abc"],
+  ["copilot.cloud.microsoft", "/chat/"],
   ["perplexity.ai", "/"],
   ["www.perplexity.ai", "/"],
   ["chat.mistral.ai", "/"],
@@ -208,6 +222,8 @@ for (const host of [
   "grok.com",
   "x.com/i/grok",
   "copilot.microsoft.com",
+  "m365.cloud.microsoft/chat",
+  "copilot.cloud.microsoft/chat",
   "perplexity.ai",
   "chat.mistral.ai",
   "meta.ai",

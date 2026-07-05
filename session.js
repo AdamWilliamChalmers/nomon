@@ -12,6 +12,8 @@ const LumenSession = (() => {
     mismatchCount: 0,
     depthCount: 0,
     scoredMessageIds: [],
+    // Frozen strip snapshot per message — survives re-evaluation / judge downgrades.
+    messageSignals: {},
     feedback: [],
     taskTypeWrongCounts: {},
     sessionSensitivity: {},
@@ -359,6 +361,7 @@ const LumenSession = (() => {
       session.sessionSensitivity
     );
     merged.feedback = mergeFeedback(stored.feedback, persisted.feedback, session.feedback);
+    merged.messageSignals = mergeMessageSignals(stored.messageSignals, session.messageSignals);
 
     // platform/sessionDate stay this tab's own (they are last-writer fields).
     merged.platform = session.platform;
@@ -406,6 +409,68 @@ const LumenSession = (() => {
     return sync();
   }
 
+  function signalPriority(primary) {
+    return { mismatch: 5, depth: 4, handoff: 3, loop: 2, drift: 1 }[primary] || 0;
+  }
+
+  function freezeStripEvaluation(evaluation) {
+    if (!evaluation?.primary) return null;
+    return {
+      primary: evaluation.primary,
+      loopScore: evaluation.loopScore,
+      handoff: evaluation.handoff,
+      loop: evaluation.loop,
+      drift: evaluation.drift,
+      mismatch: evaluation.mismatch,
+      depth: evaluation.depth,
+    };
+  }
+
+  function mergeMessageSignals(stored = {}, current = {}) {
+    const out = { ...stored };
+    Object.entries(current).forEach(([id, snap]) => {
+      if (!snap?.primary) return;
+      const prev = out[id];
+      if (!prev?.primary || signalPriority(snap.primary) >= signalPriority(prev.primary)) {
+        out[id] = snap;
+      }
+    });
+    return out;
+  }
+
+  function getStripEvaluation(messageId, liveEvaluation) {
+    const frozen = session.messageSignals?.[messageId];
+    if (!frozen?.primary) return liveEvaluation;
+    return { ...liveEvaluation, ...frozen, primary: frozen.primary };
+  }
+
+  function upsertMessageSignal(messageId, evaluation) {
+    if (!session.scoredMessageIds.includes(messageId)) return false;
+    if (!evaluation?.primary) return false;
+
+    const frozen = freezeStripEvaluation(evaluation);
+    const existing = session.messageSignals[messageId];
+    if (existing?.primary === frozen.primary) {
+      session.messageSignals[messageId] = frozen;
+      save();
+      return true;
+    }
+    if (existing?.primary && signalPriority(frozen.primary) < signalPriority(existing.primary)) {
+      return false;
+    }
+
+    if (existing?.primary && existing.primary !== frozen.primary) {
+      bumpSignalCount(existing.primary, -1);
+      bumpSignalCount(frozen.primary, 1);
+    } else if (!existing?.primary) {
+      bumpSignalCount(frozen.primary, 1);
+    }
+
+    session.messageSignals[messageId] = frozen;
+    save();
+    return true;
+  }
+
   function bumpSignalCount(signal, delta) {
     if (!signal || !delta) return;
     if (signal === "loop") session.loopCount = Math.max(0, session.loopCount + delta);
@@ -415,7 +480,7 @@ const LumenSession = (() => {
     if (signal === "depth") session.depthCount = Math.max(0, session.depthCount + delta);
   }
 
-  function recordMessage(messageId, loopScore, signal, taskType) {
+  function recordMessage(messageId, loopScore, signal, taskType, evaluation) {
     if (session.scoredMessageIds.includes(messageId)) return false;
 
     session.scoredMessageIds.push(messageId);
@@ -426,6 +491,9 @@ const LumenSession = (() => {
     );
 
     bumpSignalCount(signal, 1);
+    if (signal && evaluation) {
+      session.messageSignals[messageId] = freezeStripEvaluation(evaluation);
+    }
     if (taskType) {
       session.taskTypeCounts = session.taskTypeCounts || {};
       session.taskTypeCounts[taskType] = (session.taskTypeCounts[taskType] || 0) + 1;
@@ -434,11 +502,15 @@ const LumenSession = (() => {
     return true;
   }
 
-  function reviseMessageSignal(messageId, previousSignal, newSignal) {
+  function reviseMessageSignal(messageId, previousSignal, newSignal, evaluation) {
     if (!session.scoredMessageIds.includes(messageId)) return false;
     if (previousSignal === newSignal) return false;
+    // Judge can upgrade a signal but never strip a frozen one — that made loops
+    // flash away after the async verdict returned "engaged".
+    if (!newSignal) return false;
     bumpSignalCount(previousSignal, -1);
     bumpSignalCount(newSignal, 1);
+    if (evaluation) session.messageSignals[messageId] = freezeStripEvaluation(evaluation);
     save();
     return true;
   }
@@ -685,6 +757,8 @@ const LumenSession = (() => {
     onChange,
     recordMessage,
     reviseMessageSignal,
+    getStripEvaluation,
+    upsertMessageSignal,
     recordFeedback,
     getWrongCountForTaskType,
     getSessionSensitivity,

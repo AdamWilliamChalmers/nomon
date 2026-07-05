@@ -32,6 +32,9 @@
   --lm-mismatch: #7b5cbf;
   --lm-mismatch-tint: #ede9f8;
   --lm-mismatch-text: #4a3680;
+  --lm-handoff: #5eb0d9;
+  --lm-handoff-tint: #e8f4fb;
+  --lm-handoff-text: #2a6a8a;
   --lm-depth: #3478c5;
   --lm-depth-tint: #e8f0fa;
   --lm-depth-text: #1a4880;
@@ -1787,7 +1790,7 @@
   color: var(--lm-dusk);
 }
 
-#lumen-root .lumen-signal-handoff .lumen-reconsider-kicker { color: var(--lm-depth); }
+#lumen-root .lumen-signal-handoff .lumen-reconsider-kicker { color: var(--lm-handoff); }
 #lumen-root .lumen-signal-loop .lumen-reconsider-kicker { color: var(--lm-loop); }
 #lumen-root .lumen-signal-depth .lumen-reconsider-kicker { color: var(--lm-depth); }
 

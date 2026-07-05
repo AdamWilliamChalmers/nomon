@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nomon",
-  "version": "3.6.0",
+  "version": "3.6.2",
   "description": "Metacognitive engagement layer for AI — five signals (Hand-off, Loop, Drift, Mismatch, Depth) that notice when you stop evaluating, not how much you use AI.",
   "permissions": ["storage"],
   "host_permissions": [
@@ -29,6 +29,8 @@
         "https://grok.com/*",
         "https://x.com/*",
         "https://copilot.microsoft.com/*",
+        "https://m365.cloud.microsoft/*",
+        "https://copilot.cloud.microsoft/*",
         "https://www.perplexity.ai/*",
         "https://perplexity.ai/*",
         "https://chat.mistral.ai/*",
@@ -58,6 +60,8 @@
         "https://grok.com/*",
         "https://x.com/i/grok*",
         "https://copilot.microsoft.com/*",
+        "https://m365.cloud.microsoft/chat/*",
+        "https://copilot.cloud.microsoft/chat/*",
         "https://www.perplexity.ai/*",
         "https://perplexity.ai/*",
         "https://chat.mistral.ai/*",
