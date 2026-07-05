@@ -143,16 +143,21 @@ assert(
   doc.querySelectorAll(".lumen-ai-hidden").length === 0
 );
 
-// Badge shows a word band (Engaged / Steady / …) once the session has messages.
+// FAB at rest shows dots only — not the old Engaged/Steady engagement band.
 const badge = doc.getElementById("lumen-fab-label");
-const badgeText = badge?.textContent?.trim();
-const validLabels = ["Engaged", "Steady", "Drifting", "Passive", "Paused", "—"];
+const badgeText = badge?.textContent?.trim() ?? "";
+const fab = doc.getElementById("lumen-fab");
 assert(
-  "badge shows engagement label",
-  validLabels.includes(badgeText),
+  "badge does not show engagement band labels",
+  !["Engaged", "Steady", "Drifting", "Passive"].includes(badgeText),
   badgeText
 );
-assert("badge not stuck on empty dash after messages", badgeText !== "—", badgeText);
+assert(
+  "badge shows signal label after mismatch",
+  badgeText.includes("mismatch"),
+  badgeText
+);
+assert("badge has transient signal attribute", fab?.dataset?.signal === "mismatch");
 assert("session recorded all user messages", LumenSession.get().messageCount === 3, `count ${LumenSession.get().messageCount}`);
 
 // Ghost mode hides in-session UI.

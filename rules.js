@@ -73,6 +73,32 @@ const LumenRules = (() => {
 
   const ENGAGEMENT_WORD_THRESHOLD = 50;
 
+  function isProvidedSourceSummarisation(text) {
+    if (!text?.trim()) return false;
+    return (
+      /\bsummari[sz]e\b/i.test(text) &&
+      /\b(this|the|attached|uploaded|document|article|paper|pdf|file|letter|report|memo|contract|above|below)\b/i.test(
+        text
+      )
+    );
+  }
+
+  const UTILITY_TASK_TYPES = new Set([
+    "summarisation",
+    "formatting",
+    "translation",
+    "conversion",
+    "scheduling",
+    "debugging",
+    "code_explanation",
+    "fact_checking",
+    "literature_search",
+  ]);
+
+  function isUtilityTaskType(taskType) {
+    return UTILITY_TASK_TYPES.has(taskType);
+  }
+
   // Directive / imperative prompts are the classic subtle hand-off the regex
   // tiers miss ("write a nice email", "summarise this", "just go with yours").
   // Used only to decide whether to spend a cheap LLM judge call — never to
@@ -155,6 +181,8 @@ const LumenRules = (() => {
   // passive continuations (the subtle "loop" pattern).
   function shouldConsultJudge(evaluation, text, opts = {}) {
     if (!text) return false;
+    if (isProvidedSourceSummarisation(text)) return false;
+    if (isUtilityTaskType(evaluation?.taskType) && evaluation?.primary !== "handoff") return false;
     if (evaluation?.confidence === "gray") return true;
     if (evaluation?.confidence === "high") return false;
     if (checkEngagementOverride(text).active) return false;
@@ -286,17 +314,34 @@ const LumenRules = (() => {
     return null;
   }
 
+  const PRIMARY_EXPLANATIONS = {
+    handoff: "You're handing off a whole task in one prompt.",
+    loop: "You've been accepting answers without much pushback.",
+    drift: "This reply may have drifted from what you asked.",
+    mismatch: "This conflicts with a goal you set.",
+    depth: "Worth thinking through yourself before asking AI to decide.",
+  };
+
+  // Classifier / judge diagnostics — never shown in the default UI copy path.
+  const INTERNAL_REASON =
+    /^(Matched:|LLM:|Judge:|Partial delegation|Semantic delegation|Borderline loop|Loop score|No strong signal|Task type is|Semantic fallback|Engagement markers)/i;
+
+  function isHumanReason(reason) {
+    if (!reason || typeof reason !== "string") return false;
+    const trimmed = reason.trim();
+    if (!trimmed || INTERNAL_REASON.test(trimmed)) return false;
+    if (trimmed === "This conflicts with a goal you set") return true;
+    if (trimmed.startsWith("You shared your own")) return true;
+    return false;
+  }
+
   function explainEvaluation(evaluation) {
-    const parts = [];
-    if (evaluation.reasons?.length) parts.push(...evaluation.reasons);
-    if (evaluation.judge?.rationale) parts.push(`LLM: ${evaluation.judge.rationale}`);
-    if (evaluation.framing?.matches?.length && !evaluation.reasons?.length) {
-      parts.push(...evaluation.framing.matches.map((m) => `Matched: ${m}`));
+    const human = (evaluation.reasons || []).find(isHumanReason);
+    if (human) return human;
+    if (evaluation.primary && PRIMARY_EXPLANATIONS[evaluation.primary]) {
+      return PRIMARY_EXPLANATIONS[evaluation.primary];
     }
-    if (evaluation.messageIndex != null) parts.unshift(`Message ${evaluation.messageIndex} in chat`);
-    if (evaluation.taskType) parts.push(`Task: ${evaluation.taskType.replace(/_/g, " ")}`);
-    if (evaluation.confidence) parts.push(`Confidence: ${evaluation.confidence}`);
-    return parts.filter(Boolean).slice(0, 5).join(" · ");
+    return "";
   }
 
   return {
@@ -319,6 +364,8 @@ const LumenRules = (() => {
     checkMismatchGoals,
     isGuardBlockable,
     explainEvaluation,
+    isProvidedSourceSummarisation,
+    isUtilityTaskType,
   };
 })();
 

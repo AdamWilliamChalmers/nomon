@@ -214,6 +214,47 @@ for (const c of cases) {
   }
 }
 
+// User-facing "why" copy — one plain sentence, no classifier internals.
+const explainChecks = [
+  [
+    "explainEvaluation drops debug fields",
+    !sandbox.LumenRules.explainEvaluation({
+      primary: "mismatch",
+      reasons: ["This conflicts with a goal you set"],
+      messageIndex: 4,
+      taskType: "general",
+      confidence: "high",
+    }).includes("Confidence"),
+  ],
+  [
+    "explainEvaluation uses primary copy when reasons are internal",
+    sandbox.LumenRules.explainEvaluation({
+      primary: "handoff",
+      reasons: ["Matched: write my essay"],
+      messageIndex: 1,
+      taskType: "essay_writing",
+      confidence: "high",
+    }) === "You're handing off a whole task in one prompt.",
+  ],
+  [
+    "explainEvaluation keeps a human reason verbatim",
+    sandbox.LumenRules.explainEvaluation({
+      primary: "mismatch",
+      reasons: ["This conflicts with a goal you set", "Matched: tier-1"],
+      confidence: "high",
+    }) === "This conflicts with a goal you set",
+  ],
+];
+for (const [name, ok] of explainChecks) {
+  if (ok) {
+    passed++;
+    console.log(`PASS  ${name}`);
+  } else {
+    failed++;
+    console.log(`FAIL  ${name}`);
+  }
+}
+
 // Nudge efficacy aggregation (P2.3)
 const Nudges = sandbox.LumenNudges;
 const eff = Nudges.summariseResponses({

@@ -156,8 +156,10 @@ const LumenEngine = (() => {
     const m = message.toLowerCase();
     if (/write.*email|draft.*message|reply to/i.test(m)) return "email_drafting";
     if (/schedule|calendar|meeting time/i.test(m)) return "scheduling";
-    if (/format|bullet|reformat/i.test(m)) return "formatting";
-    if (/summaris|tldr|key points|bullet points from/i.test(m)) return "summarisation";
+    // Summarisation before formatting — "bullet points" alone must not beat "summarise".
+    if (/summaris|summariz|tldr|key points|bullet points from/i.test(m)) return "summarisation";
+    if (/format|reformat/i.test(m)) return "formatting";
+    if (/\bbullet points?\b/i.test(m)) return "formatting";
     if (/literature|papers|sources|citations/i.test(m)) return "literature_search";
     if (/fact check|is it true|verify/i.test(m)) return "fact_checking";
     if (/write.*essay|draft.*paper|argument/i.test(m)) return "essay_writing";
@@ -561,6 +563,7 @@ const LumenEngine = (() => {
 
     const result = {
       messageIndex,
+      text: msg.text,
       tier,
       framing,
       engagementOverride: engagementOverride.active,

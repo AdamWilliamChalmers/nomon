@@ -44,6 +44,22 @@ const LumenJudge = (() => {
   function mergeVerdict(evaluation, verdict) {
     if (!verdict?.signal) return evaluation;
 
+    const tier1Exact =
+      evaluation.framing?.tier === 1 && evaluation.framing?.source === "tier1";
+    if (
+      verdict.signal === "handoff" &&
+      !tier1Exact &&
+      (LumenRules.isUtilityTaskType?.(evaluation.taskType) ||
+        LumenRules.isProvidedSourceSummarisation?.(evaluation.text || ""))
+    ) {
+      return {
+        ...evaluation,
+        judge: { ...verdict, signal: "none", rationale: "Utility / source summarisation — not a hand-off" },
+        reasons: [...(evaluation.reasons || []), "Judge: utility task — no flag"],
+        explanation: LumenRules.explainEvaluation(evaluation),
+      };
+    }
+
     const merged = { ...evaluation, judge: verdict, reasons: [...(evaluation.reasons || [])] };
     merged.reasons.push(`Judge: ${verdict.rationale || verdict.signal}`);
 

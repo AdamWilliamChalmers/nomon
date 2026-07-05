@@ -1,4 +1,6 @@
 const LumenGoals = (() => {
+  const chrome = globalThis.chrome;
+  const chromeApi = chrome;
   const STORAGE_KEY = "lumenUserGoals";
   const EXEMPTIONS_KEY = "lumenTaskTypeExemptions";
 
@@ -52,13 +54,10 @@ const LumenGoals = (() => {
     llmJudgeEnabled: true,
     judgeApiUrl: LumenConfig.judgeApiUrl(),
     webAppUrl: LumenConfig.webAppUrl(),
-    // On by default (opt-out): the user is enrolled in the calibration study
-    // (post-session survey) unless they turn it off in the pill.
+    // On by default (opt-out): post-session survey when leaving a tab.
     studyParticipant: true,
-    // On by default (opt-out): anonymised session summaries are shared with the
-    // backend unless the user turns this off. Gates postSessionSummary egress
-    // (see session.js). NOTE: this sends data off-device by default — make sure
-    // the consent/disclosure copy reflects that.
+    // On by default (opt-out): anonymised session summaries shared on tab close.
+    // Gates postSessionSummary egress (see session.js).
     shareAnonymisedData: true,
     crowdCalibration: null,
     fabPosition: null,
@@ -85,27 +84,58 @@ const LumenGoals = (() => {
     judgeAvailable: false,
   };
 
+  const VALID_MODES = new Set(MODES.map((m) => m.value));
+
   let cache = { ...DEFAULTS };
   let taskTypeExemptions = [];
+  const changeListeners = new Set();
+  // Bumped on every save() so an in-flight load() cannot apply stale sync data
+  // over a mode (or other setting) the user just wrote.
+  let storageGeneration = 0;
+
+  function notifyChange() {
+    changeListeners.forEach((cb) => {
+      try {
+        cb(get());
+      } catch (_) {
+        // ignore listener errors
+      }
+    });
+  }
+
+  function onChange(cb) {
+    if (typeof cb !== "function") return () => {};
+    changeListeners.add(cb);
+    return () => changeListeners.delete(cb);
+  }
 
   function get() {
     return { ...cache };
   }
 
+  function normalizeMode(mode) {
+    if (mode === "focus") return "active";
+    return VALID_MODES.has(mode) ? mode : DEFAULTS.mode;
+  }
+
   function apply(data) {
     cache = { ...DEFAULTS, ...data };
-    // Focus mode was removed; migrate anyone still on it (and its session goal)
-    // to Active — the mode Focus was built on top of.
-    if (cache.mode === "focus") cache.mode = "active";
+    cache.mode = normalizeMode(cache.mode);
     delete cache.focusGoal;
     return cache;
   }
 
   function load() {
+    const generation = storageGeneration;
     return new Promise((resolve) => {
       const finish = (goalsData, exemptions) => {
+        if (generation !== storageGeneration) {
+          resolve(cache);
+          return;
+        }
         apply(goalsData || DEFAULTS);
         taskTypeExemptions = exemptions || [];
+        notifyChange();
         resolve(cache);
       };
 
@@ -139,16 +169,67 @@ const LumenGoals = (() => {
   }
 
   function save(next) {
+    storageGeneration += 1;
+    const generationAtSave = storageGeneration;
+    const includesMode = Object.prototype.hasOwnProperty.call(next, "mode");
     cache = { ...cache, ...next };
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
-    } catch (_) {
-      // ignore
+    if (includesMode) cache.mode = normalizeMode(cache.mode);
+
+    const persistLocal = () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+      } catch (_) {
+        // ignore
+      }
+    };
+
+    const pushSync = (payload) => {
+      if (chromeApi?.storage?.sync?.set) {
+        chromeApi.storage.sync.set({ [STORAGE_KEY]: payload }, () => void chrome.runtime?.lastError);
+      }
+    };
+
+    const finish = () => {
+      persistLocal();
+      pushSync(cache);
+      notifyChange();
+    };
+
+    if (includesMode || !chromeApi?.storage?.sync?.get) {
+      finish();
+      return cache;
     }
-    if (chrome?.storage?.sync?.set) {
-      chrome.storage.sync.set({ [STORAGE_KEY]: cache }, () => void chrome.runtime?.lastError);
-    }
+
+    // Saving goals/toggles (not mode): merge the latest synced mode first so a
+    // stale tab cannot clobber Ghost/Ambient/etc. set on another AI tab.
+    chromeApi.storage.sync.get(STORAGE_KEY, (result) => {
+      if (generationAtSave !== storageGeneration) return;
+      const remote = result?.[STORAGE_KEY];
+      if (remote?.mode) {
+        const remoteMode = normalizeMode(remote.mode);
+        if (remoteMode !== cache.mode) {
+          cache.mode = remoteMode;
+          persistLocal();
+        }
+      }
+      finish();
+    });
     return cache;
+  }
+
+  // Re-read synced settings from storage (e.g. after edits on another AI tab).
+  function refresh() {
+    return load();
+  }
+
+  if (chromeApi?.storage?.onChanged?.addListener) {
+    chromeApi.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "sync") return;
+      if (!changes?.[STORAGE_KEY]) return;
+      storageGeneration += 1;
+      apply(changes[STORAGE_KEY].newValue || DEFAULTS);
+      notifyChange();
+    });
   }
 
   function completeOnboarding({ useCases, protectedGoals, mode }) {
@@ -216,7 +297,8 @@ const LumenGoals = (() => {
   }
 
   function modeMeta(mode = cache.mode) {
-    return MODES.find((m) => m.value === mode) || MODES[0];
+    const normalized = normalizeMode(mode);
+    return MODES.find((m) => m.value === normalized) || MODES.find((m) => m.value === DEFAULTS.mode);
   }
 
   function listModes() {
@@ -381,6 +463,8 @@ const LumenGoals = (() => {
     get,
     load,
     save,
+    refresh,
+    onChange,
     completeOnboarding,
     skipOnboarding,
     setUseCases,
@@ -397,6 +481,7 @@ const LumenGoals = (() => {
     isPaused,
     setPaused,
     modeMeta,
+    normalizeMode,
     listModes,
     checkMismatch,
     setStudyParticipant,

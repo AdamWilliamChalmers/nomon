@@ -324,6 +324,7 @@
     const resync = () => {
       if (document.visibilityState === "hidden") return;
       Promise.resolve(LumenSession.refresh?.()).catch(() => {});
+      Promise.resolve(LumenGoals.refresh?.()).catch(() => {});
     };
     document.addEventListener("visibilitychange", resync);
     window.addEventListener("focus", resync);

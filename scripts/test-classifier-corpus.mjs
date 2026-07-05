@@ -106,7 +106,8 @@ const CORPUS = [
   // ── Subtle hand-offs (directives the tiers miss → must DEFER to LLM) ──
   ["do my homework for me", "handoff"],
   ["just give me the final answer, I don't need the working", "handoff"],
-  ["summarise this whole article so I don't have to read it", "handoff"],
+  ["Summarise this document in bullet points.", "none"],
+  ["summarise this whole article so I don't have to read it", "none"],
   ["translate my entire essay into French", "handoff"],
 
   // ── Genuine engagement / learning (must NOT flag) ──
