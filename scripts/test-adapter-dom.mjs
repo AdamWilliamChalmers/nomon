@@ -119,6 +119,29 @@ const convo = (userSel, asstSel, inputHtml) => `
   assert("gemini: finds composer", Boolean(adapter.findChatInput()));
 }
 
+// ── Gemini nested turn nodes (duplicate strip regression) ───────────────────
+{
+  const html = `
+    <main>
+      <user-query>
+        <div class="query-content" data-message-author="user">Nested Gemini question?</div>
+      </user-query>
+      <model-response>
+        <div class="model-response-text" data-message-author="model">Nested Gemini answer.</div>
+      </model-response>
+    </main>
+    <div class="ql-editor" contenteditable="true"></div>
+  `;
+  const { adapter } = loadAdapter("LumenAdapterGemini", "adapters/gemini.js", html, "gemini.google.com");
+  const list = adapter.buildMessageList();
+  assert("gemini nested: one turn not double-counted", list.length === 2, `got ${list.length}`);
+  assert(
+    "gemini nested: roles user then assistant",
+    list.map((m) => m.role).join(",") === "user,assistant",
+    list.map((m) => m.role).join(",")
+  );
+}
+
 // ── Grok ────────────────────────────────────────────────────────────────────
 {
   const html = `

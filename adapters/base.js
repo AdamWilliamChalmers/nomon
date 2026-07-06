@@ -16,6 +16,13 @@
  *   matchesFn?: () => boolean,      // override host matching (e.g. path-scoped)
  * }
  */
+function outermostElements(nodeList) {
+  const list = Array.from(nodeList);
+  return list.filter(
+    (el) => !list.some((other) => other !== el && other.contains(el))
+  );
+}
+
 globalThis.LumenCreateAdapter = function LumenCreateAdapter(config) {
   const containerSelector = config.container || "main";
 
@@ -60,8 +67,10 @@ globalThis.LumenCreateAdapter = function LumenCreateAdapter(config) {
       let userEls = [];
       let assistantEls = [];
       try {
-        userEls = Array.from(document.querySelectorAll(this.USER_SELECTOR));
-        assistantEls = Array.from(document.querySelectorAll(this.ASSISTANT_SELECTOR));
+        // Comma-separated selectors often match nested nodes in the same turn
+        // (e.g. Gemini's user-query wrapping .query-content) — keep outermost only.
+        userEls = outermostElements(document.querySelectorAll(this.USER_SELECTOR));
+        assistantEls = outermostElements(document.querySelectorAll(this.ASSISTANT_SELECTOR));
       } catch (_) {
         return [];
       }
