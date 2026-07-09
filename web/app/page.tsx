@@ -446,11 +446,9 @@ export default function HomePage() {
               </p>
             </div>
             <div className="qa-item">
-              <h3>Who&rsquo;s behind this?</h3>
+              <h3>Contact</h3>
               <p>
-                <b>A researcher, not a growth team.</b> Nomon is built in Edinburgh by Dr Adam
-                Chalmers, a University of Edinburgh academic working on computational social science
-                and AI governance. All feedback can be directed to{" "}
+                All feedback can be directed to{" "}
                 <a href="mailto:hello@nomon-app.com">hello@nomon-app.com</a>.
               </p>
             </div>

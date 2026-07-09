@@ -39,7 +39,7 @@ The single biggest churn risk is explicitly named in the strategy docs: **the pr
 - Depth never delays the AI response.
 - Drift is never a banner or an alarm — it lives in the weekly digest.
 - The reflection box is never required.
-- Privacy is radical: local by default, opt-in egress, revocable.
+- Privacy is radical: scoring stays local; anonymised research sharing is on by default and revocable (opt-out in Privacy & data).
 
 **Brand voice:** calm, curious, non-judgmental, clinical but warm — "a thoughtful researcher, not a productivity app." Never preachy, never alarmist. The name *Lumen* is Latin for light: it illuminates patterns you can't see yourself, and "shines without blinding."
 
@@ -103,7 +103,7 @@ scripts/               — Node/jsdom test suites + icon generation (NOT shipped
 
 **Adapter pattern:** `adapters/chatgpt.js` is a bespoke role-attribute adapter; `adapters/base.js` is a shared factory for no-role-attribute sites (DOM-order message building), with thin configs for `claude.js`, `gemini.js`, `grok.js`, `copilot.js`, `perplexity.js`. A fail-soft `try/catch` around DOM parsing means a broken selector shows **nothing** rather than breaking the host page. (Gemini/Grok/Copilot/Perplexity selectors are "best-effort" and may need live tuning.)
 
-**Pipeline:** `content.js` picks a site adapter → adapter builds a normalized message list from the DOM → `engine.js` scores each user message using `rules.js` patterns → optionally `judge.js` calls the backend for LLM confirmation on ambiguous messages → `widget.js` renders strips/cards/badge → `session.js` stores results locally → optionally POSTs an anonymised summary to `/api/session` (**only** if the user opted into `shareAnonymisedData`, default **off**).
+**Pipeline:** `content.js` picks a site adapter → adapter builds a normalized message list from the DOM → `engine.js` scores each user message using `rules.js` patterns → optionally `judge.js` calls the backend for LLM confirmation on ambiguous messages → `widget.js` renders strips/cards/badge → `session.js` stores results locally → on tab close POSTs an anonymised summary to `/api/session` when `shareAnonymisedData` is on (**default on**, opt-out in Privacy & data).
 
 **Scoring engine:** a weighted composite of prompt length, velocity, passive acceptance, and task framing, modulated by ~20 task-type multipliers (e.g. `essay_writing: 1.0`, `debugging: 0.5`, `scheduling: 0.1` — admin tasks barely count) and auto-exempt thresholds. The badge shows an **Engagement score (100 − passive)** so higher = better. Depth triggers/exemptions, passive-continuation detection, and AI-quote detection all work to keep false positives low.
 
@@ -140,9 +140,9 @@ Aggregate-only, privacy-first tables: `users` (incl. `pro`, `polar_order_id`, `a
 
 Privacy isn't a compliance checkbox here — it's the load-bearing wall. "The moment users feel surveilled, the brand collapses."
 
-- **Local by default.** All scoring happens in the browser. Nothing is transmitted unless the user opts in (`shareAnonymisedData`, default **off**).
-- **Reads structure, not content.** The engine works on conversation shape (length, velocity, question/command patterns), and the backend stores only aggregate counts — never message text.
-- **Opt-in, revocable data contribution**, with a transparency view of exactly what's shared and full deletion on request.
+- **Local by default for scoring.** All signal detection happens in the browser. Message text is not stored or analysed as content.
+- **Reads structure, not content.** The engine works on conversation shape (length, velocity, question/command patterns). The backend receives daily counts and optional feedback snippets (up to 200 chars from explicit ✕ clicks) — never full chats.
+- **Research sharing on by default, revocable.** `shareAnonymisedData` and the calibration-study survey (`studyParticipant`) default **on**; users opt out any time under Privacy & data in the pill. Full deletion on request (planned transparency view not yet shipped).
 - **Family sharing is child-led and consent-based** — parents see the weekly card only, never logs, message content, or time limits. Hard rule: **no under-13 support.**
 
 ---
@@ -204,7 +204,7 @@ _Practical note: what's live is the **£49 one-time Pro** model. The £39 "Deep"
 
 ## 11. Current status & known reconciliation items
 
-**Shipped and working:** five signals; five visibility modes; seven-site adapter coverage (ChatGPT bespoke + 6 factory adapters); local-first scoring with opt-in egress; configurable backend URL; optional LLM judge cascade with heuristic fallback; Pro tier gating via Polar; weekly card/digest; family sharing; CI + pre-commit test suites (~135 checks).
+**Shipped and working:** five signals; five visibility modes; seven-site adapter coverage (ChatGPT bespoke + 6 factory adapters); local-first scoring with revocable research egress (on by default); configurable backend URL; optional LLM judge cascade with heuristic fallback; Pro tier gating via Polar; weekly card/digest; family sharing; CI + pre-commit test suites (~135 checks).
 
 **Open items to reconcile (mostly documentation vs. code drift):**
 

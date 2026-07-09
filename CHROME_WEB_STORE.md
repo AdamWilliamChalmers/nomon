@@ -53,7 +53,7 @@ SIGNALS
 • Depth — invitations to think before you send
 
 WORKS ON
-ChatGPT, Claude, Gemini, Grok, Copilot, Perplexity, Mistral, Meta AI, DeepSeek, Qwen, Kimi, MiniMax, HuggingChat, and Doubao.
+Major AI chat sites in the browser — wherever you type prompts and read replies on the supported assistants.
 
 PRIVACY
 All scoring runs locally in your browser. Optional research sharing (daily counts and feedback snippets only — never full chats) is on by default; turn off any time under Privacy & data in the pill. Privacy policy: https://nomon-app.com/privacy

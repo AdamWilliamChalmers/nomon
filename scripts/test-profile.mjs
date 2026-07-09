@@ -56,6 +56,33 @@ assert("snapshot stores per-platform signalCounts", snap?.signalCounts?.handoff 
 assert("snapshot stores per-platform taskTypeCounts", snap?.taskTypeCounts?.essay_writing === 1, JSON.stringify(snap?.taskTypeCounts));
 assert("daily aggregate sums signalCounts", today.signalCounts?.handoff === 1, JSON.stringify(today.signalCounts));
 
+// ── 1b. Multi-platform persistence (regression: ChatGPT-only "Across tools") ──
+// Simulate another AI's tallies already in the shared live session, then ensure
+// a ChatGPT snapshot merge keeps that host instead of overwriting the day.
+LumenSession.get().platformStats = {
+  ...(LumenSession.get().platformStats || {}),
+  "claude.ai": {
+    messageCount: 12,
+    signalCounts: { handoff: 0, loop: 1, mismatch: 0, depth: 2, drift: 0 },
+    taskTypeCounts: { debugging: 8, code_generation: 4 },
+  },
+  "gemini.google.com": {
+    messageCount: 9,
+    signalCounts: { handoff: 1, loop: 0, mismatch: 0, depth: 0, drift: 0 },
+    taskTypeCounts: { research: 9 },
+  },
+};
+const multiHistory = await LumenSession.saveSessionSnapshot(messages);
+const multiToday = multiHistory[multiHistory.length - 1];
+const hosts = Object.keys(multiToday.byPlatform || {}).sort();
+assert(
+  "snapshot keeps Claude + Gemini alongside ChatGPT",
+  hosts.includes("chatgpt.com") && hosts.includes("claude.ai") && hosts.includes("gemini.google.com"),
+  hosts.join(", ")
+);
+assert("Claude message count preserved", multiToday.byPlatform["claude.ai"]?.messageCount === 12);
+assert("Gemini message count preserved", multiToday.byPlatform["gemini.google.com"]?.messageCount === 9);
+
 // ── 2. Characterisation on crafted history ──
 // Build `days` day-entries. ChatGPT = writing + hand-off heavy; Claude = code +
 // engaged; Gemini = barely used (below the sample gate).

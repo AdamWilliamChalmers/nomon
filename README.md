@@ -2,11 +2,83 @@
 
 Cognitive fitness layer for AI — four signals, no red, no judgment.
 
-## Setup
+## Getting started (run the extension locally)
+
+No build step is required for **Chrome**. After cloning the repo, load the extension folder directly.
+
+### Prerequisites
+
+- **Google Chrome** (or another Chromium browser with “Load unpacked”)
+- **Git** — clone from GitHub
+
+### Chrome (recommended)
+
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/AdamWilliamChalmers/nomon.git
+   cd nomon
+   ```
+   *(Replace the URL with your actual GitHub remote.)*
+
+2. **Load the extension**
+   - Open `chrome://extensions`
+   - Turn on **Developer mode** (top right)
+   - Click **Load unpacked**
+   - Select the **repo root** folder (the one that contains `manifest.json`)
+
+3. **Try it**
+   - Open a supported site, e.g. [chatgpt.com](https://chatgpt.com) or [claude.ai](https://claude.ai)
+   - You should see the Nomon pill (bottom-right). Complete onboarding or choose **Skip** for Ambient mode.
+
+4. **After pulling new changes**
+   - Go to `chrome://extensions` → click **Reload** on Nomon
+   - Hard-refresh any open AI chat tabs (`Cmd+Shift+R` on Mac)
+
+### Safari (macOS)
+
+The Safari build lives under `safari/Nomon/Nomon.xcodeproj`. To refresh it from the Chrome sources:
+
+```bash
+./scripts/package-safari.sh
+```
+
+Then open the project in **Xcode**, set your **Signing Team**, and **Product → Run**. Enable the extension in **Safari → Settings → Extensions**.
+
+### Optional: companion website
+
+The landing page and API live in `web/`:
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). See [web/README.md](./web/README.md) for env vars.
+
+### Optional: run tests
+
+```bash
+cd scripts && npm install && npm test
+```
+
+### Troubleshooting
+
+| Problem | Fix |
+|--------|-----|
+| No Nomon pill on an AI site | Confirm the site is in `manifest.json` → reload extension + hard-refresh the tab |
+| “Scripts failed to load” in console | Remove the extension, **Load unpacked** again from the repo root |
+| Changes don’t appear | Reload extension at `chrome://extensions`, then hard-refresh the chat tab |
+| Loaded wrong folder | Unpacked path must be the folder containing `manifest.json` (not `web/` or `safari/`) |
+
+**Chrome Web Store / release builds:** see [CHROME_WEB_STORE.md](./CHROME_WEB_STORE.md).  
+**Technical deep-dive:** see [NOMON-EXTENSION-OVERVIEW.md](./NOMON-EXTENSION-OVERVIEW.md).
+
+## Setup (maintainers)
 
 **Chrome Web Store:** see [CHROME_WEB_STORE.md](./CHROME_WEB_STORE.md). Build upload zip with `./scripts/package-extension.sh`.
 
-**Local development:**
+**Local development (quick):**
 
 1. `chrome://extensions` → Developer mode → Load unpacked → this folder
 2. Open [chatgpt.com](https://chatgpt.com)

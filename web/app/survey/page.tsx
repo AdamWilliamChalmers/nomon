@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import BrandLogo from "@/components/BrandLogo";
+import { ensureUserId } from "@/lib/userId";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
@@ -18,10 +19,7 @@ function SurveyForm() {
   const [answers, setAnswers] = useState<number[]>([4, 4, 4, 4, 4]);
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
 
-  const userId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("lumenUserId") || "anonymous"
-      : "anonymous";
+  const userId = typeof window !== "undefined" ? ensureUserId() : "anonymous";
   const sessionDate = params.get("date") || new Date().toISOString().slice(0, 10);
   const platform = params.get("platform") || "unknown";
   const compositeScore = params.get("score") ? Number(params.get("score")) : undefined;

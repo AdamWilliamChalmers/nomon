@@ -1,0 +1,661 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		155D20F12FFBA147007A644F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155D20F02FFBA147007A644F /* AppDelegate.swift */; };
+		155D20F52FFBA147007A644F /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 155D20F32FFBA147007A644F /* Main.html */; };
+		155D20F72FFBA147007A644F /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 155D20F62FFBA147007A644F /* Icon.png */; };
+		155D20F92FFBA147007A644F /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 155D20F82FFBA147007A644F /* Style.css */; };
+		155D20FB2FFBA147007A644F /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D20FA2FFBA147007A644F /* Script.js */; };
+		155D20FD2FFBA147007A644F /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155D20FC2FFBA147007A644F /* ViewController.swift */; };
+		155D21002FFBA147007A644F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 155D20FE2FFBA147007A644F /* Main.storyboard */; };
+		155D21022FFBA148007A644F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 155D21012FFBA148007A644F /* Assets.xcassets */; };
+		155D21092FFBA148007A644F /* Nomon Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 155D21082FFBA148007A644F /* Nomon Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		155D210E2FFBA148007A644F /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155D210D2FFBA148007A644F /* SafariWebExtensionHandler.swift */; };
+		155D212B2FFBA148007A644F /* net.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D211A2FFBA148007A644F /* net.js */; };
+		155D212C2FFBA148007A644F /* nudges.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D211B2FFBA148007A644F /* nudges.js */; };
+		155D212D2FFBA148007A644F /* goals.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D211C2FFBA148007A644F /* goals.js */; };
+		155D212E2FFBA148007A644F /* userId.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D211D2FFBA148007A644F /* userId.js */; };
+		155D212F2FFBA148007A644F /* rules.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D211E2FFBA148007A644F /* rules.js */; };
+		155D21302FFBA148007A644F /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D211F2FFBA148007A644F /* background.js */; };
+		155D21312FFBA148007A644F /* session.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D21202FFBA148007A644F /* session.js */; };
+		155D21322FFBA148007A644F /* widget.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D21212FFBA148007A644F /* widget.js */; };
+		155D21332FFBA148007A644F /* config.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D21222FFBA148007A644F /* config.js */; };
+		155D21342FFBA148007A644F /* adapters in Resources */ = {isa = PBXBuildFile; fileRef = 155D21232FFBA148007A644F /* adapters */; };
+		155D21352FFBA148007A644F /* widget.css in Resources */ = {isa = PBXBuildFile; fileRef = 155D21242FFBA148007A644F /* widget.css */; };
+		155D21362FFBA148007A644F /* icons in Resources */ = {isa = PBXBuildFile; fileRef = 155D21252FFBA148007A644F /* icons */; };
+		155D21372FFBA148007A644F /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 155D21262FFBA148007A644F /* manifest.json */; };
+		155D21382FFBA148007A644F /* engine.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D21272FFBA148007A644F /* engine.js */; };
+		155D21392FFBA148007A644F /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D21282FFBA148007A644F /* content.js */; };
+		155D213A2FFBA148007A644F /* sparkline.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D21292FFBA148007A644F /* sparkline.js */; };
+		155D213B2FFBA148007A644F /* judge.js in Resources */ = {isa = PBXBuildFile; fileRef = 155D212A2FFBA148007A644F /* judge.js */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		155D210A2FFBA148007A644F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 155D20E52FFBA147007A644F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 155D21072FFBA148007A644F;
+			remoteInfo = "Nomon Extension";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		155D21152FFBA148007A644F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				155D21092FFBA148007A644F /* Nomon Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		155D20ED2FFBA147007A644F /* Nomon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nomon.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		155D20F02FFBA147007A644F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		155D20F42FFBA147007A644F /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
+		155D20F62FFBA147007A644F /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		155D20F82FFBA147007A644F /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		155D20FA2FFBA147007A644F /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
+		155D20FC2FFBA147007A644F /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		155D20FF2FFBA147007A644F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		155D21012FFBA148007A644F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		155D21032FFBA148007A644F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		155D21082FFBA148007A644F /* Nomon Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Nomon Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		155D210D2FFBA148007A644F /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		155D210F2FFBA148007A644F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		155D211A2FFBA148007A644F /* net.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = net.js; path = Resources/net.js; sourceTree = "<group>"; };
+		155D211B2FFBA148007A644F /* nudges.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = nudges.js; path = Resources/nudges.js; sourceTree = "<group>"; };
+		155D211C2FFBA148007A644F /* goals.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = goals.js; path = Resources/goals.js; sourceTree = "<group>"; };
+		155D211D2FFBA148007A644F /* userId.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = userId.js; path = Resources/userId.js; sourceTree = "<group>"; };
+		155D211E2FFBA148007A644F /* rules.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = rules.js; path = Resources/rules.js; sourceTree = "<group>"; };
+		155D211F2FFBA148007A644F /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = Resources/background.js; sourceTree = "<group>"; };
+		155D21202FFBA148007A644F /* session.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = session.js; path = Resources/session.js; sourceTree = "<group>"; };
+		155D21212FFBA148007A644F /* widget.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = widget.js; path = Resources/widget.js; sourceTree = "<group>"; };
+		155D21222FFBA148007A644F /* config.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = config.js; path = Resources/config.js; sourceTree = "<group>"; };
+		155D21232FFBA148007A644F /* adapters */ = {isa = PBXFileReference; lastKnownFileType = folder; name = adapters; path = Resources/adapters; sourceTree = "<group>"; };
+		155D21242FFBA148007A644F /* widget.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = widget.css; path = Resources/widget.css; sourceTree = "<group>"; };
+		155D21252FFBA148007A644F /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = Resources/icons; sourceTree = "<group>"; };
+		155D21262FFBA148007A644F /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
+		155D21272FFBA148007A644F /* engine.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = engine.js; path = Resources/engine.js; sourceTree = "<group>"; };
+		155D21282FFBA148007A644F /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = Resources/content.js; sourceTree = "<group>"; };
+		155D21292FFBA148007A644F /* sparkline.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = sparkline.js; path = Resources/sparkline.js; sourceTree = "<group>"; };
+		155D212A2FFBA148007A644F /* judge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = judge.js; path = Resources/judge.js; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		155D20EA2FFBA147007A644F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		155D21052FFBA148007A644F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		155D20E42FFBA147007A644F = {
+			isa = PBXGroup;
+			children = (
+				155D20EF2FFBA147007A644F /* Nomon */,
+				155D210C2FFBA148007A644F /* Nomon Extension */,
+				155D20EE2FFBA147007A644F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		155D20EE2FFBA147007A644F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				155D20ED2FFBA147007A644F /* Nomon.app */,
+				155D21082FFBA148007A644F /* Nomon Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		155D20EF2FFBA147007A644F /* Nomon */ = {
+			isa = PBXGroup;
+			children = (
+				155D20F02FFBA147007A644F /* AppDelegate.swift */,
+				155D20FC2FFBA147007A644F /* ViewController.swift */,
+				155D20FE2FFBA147007A644F /* Main.storyboard */,
+				155D21012FFBA148007A644F /* Assets.xcassets */,
+				155D21032FFBA148007A644F /* Info.plist */,
+				155D20F22FFBA147007A644F /* Resources */,
+			);
+			path = Nomon;
+			sourceTree = "<group>";
+		};
+		155D20F22FFBA147007A644F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				155D20F32FFBA147007A644F /* Main.html */,
+				155D20F62FFBA147007A644F /* Icon.png */,
+				155D20F82FFBA147007A644F /* Style.css */,
+				155D20FA2FFBA147007A644F /* Script.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		155D210C2FFBA148007A644F /* Nomon Extension */ = {
+			isa = PBXGroup;
+			children = (
+				155D21192FFBA148007A644F /* Resources */,
+				155D210D2FFBA148007A644F /* SafariWebExtensionHandler.swift */,
+				155D210F2FFBA148007A644F /* Info.plist */,
+			);
+			path = "Nomon Extension";
+			sourceTree = "<group>";
+		};
+		155D21192FFBA148007A644F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				155D211A2FFBA148007A644F /* net.js */,
+				155D211B2FFBA148007A644F /* nudges.js */,
+				155D211C2FFBA148007A644F /* goals.js */,
+				155D211D2FFBA148007A644F /* userId.js */,
+				155D211E2FFBA148007A644F /* rules.js */,
+				155D211F2FFBA148007A644F /* background.js */,
+				155D21202FFBA148007A644F /* session.js */,
+				155D21212FFBA148007A644F /* widget.js */,
+				155D21222FFBA148007A644F /* config.js */,
+				155D21232FFBA148007A644F /* adapters */,
+				155D21242FFBA148007A644F /* widget.css */,
+				155D21252FFBA148007A644F /* icons */,
+				155D21262FFBA148007A644F /* manifest.json */,
+				155D21272FFBA148007A644F /* engine.js */,
+				155D21282FFBA148007A644F /* content.js */,
+				155D21292FFBA148007A644F /* sparkline.js */,
+				155D212A2FFBA148007A644F /* judge.js */,
+			);
+			name = Resources;
+			path = "Nomon Extension";
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		155D20EC2FFBA147007A644F /* Nomon */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 155D21162FFBA148007A644F /* Build configuration list for PBXNativeTarget "Nomon" */;
+			buildPhases = (
+				155D20E92FFBA147007A644F /* Sources */,
+				155D20EA2FFBA147007A644F /* Frameworks */,
+				155D20EB2FFBA147007A644F /* Resources */,
+				155D21152FFBA148007A644F /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				155D210B2FFBA148007A644F /* PBXTargetDependency */,
+			);
+			name = Nomon;
+			packageProductDependencies = (
+			);
+			productName = Nomon;
+			productReference = 155D20ED2FFBA147007A644F /* Nomon.app */;
+			productType = "com.apple.product-type.application";
+		};
+		155D21072FFBA148007A644F /* Nomon Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 155D21122FFBA148007A644F /* Build configuration list for PBXNativeTarget "Nomon Extension" */;
+			buildPhases = (
+				155D21042FFBA148007A644F /* Sources */,
+				155D21052FFBA148007A644F /* Frameworks */,
+				155D21062FFBA148007A644F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Nomon Extension";
+			packageProductDependencies = (
+			);
+			productName = "Nomon Extension";
+			productReference = 155D21082FFBA148007A644F /* Nomon Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		155D20E52FFBA147007A644F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					155D20EC2FFBA147007A644F = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					155D21072FFBA148007A644F = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = 155D20E82FFBA147007A644F /* Build configuration list for PBXProject "Nomon" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 155D20E42FFBA147007A644F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 155D20EE2FFBA147007A644F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				155D20EC2FFBA147007A644F /* Nomon */,
+				155D21072FFBA148007A644F /* Nomon Extension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		155D20EB2FFBA147007A644F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				155D20F72FFBA147007A644F /* Icon.png in Resources */,
+				155D21002FFBA147007A644F /* Main.storyboard in Resources */,
+				155D20FB2FFBA147007A644F /* Script.js in Resources */,
+				155D20F52FFBA147007A644F /* Main.html in Resources */,
+				155D21022FFBA148007A644F /* Assets.xcassets in Resources */,
+				155D20F92FFBA147007A644F /* Style.css in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		155D21062FFBA148007A644F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				155D213A2FFBA148007A644F /* sparkline.js in Resources */,
+				155D21332FFBA148007A644F /* config.js in Resources */,
+				155D21322FFBA148007A644F /* widget.js in Resources */,
+				155D212F2FFBA148007A644F /* rules.js in Resources */,
+				155D21372FFBA148007A644F /* manifest.json in Resources */,
+				155D212E2FFBA148007A644F /* userId.js in Resources */,
+				155D212C2FFBA148007A644F /* nudges.js in Resources */,
+				155D212D2FFBA148007A644F /* goals.js in Resources */,
+				155D21312FFBA148007A644F /* session.js in Resources */,
+				155D21302FFBA148007A644F /* background.js in Resources */,
+				155D21392FFBA148007A644F /* content.js in Resources */,
+				155D21342FFBA148007A644F /* adapters in Resources */,
+				155D21382FFBA148007A644F /* engine.js in Resources */,
+				155D21362FFBA148007A644F /* icons in Resources */,
+				155D21352FFBA148007A644F /* widget.css in Resources */,
+				155D213B2FFBA148007A644F /* judge.js in Resources */,
+				155D212B2FFBA148007A644F /* net.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		155D20E92FFBA147007A644F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				155D20FD2FFBA147007A644F /* ViewController.swift in Sources */,
+				155D20F12FFBA147007A644F /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		155D21042FFBA148007A644F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				155D210E2FFBA148007A644F /* SafariWebExtensionHandler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		155D210B2FFBA148007A644F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 155D21072FFBA148007A644F /* Nomon Extension */;
+			targetProxy = 155D210A2FFBA148007A644F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		155D20F32FFBA147007A644F /* Main.html */ = {
+			isa = PBXVariantGroup;
+			children = (
+				155D20F42FFBA147007A644F /* Base */,
+			);
+			name = Main.html;
+			sourceTree = "<group>";
+		};
+		155D20FE2FFBA147007A644F /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				155D20FF2FFBA147007A644F /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		155D21102FFBA148007A644F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		155D21112FFBA148007A644F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		155D21132FFBA148007A644F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Nomon Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Nomon Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.nomon.extension.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		155D21142FFBA148007A644F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Nomon Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Nomon Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.nomon.extension.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		155D21172FFBA148007A644F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Nomon/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Nomon;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.nomon.extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		155D21182FFBA148007A644F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Nomon/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Nomon;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.nomon.extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		155D20E82FFBA147007A644F /* Build configuration list for PBXProject "Nomon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				155D21102FFBA148007A644F /* Debug */,
+				155D21112FFBA148007A644F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		155D21122FFBA148007A644F /* Build configuration list for PBXNativeTarget "Nomon Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				155D21132FFBA148007A644F /* Debug */,
+				155D21142FFBA148007A644F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		155D21162FFBA148007A644F /* Build configuration list for PBXNativeTarget "Nomon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				155D21172FFBA148007A644F /* Debug */,
+				155D21182FFBA148007A644F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 155D20E52FFBA147007A644F /* Project object */;
+}

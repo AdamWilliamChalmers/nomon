@@ -103,8 +103,9 @@ delete `extension/` after porting anything still wanted.
 ## P2 — Reach & efficacy
 
 ### P2.1 — Network egress without explicit consent `[x]`
-Done: new `shareAnonymisedData` goal (default **false**); `postSessionSummary`
-bails unless enabled; popover toggle added. Scoring is fully local by default.
+Done: `shareAnonymisedData` and `studyParticipant` goals gate egress and the
+post-session survey; both default **on** (opt-out in Privacy & data). Scoring
+stays fully local regardless — only counts/snippets leave when sharing is on.
 
 ### P2.2 — Multi-platform adapters `[x]`
 Done: shared adapter factory (`adapters/base.js`) for no-role-attribute sites
@@ -152,7 +153,7 @@ into an engagement rate, surfaced as a "Your responses" line in the digest
 - **P1.2 done** — accurate timestamps: historical = null, live = real send time
   via composer capture (`content.js`).
 - **P1.3 done** — `extension/` marked DEPRECATED (`extension/README.md`).
-- **P2.1 done** — egress gated behind `shareAnonymisedData` (default off)
+- **P2.1 done** — egress gated behind `shareAnonymisedData` (default on, opt-out)
   (`goals.js`, `session.js`, `widget.js`).
 - **P3.1 done** — sparkline renderer de-duplicated (`widget.js`).
 - **P2.2 done** — shared adapter factory (`adapters/base.js`) + Claude, Gemini,

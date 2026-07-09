@@ -149,8 +149,8 @@ Value-neutral, descriptive, never evaluative. Examples:
   dominant use on a clear plurality, else "a mix."
 - **Privacy.** Fully computable locally; **no raw prompts ever leave the device.**
   The profile feels more like "profiling" than counts, so it stays local-only and
-  must not ride the opt-in `shareAnonymisedData` channel without separate,
-  explicit consent.
+  must not ride the `shareAnonymisedData` channel without separate,
+  explicit consent (profile data stays local-only regardless of sharing toggles).
 - **No false positives over coverage.** Same north star as the classifier: a
   missing line is fine; a wrong line is not.
 

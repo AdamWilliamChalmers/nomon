@@ -161,7 +161,7 @@ ChatGPT is the beach head. The same logic applies to Google Docs with Gemini emb
 
 1. **The product must not nag.** The single biggest risk to the flywheel is that users find Lumen annoying and uninstall. The "mirror not the nanny" design philosophy must be enforced ruthlessly in every product decision.
 
-2. **Privacy must be radical.** The moment users feel surveilled, the brand collapses. All data local by default. Research opt-in must be genuinely voluntary, well-explained, and revocable. This is not just good ethics — it is the only viable business model.
+2. **Privacy must be radical.** The moment users feel surveilled, the brand collapses. Scoring stays local. Research contribution is on by default but must be well-disclosed, genuinely revocable (opt-out in one click), and limited to counts — never full chats. This is not just good ethics — it is the only viable business model.
 
 3. **The academic voice must be real.** The research credibility moat only works if real research is being done and published. This is not marketing — it is a product investment that pays dividends in brand authority and B2B access.
 

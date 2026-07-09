@@ -125,11 +125,11 @@ What it does:
 - Makes signal detection more accurate over time
 - Provides the empirical basis for research papers and academic credibility
 - Enables the "State of Human-AI Thinking" report as a brand/PR asset (not a product)
-- Creates opt-in calibration studies that strengthen the research moat
+- Creates calibration studies (post-session survey + anonymised counts) that strengthen the research moat
 
 **Privacy architecture (non-negotiable):**
 
-- All data contribution is opt-in, off by default
+- Research contribution is **on by default** — users opt out any time in the extension (Privacy & data). Daily counts and optional feedback snippets only; never full chats
 - Users can view exactly what is shared via a transparency dashboard
 - Full deletion on request, within 30 days
 - No individual-level data ever leaves the product — only aggregate, differentially private outputs

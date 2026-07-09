@@ -21,8 +21,8 @@ export default function CalibrationPage() {
       <div className="lm-surface p-4 mt-8">
         <p className="lm-label mb-2">Calibration study (Route 3)</p>
         <p className="text-[12px] text-[var(--lm-secondary)] mb-3">
-          Participants opt in via the extension popover. Post-session surveys pair self-reported
-          engagement with Nomon scores.
+          On by default in the extension (Privacy &amp; data); users opt out any time.
+          Post-session surveys pair self-reported engagement with Nomon scores.
         </p>
         <Link href="/survey" className="lm-link text-[12px]">
           Open survey form →
