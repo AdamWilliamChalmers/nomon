@@ -63,6 +63,12 @@
   function bindSendCapture() {
     const stamp = () => {
       lastSendAt = Date.now();
+      // Piggy-bank: if Cost coach logged a switch for this draft, animate into FAB.
+      try {
+        deps().widget?.playPendingCostSaveCoin?.();
+      } catch (_) {
+        /* ignore */
+      }
     };
     document.addEventListener(
       "keydown",
@@ -90,6 +96,91 @@
   }
 
   let guardBypassUntil = 0;
+  let costCoachTimer = null;
+
+  function bindCostCoach() {
+    const { goals: LumenGoals, widget: LumenWidget } = deps();
+    const LumenCost = g.LumenCost;
+
+    const run = () => {
+      if (!adapter || !LumenGoals || !LumenWidget || !LumenCost) return;
+      if (!LumenGoals.isCostEnabled?.()) {
+        LumenWidget.clearCostCoach?.();
+        return;
+      }
+      // Don't compete with an open Guard hold.
+      if (document.getElementById("lumen-guard-hold")?.classList.contains("lumen-guard-hold--open")) {
+        return;
+      }
+      const text = adapter.getChatInputText?.() || "";
+      const selectedModel = adapter.getSelectedModel?.() || null;
+      const analysis = LumenCost.analyze(text, LumenGoals.get(), {
+        hostname: location.hostname,
+        selectedModel,
+      });
+      LumenWidget.renderCostCoach?.(analysis, adapter);
+    };
+
+    const schedule = () => {
+      clearTimeout(costCoachTimer);
+      costCoachTimer = setTimeout(run, 220);
+    };
+
+    const isComposerEvent = (target) => {
+      const input = adapter?.findChatInput?.();
+      if (!input || !target) return false;
+      return target === input || input.contains?.(target);
+    };
+
+    document.addEventListener(
+      "input",
+      (event) => {
+        if (isComposerEvent(event.target)) schedule();
+      },
+      true
+    );
+    document.addEventListener(
+      "keyup",
+      (event) => {
+        if (isComposerEvent(event.target)) schedule();
+      },
+      true
+    );
+
+    // Contenteditable hosts remount; refresh when the composer regains focus.
+    document.addEventListener(
+      "focusin",
+      (event) => {
+        if (isComposerEvent(event.target)) schedule();
+      },
+      true
+    );
+
+    // Model / intelligence picker changes (ChatGPT Medium → Instant, etc.)
+    document.addEventListener(
+      "click",
+      (event) => {
+        if (!LumenGoals?.isCostEnabled?.()) return;
+        const t = event.target;
+        if (!t?.closest) return;
+        if (
+          t.closest(
+            '[data-testid*="model" i], [role="menuitemradio"], [role="menuitem"], [role="option"]'
+          )
+        ) {
+          // Menu selection applies after the click; re-read shortly after.
+          clearTimeout(costCoachTimer);
+          costCoachTimer = setTimeout(run, 280);
+        }
+      },
+      true
+    );
+
+    LumenGoals?.onChange?.(() => schedule());
+    // Expose for FAB Cost coach toggle (refresh without waiting on storage).
+    g.LumenCostCoach = { refresh: schedule, run };
+    schedule();
+  }
 
   function bindPreSendGuard() {
     const { goals: LumenGoals, engine: LumenEngine, widget: LumenWidget } = deps();
@@ -346,6 +437,7 @@
     // app is offline and a best-effort fetch rejects).
     bindSendCapture();
     bindPreSendGuard();
+    bindCostCoach();
     adapter.onNewMessage(debouncedProcess);
     debouncedProcess();
 
@@ -358,6 +450,8 @@
       await LumenGoals.loadStudyParticipant();
       await LumenSession.load();
       history = await LumenSession.loadHistory();
+      await g.LumenCostLedger?.load?.();
+      LumenWidget.refreshPopover?.();
     } catch (err) {
       console.warn("[Lumen] init load step failed — continuing with defaults:", err?.message);
     }

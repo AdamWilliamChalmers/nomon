@@ -181,6 +181,82 @@ globalThis.LumenCreateAdapter = function LumenCreateAdapter(config) {
       return null;
     },
 
+    /**
+     * Best-effort model/menu switch for hosts without a custom switcher.
+     * Opens a likely model control, then clicks a menuitem matching uiLabel/value.
+     * @param {{ kind?: string, value?: string, uiLabel?: string, hint?: string }} action
+     */
+    async switchModel(action = {}) {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const clean = (s) => String(s || "").replace(/\s+/g, " ").trim();
+      const want = clean(action.uiLabel || action.value);
+      if (!want) return { ok: false, message: "No target model" };
+
+      const clickEl = (el) => {
+        if (!el) return false;
+        el.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, cancelable: true }));
+        el.click();
+        return true;
+      };
+
+      const findItem = (label) => {
+        const target = clean(label).toLowerCase();
+        const nodes = document.querySelectorAll(
+          '[role="menuitemradio"], [role="menuitem"], [role="option"], [role="menuitemcheckbox"], button'
+        );
+        for (const el of nodes) {
+          const t = clean(el.getAttribute("aria-label") || el.textContent).toLowerCase();
+          if (!t || t.length > 120) continue;
+          if (t === target || t.includes(target)) return el;
+        }
+        return null;
+      };
+
+      const openPicker = () => {
+        const input = this.findChatInput?.();
+        const composer =
+          input?.closest("form") ||
+          input?.closest("[class*='composer']") ||
+          input?.closest("[class*='input']") ||
+          input?.parentElement?.parentElement;
+        const buttons = [];
+        document
+          .querySelectorAll(
+            'button[aria-haspopup="menu"], button[aria-haspopup="listbox"], button[aria-label*="Model" i], button[data-testid*="model" i]'
+          )
+          .forEach((b) => buttons.push(b));
+        if (composer) {
+          composer.querySelectorAll("button").forEach((b) => buttons.push(b));
+        }
+        for (const b of buttons) {
+          const t = clean(b.getAttribute("aria-label") || b.textContent);
+          if (/model|gpt|claude|gemini|flash|opus|sonnet|haiku|instant|medium|high|pro/i.test(t)) {
+            if (clickEl(b)) return true;
+          }
+        }
+        if (buttons[0]) return clickEl(buttons[0]);
+        return false;
+      };
+
+      openPicker();
+      await sleep(200);
+      let item = findItem(want);
+      if (!item && action.kind === "effort") {
+        const effortRow = findItem("Effort");
+        if (effortRow) {
+          clickEl(effortRow);
+          await sleep(160);
+          item = findItem(want);
+        }
+      }
+      if (!item) {
+        return { ok: false, message: action.hint || `Pick ${want} in the model menu` };
+      }
+      clickEl(item);
+      await sleep(220);
+      return { ok: true, method: "menu" };
+    },
+
     triggerSend() {
       const btn = this.findSendButton();
       if (btn && !btn.disabled) {

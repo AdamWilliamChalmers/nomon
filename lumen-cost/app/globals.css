@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg0: #121916;
+  --bg1: #1a2420;
+  --bg2: #24302b;
+  --ink: #e8efe9;
+  --muted: #8a9b93;
+  --citrus: #a8d43a;
+  --ember: #e07a3a;
+  --line: rgba(232, 239, 233, 0.1);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(168, 212, 58, 0.12), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(224, 122, 58, 0.1), transparent 50%),
+    linear-gradient(180deg, var(--bg0) 0%, #0d1210 100%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(168, 212, 58, 0.35);
+  color: #fff;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: rise 0.45s ease-out both;
+}
+
+.animate-rise-delay {
+  animation: rise 0.5s ease-out 0.08s both;
+}
+
+textarea,
+input,
+select {
+  background: transparent;
+}
+
+.glass {
+  background: rgba(26, 36, 32, 0.72);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}

@@ -3,26 +3,39 @@
 @import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap");
 
 /* ============================================================
-   Nomon marketing landing page.
-   Every rule is namespaced under `.lumen-landing` so this warm-paper
-   design never leaks into the app routes (dashboard, community, …),
-   which keep the diffuse `--lm-*` system.
+   Nomon marketing landing page — Aurora Grayscale (Ink).
+   Every rule is namespaced under `.lumen-landing` so this design
+   never leaks into the app routes (dashboard, community, …).
+
+   Rules: the four-dot mark is the ONLY saturated colour · green is
+   allowed for positive/wins only · signals are monochrome — the
+   label carries the meaning, not hue · no glow, no purple outside
+   the mark.
    ============================================================ */
 :root {
-  --ll-paper: #fbfbf9;
-  --ll-card: #ffffff;
-  --ll-ink: #191917;
-  --ll-muted: #6e6e68;
-  --ll-faint: #9a9a93;
-  --ll-hairline: rgba(25, 25, 23, 0.1);
-  --ll-hairline-soft: rgba(25, 25, 23, 0.06);
+  --ll-paper: #08080b;
+  --ll-card: #121216;
+  --ll-card-grad: linear-gradient(180deg, #16161b, #101014);
+  --ll-ink: #f2f2f4;
+  --ll-body: #e7e7ea;
+  --ll-muted: #a2a2ad;
+  --ll-faint: #7f7f8a;
+  --ll-hairline: rgba(255, 255, 255, 0.1);
+  --ll-hairline-soft: rgba(255, 255, 255, 0.06);
+  --ll-glass: rgba(255, 255, 255, 0.04);
 
-  /* Signal colours — the only chroma on the page */
-  --ll-sky: #4e9cc4; /* hand-off */
-  --ll-green: #2e9e4f; /* loop     */
-  --ll-amber: #b5810f; /* drift    */
-  --ll-rose: #b5486b; /* mismatch */
-  --ll-blue: #3273c5; /* depth    */
+  /* The four-dot mark — the only saturated colour on the page */
+  --ll-dot-green: #5ba85c;
+  --ll-dot-amber: #e5a33d;
+  --ll-dot-purple: #8e6fd8;
+  --ll-dot-blue: #5b9bd5;
+
+  /* Neutral signal chrome — labels differentiate, never hue */
+  --ll-signal-dot: #9a9aa5;
+  --ll-signal-ink: #d0d0d6;
+
+  /* Positive / wins — the one allowed flat accent here */
+  --ll-win: #7fbf80;
 
   --ll-serif: "Newsreader", Georgia, serif;
   --ll-sans: "Plus Jakarta Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
@@ -37,7 +50,7 @@ html:has(.lumen-landing) {
 
 .lumen-landing {
   background: var(--ll-paper);
-  color: var(--ll-ink);
+  color: var(--ll-body);
   font-family: var(--ll-sans);
   font-size: 16px;
   line-height: 1.6;
@@ -54,7 +67,7 @@ html:has(.lumen-landing) {
 }
 
 .lumen-landing ::selection {
-  background: rgba(50, 115, 197, 0.16);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .lumen-landing a {
@@ -66,7 +79,7 @@ html:has(.lumen-landing) {
 }
 
 .lumen-landing :focus-visible {
-  outline: 2px solid var(--ll-blue);
+  outline: 2px solid rgba(255, 255, 255, 0.45);
   outline-offset: 2px;
   border-radius: 3px;
 }
@@ -93,19 +106,19 @@ html:has(.lumen-landing) {
   border-radius: 50%;
 }
 .lumen-landing .mark .d-green {
-  background: var(--ll-green);
+  background: var(--ll-dot-green);
   transform: translate(-146%, -108%);
 }
 .lumen-landing .mark .d-amber {
-  background: var(--ll-amber);
+  background: var(--ll-dot-amber);
   transform: translate(-50%, -108%);
 }
 .lumen-landing .mark .d-rose {
-  background: var(--ll-rose);
+  background: var(--ll-dot-purple);
   transform: translate(46%, -108%);
 }
 .lumen-landing .mark .d-blue {
-  background: var(--ll-blue);
+  background: var(--ll-dot-blue);
   transform: translate(-50%, 8%);
 }
 
@@ -124,21 +137,20 @@ html:has(.lumen-landing) {
   top: 50%;
   left: 50%;
   border-radius: 50%;
-  mix-blend-mode: multiply; /* light backgrounds: colours deepen on overlap */
   will-change: transform;
   animation: ll-dot-cycle var(--ll-dur) var(--ll-ease) infinite;
 }
 .lumen-landing .mark-anim .d-green {
-  background: var(--ll-green);
+  background: var(--ll-dot-green);
 }
 .lumen-landing .mark-anim .d-amber {
-  background: var(--ll-amber);
+  background: var(--ll-dot-amber);
 }
 .lumen-landing .mark-anim .d-rose {
-  background: var(--ll-rose);
+  background: var(--ll-dot-purple);
 }
 .lumen-landing .mark-anim .d-blue {
-  background: var(--ll-blue);
+  background: var(--ll-dot-blue);
 }
 
 @keyframes ll-dot-cycle {
@@ -193,7 +205,11 @@ html:has(.lumen-landing) {
 ———————————————————————————————————————— */
 .lumen-landing nav {
   border-bottom: 1px solid var(--ll-hairline-soft);
-  background: var(--ll-paper);
+  background: rgba(8, 8, 11, 0.72);
+  backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 .lumen-landing .nav-inner {
   display: flex;
@@ -242,7 +258,7 @@ html:has(.lumen-landing) {
 }
 .lumen-landing .nav-links a.btn-primary,
 .lumen-landing .nav-links a.btn-primary:hover {
-  color: var(--ll-paper);
+  color: #16161a;
 }
 
 .lumen-landing .btn {
@@ -259,18 +275,19 @@ html:has(.lumen-landing) {
 }
 .lumen-landing .btn-primary {
   background: var(--ll-ink);
-  color: var(--ll-paper);
+  color: #16161a;
 }
 .lumen-landing .btn-primary:hover {
-  background: #33332f;
+  background: #ffffff;
 }
 .lumen-landing .btn-ghost {
   background: transparent;
-  color: var(--ll-ink);
-  border-color: var(--ll-hairline);
+  color: var(--ll-body);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 .lumen-landing .btn-ghost:hover {
-  border-color: rgba(25, 25, 23, 0.28);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
 }
 .lumen-landing .btn-small {
   font-size: 14px;
@@ -294,6 +311,10 @@ html:has(.lumen-landing) {
   line-height: 1.12;
   letter-spacing: -0.01em;
   margin: 34px 0 24px;
+  background: linear-gradient(180deg, #ffffff, #b7b7c2);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .lumen-landing .hero h1 em {
   font-style: italic;
@@ -325,12 +346,10 @@ html:has(.lumen-landing) {
    Chat demo card (hero, mode previews)
 ———————————————————————————————————————— */
 .lumen-landing .chat {
-  background: var(--ll-card);
+  background: var(--ll-card-grad);
   border: 1px solid var(--ll-hairline);
   border-radius: 16px;
-  box-shadow:
-    0 1px 2px rgba(25, 25, 23, 0.04),
-    0 12px 40px -18px rgba(25, 25, 23, 0.12);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
   overflow: hidden;
 }
 .lumen-landing .chat-head {
@@ -363,13 +382,14 @@ html:has(.lumen-landing) {
   padding: 20px 18px 22px;
 }
 .lumen-landing .bubble {
-  background: #f1f1ed;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 12px 12px 3px 12px;
   padding: 12px 15px;
   font-size: 14.5px;
   line-height: 1.5;
   max-width: 92%;
   margin-left: auto;
+  color: var(--ll-body);
 }
 .lumen-landing .ai-reply {
   font-size: 14px;
@@ -378,7 +398,7 @@ html:has(.lumen-landing) {
   padding: 4px 2px 0;
 }
 
-/* The signal strip — the product's core UI element */
+/* The signal strip — monochrome; the label carries the meaning */
 .lumen-landing .strip {
   display: flex;
   align-items: baseline;
@@ -411,50 +431,44 @@ html:has(.lumen-landing) {
   padding-left: 0;
 }
 
-.lumen-landing .sig-sky {
-  color: var(--ll-sky);
-}
-.lumen-landing .bg-sky {
-  background: var(--ll-sky);
-}
-.lumen-landing .sig-green {
-  color: var(--ll-green);
-}
-.lumen-landing .bg-green {
-  background: var(--ll-green);
-}
-.lumen-landing .sig-amber {
-  color: var(--ll-amber);
-}
-.lumen-landing .bg-amber {
-  background: var(--ll-amber);
-}
-.lumen-landing .sig-rose {
-  color: var(--ll-rose);
-}
-.lumen-landing .bg-rose {
-  background: var(--ll-rose);
-}
+/* Signals are grayscale — one neutral dot, one neutral label. */
+.lumen-landing .sig-sky,
+.lumen-landing .sig-green,
+.lumen-landing .sig-amber,
+.lumen-landing .sig-rose,
 .lumen-landing .sig-blue {
-  color: var(--ll-blue);
+  color: var(--ll-signal-ink);
 }
+.lumen-landing .bg-sky,
+.lumen-landing .bg-green,
+.lumen-landing .bg-amber,
+.lumen-landing .bg-rose,
 .lumen-landing .bg-blue {
-  background: var(--ll-blue);
+  background: var(--ll-signal-dot);
 }
 
-/* Reflection card inside chat demo */
+/* Weekly-card bar fills — green is allowed as the positive accent */
+.lumen-landing .fill-win {
+  background: var(--ll-win);
+}
+.lumen-landing .fill-neutral {
+  background: var(--ll-signal-dot);
+}
+
+/* Reflection card inside chat demo — neutral firm edge, no signal hue */
 .lumen-landing .reflect {
   border: 1px solid var(--ll-hairline);
-  border-left: 2.5px solid var(--ll-blue);
+  border-left: 2.5px solid rgba(255, 255, 255, 0.32);
   border-radius: 10px;
   padding: 15px 16px;
   margin-top: 12px;
-  background: var(--ll-card);
+  background: var(--ll-glass);
 }
 .lumen-landing .reflect h4 {
   font-size: 14.5px;
   font-weight: 700;
   margin-bottom: 5px;
+  color: var(--ll-ink);
 }
 .lumen-landing .reflect p {
   font-size: 13.5px;
@@ -471,13 +485,14 @@ html:has(.lumen-landing) {
   font-size: 13px;
   font-weight: 600;
   border: 1px solid var(--ll-hairline);
-  background: var(--ll-card);
+  background: transparent;
+  color: var(--ll-body);
   border-radius: 8px;
   padding: 7px 13px;
 }
 .lumen-landing .chip-solid {
   background: var(--ll-ink);
-  color: var(--ll-paper);
+  color: #16161a;
   border-color: var(--ll-ink);
 }
 .lumen-landing .chat-note {
@@ -494,7 +509,7 @@ html:has(.lumen-landing) {
 .lumen-landing .terms {
   border-top: 1px solid var(--ll-hairline-soft);
   border-bottom: 1px solid var(--ll-hairline-soft);
-  background: var(--ll-card);
+  background: rgba(255, 255, 255, 0.02);
 }
 .lumen-landing .terms-inner {
   display: grid;
@@ -531,6 +546,7 @@ html:has(.lumen-landing) {
   line-height: 1.15;
   letter-spacing: -0.005em;
   margin-bottom: 18px;
+  color: var(--ll-ink);
 }
 .lumen-landing .section-intro {
   font-size: 16.5px;
@@ -549,6 +565,7 @@ html:has(.lumen-landing) {
   font-size: 17px;
   font-weight: 700;
   margin-bottom: 10px;
+  color: var(--ll-ink);
 }
 .lumen-landing .step p {
   font-size: 15px;
@@ -571,17 +588,17 @@ html:has(.lumen-landing) {
 .lumen-landing .shape-viz i {
   width: 9px;
   border-radius: 3px;
-  background: rgba(25, 25, 23, 0.14);
+  background: rgba(255, 255, 255, 0.14);
   display: block;
 }
 .lumen-landing .shape-viz i.q {
-  background: rgba(25, 25, 23, 0.34);
+  background: rgba(255, 255, 255, 0.38);
 }
 /* step 3: mini card */
 .lumen-landing .mini-card {
   border: 1px solid var(--ll-hairline);
   border-radius: 9px;
-  background: var(--ll-card);
+  background: var(--ll-glass);
   padding: 9px 12px;
   font-size: 11.5px;
   color: var(--ll-muted);
@@ -615,8 +632,8 @@ html:has(.lumen-landing) {
   padding: 11px 22px;
   border: 1px solid var(--ll-hairline);
   border-radius: 99px;
-  background: var(--ll-card);
-  color: var(--ll-ink);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ll-body);
 }
 .lumen-landing .ai-fine {
   margin-top: 24px;
@@ -678,7 +695,7 @@ html:has(.lumen-landing) {
   padding: 9px 17px;
   border-radius: 99px;
   border: 1px solid var(--ll-hairline);
-  background: var(--ll-card);
+  background: var(--ll-glass);
   color: var(--ll-muted);
   transition: all 0.15s;
 }
@@ -696,13 +713,16 @@ html:has(.lumen-landing) {
   height: 6px;
 }
 .lumen-landing .dial button:hover {
-  border-color: rgba(25, 25, 23, 0.3);
+  border-color: rgba(255, 255, 255, 0.28);
   color: var(--ll-ink);
 }
 .lumen-landing .dial button[aria-pressed="true"] {
   background: var(--ll-ink);
-  color: var(--ll-paper);
+  color: #16161a;
   border-color: var(--ll-ink);
+}
+.lumen-landing .dial button[aria-pressed="true"] .dot-i {
+  background: #16161a;
 }
 .lumen-landing .dial button .optin {
   font-size: 10px;
@@ -734,17 +754,20 @@ html:has(.lumen-landing) {
 .lumen-landing .mode-preview .chat-body {
   min-height: 218px;
 }
+/* Guard hold — firmer neutral edge, not a colour */
 .lumen-landing .hold-card {
   border: 1px solid var(--ll-hairline);
-  border-left: 2.5px solid var(--ll-rose);
+  border-left: 2.5px solid rgba(255, 255, 255, 0.45);
   border-radius: 10px;
   padding: 15px 16px;
   margin-top: 12px;
+  background: var(--ll-glass);
 }
 .lumen-landing .hold-card h4 {
   font-size: 14.5px;
   font-weight: 700;
   margin-bottom: 5px;
+  color: var(--ll-ink);
 }
 .lumen-landing .hold-card p {
   font-size: 13.5px;
@@ -784,12 +807,10 @@ html:has(.lumen-landing) {
   align-items: center;
 }
 .lumen-landing .wcard {
-  background: var(--ll-card);
+  background: var(--ll-card-grad);
   border: 1px solid var(--ll-hairline);
   border-radius: 16px;
-  box-shadow:
-    0 1px 2px rgba(25, 25, 23, 0.04),
-    0 12px 40px -18px rgba(25, 25, 23, 0.12);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
   padding: 26px;
 }
 .lumen-landing .wcard-top {
@@ -802,6 +823,7 @@ html:has(.lumen-landing) {
   font-size: 19px;
   font-weight: 700;
   margin-top: 12px;
+  color: var(--ll-ink);
 }
 .lumen-landing .wcard .shape-label {
   font-size: 13.5px;
@@ -821,7 +843,8 @@ html:has(.lumen-landing) {
   margin-bottom: 20px;
 }
 .lumen-landing .wstat {
-  background: #f6f6f3;
+  background: var(--ll-glass);
+  border: 1px solid var(--ll-hairline-soft);
   border-radius: 10px;
   padding: 13px 15px;
 }
@@ -837,6 +860,7 @@ html:has(.lumen-landing) {
 .lumen-landing .wstat b {
   font-size: 21px;
   font-weight: 700;
+  color: var(--ll-ink);
 }
 .lumen-landing .wbar {
   margin-bottom: 13px;
@@ -850,7 +874,7 @@ html:has(.lumen-landing) {
 }
 .lumen-landing .wbar-track {
   height: 4px;
-  background: #ecece8;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 99px;
 }
 .lumen-landing .wbar-fill {
@@ -858,7 +882,8 @@ html:has(.lumen-landing) {
   border-radius: 99px;
 }
 .lumen-landing .wcard .sit-with {
-  font-size: 13.5px;
+  font-family: var(--ll-serif);
+  font-size: 14px;
   color: var(--ll-muted);
   font-style: italic;
   border-top: 1px solid var(--ll-hairline-soft);
@@ -884,6 +909,7 @@ html:has(.lumen-landing) {
   font-weight: 500;
   font-size: 20px;
   margin-bottom: 8px;
+  color: var(--ll-ink);
 }
 .lumen-landing .qa-item p {
   font-size: 15px;
@@ -895,7 +921,7 @@ html:has(.lumen-landing) {
   font-weight: 600;
 }
 .lumen-landing .qa-item p a {
-  color: var(--ll-ink);
+  color: var(--ll-body);
   text-decoration: underline;
   text-decoration-color: var(--ll-hairline);
   text-underline-offset: 2px;

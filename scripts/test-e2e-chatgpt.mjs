@@ -154,7 +154,7 @@ assert(
 );
 assert(
   "badge shows signal label after mismatch",
-  badgeText.includes("mismatch"),
+  /mismatch/i.test(badgeText),
   badgeText
 );
 assert("badge has transient signal attribute", fab?.dataset?.signal === "mismatch");

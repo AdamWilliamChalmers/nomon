@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nomon — In-conversation surfaces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --font:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+  --serif:"Newsreader",Georgia,serif;
+  --dot-green:#5ba85c; --dot-amber:#e5a33d; --dot-purple:#8e6fd8; --dot-blue:#5b9bd5;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font);background:#08080b;color:#e7e7ea;-webkit-font-smoothing:antialiased;}
+.page{max-width:1120px;margin:0 auto;padding:0 28px 120px;}
+.toolbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:14px 0;background:rgba(8,8,11,0.72);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.06);}
+.toolbar .brand{font-weight:700;margin-right:6px;}
+.toolbar a{font-size:13px;color:#9a9aa5;text-decoration:none;padding:6px 11px;border-radius:8px;transition:.15s var(--ease);}
+.toolbar a:hover{color:#fff;background:rgba(255,255,255,0.06);}
+.toolbar .spacer{flex:1;}
+.theme-switch{display:inline-flex;padding:3px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);}
+.theme-switch button{border:0;background:transparent;color:#9a9aa5;font-family:var(--font);font-size:12px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;transition:.15s var(--ease);}
+.theme-switch button.on{background:#f2f2f4;color:#111;}
+
+.hero{position:relative;padding:70px 0 30px;overflow:hidden;}
+.hero::before{content:"";position:absolute;top:-160px;left:15%;width:720px;height:520px;
+  background:radial-gradient(circle at 30% 40%,rgba(255,255,255,0.10),transparent 55%),radial-gradient(circle at 70% 55%,rgba(91,155,213,0.10),transparent 55%);filter:blur(20px);}
+.hero>*{position:relative;}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:#8a8a95;margin:0 0 16px;}
+.hero h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-0.03em;margin:0 0 16px;
+  background:linear-gradient(180deg,#fff,#b7b7c2);-webkit-background-clip:text;background-clip:text;color:transparent;max-width:660px;}
+.hero p{font-size:16px;line-height:1.6;color:#a2a2ad;max-width:600px;margin:0;}
+
+section{padding:48px 0 10px;}
+.sec-head{margin-bottom:22px;max-width:720px;}
+.sec-num{font-size:12px;font-weight:700;letter-spacing:0.2em;color:#6a6a75;text-transform:uppercase;}
+.sec-head h2{font-size:24px;font-weight:700;letter-spacing:-0.02em;margin:8px 0 10px;}
+.sec-head p{font-size:14px;line-height:1.6;color:#9a9aa5;margin:0;}
+
+.canvas{position:relative;border-radius:22px;padding:40px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);
+  background:radial-gradient(1000px 400px at 80% -10%,rgba(255,255,255,0.08),transparent 60%),linear-gradient(180deg,#101014,#0b0b0e);}
+.canvas.paper{border-color:rgba(0,0,0,0.08);
+  background:radial-gradient(900px 400px at 85% -15%,rgba(90,110,150,0.05),transparent 60%),linear-gradient(180deg,#fbfbfd,#f3f3f6);}
+.canvas::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+.canvas.paper::after{opacity:.5;mix-blend-mode:multiply;}
+.canvas>*{position:relative;z-index:1;}
+.canvas-label{position:absolute;top:14px;left:18px;z-index:2;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6a6a75;}
+.canvas.paper .canvas-label{color:#9a9aa5;}
+.cap{font-size:12px;color:#8a8a95;text-align:center;line-height:1.5;max-width:340px;margin:12px auto 0;}
+.cap b{color:#d7d7dc;}.canvas.paper .cap{color:#77777f;}.canvas.paper .cap b{color:#26262c;}
+
+/* mark */
+.nm-mark{position:relative;width:22px;height:22px;flex-shrink:0;}
+.nm-mark .spin{position:absolute;inset:0;}
+.nm-mark .dot{position:absolute;top:50%;left:50%;width:5.5px;height:5.5px;margin:-2.75px 0 0 -2.75px;border-radius:50%;transform:translate(var(--rx),var(--ry));}
+.nm-mark .g{background:var(--dot-green);}.nm-mark .a{background:var(--dot-amber);}
+.nm-mark .p{background:var(--dot-purple);}.nm-mark .b{background:var(--dot-blue);}
+
+/* chat context */
+.chat{max-width:580px;margin:0 auto;}
+.bubble{padding:15px 17px;border-radius:16px;font-size:14px;line-height:1.6;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#cfcfd6;}
+.canvas.paper .bubble{background:#fff;border-color:rgba(0,0,0,0.07);color:#33333b;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.you{max-width:60%;margin-left:auto;background:rgba(255,255,255,0.07);}
+.canvas.paper .you{background:#eef0f4;}
+
+/* ===== SIGNAL STRIP ===== */
+.strip{display:inline-flex;align-items:center;gap:9px;margin:10px 0 2px;padding:5px 12px 5px 10px;border-radius:999px;position:relative;cursor:default;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:11px;}
+.canvas.paper .strip{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.07);}
+.strip .d{width:7px;height:7px;border-radius:50%;background:#9a9aa5;}
+.canvas.paper .strip .d{background:#83838d;}
+.strip .nm{font-weight:600;letter-spacing:.02em;color:#d0d0d6;}
+.canvas.paper .strip .nm{color:#2b2b33;}
+.strip .sub{color:#8a8a95;}
+.strip .arw{color:#6d6d78;font-size:13px;margin-left:2px;}
+.strip .tip{position:absolute;bottom:calc(100% + 10px);right:0;width:250px;padding:11px 13px;border-radius:12px;z-index:5;
+  background:#17171d;border:1px solid rgba(255,255,255,0.1);box-shadow:0 14px 40px rgba(0,0,0,0.6);
+  font-size:11.5px;line-height:1.5;color:#c2c2cb;opacity:0;transform:translateY(4px);pointer-events:none;transition:.18s var(--ease);text-align:left;}
+.strip .tip b{color:#fff;}
+.strip:hover .tip{opacity:1;transform:translateY(0);}
+.why{font-size:10px;color:#8a8a95;text-align:right;max-width:320px;margin:4px 0 0 auto;line-height:1.45;}
+.canvas.paper .why{color:#83838d;}
+
+/* ===== TRANSPARENCY BADGE ===== */
+.disclose{display:inline-flex;align-items:center;gap:8px;padding:6px 13px 6px 10px;border-radius:999px;cursor:pointer;
+  background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.16);font-size:11.5px;font-weight:600;color:#c7c7cf;transition:.15s var(--ease);}
+.canvas.paper .disclose{background:rgba(0,0,0,0.015);border-color:rgba(0,0,0,0.16);color:#55555e;}
+.disclose:hover{border-color:rgba(255,255,255,0.4);}
+.disclose svg{width:13px;height:13px;stroke:#b7b7c0;}
+.canvas.paper .disclose svg{stroke:#6f6f79;}
+
+.badge-card{width:340px;padding:18px;border-radius:18px;text-align:left;
+  background:linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.10);box-shadow:0 14px 40px rgba(0,0,0,0.4);}
+.canvas.paper .badge-card{background:linear-gradient(180deg,#fff,#fafafc);border-color:rgba(0,0,0,0.08);box-shadow:0 12px 34px rgba(20,20,40,0.10);}
+.bc-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.bc-brand{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9a9aa5;}
+.bc-title{font-size:14px;font-weight:600;color:#ededf0;margin:1px 0 0;}
+.canvas.paper .bc-title{color:#201e2a;}
+.bc-ev{font-size:11.5px;line-height:1.5;color:#9a9aa5;padding:10px 12px;border-radius:10px;margin-bottom:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);}
+.canvas.paper .bc-ev{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.05);color:#6f6f79;}
+.bc-ev b{color:#e7e7ea;font-weight:700;}
+.canvas.paper .bc-ev b{color:#201e2a;}
+.bc-levels{display:flex;gap:7px;margin-bottom:14px;}
+.bc-lvl{flex:1;padding:9px 6px;border-radius:10px;text-align:center;cursor:pointer;font-size:11px;font-weight:600;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:#9a9aa5;transition:.15s var(--ease);}
+.canvas.paper .bc-lvl{background:#fff;border-color:rgba(0,0,0,0.08);color:#77777f;}
+.bc-lvl.on{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.4);color:#fff;}
+.canvas.paper .bc-lvl.on{background:#1a1822;border-color:#1a1822;color:#fff;}
+.bc-actions{display:flex;gap:8px;}
+.btn{font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;padding:9px 15px;border-radius:10px;border:1px solid transparent;transition:.15s var(--ease);}
+.btn-primary{background:#f2f2f4;color:#16161a;flex:1;}.btn-primary:hover{background:#fff;}
+.canvas.paper .btn-primary{background:#1a1822;color:#fff;}
+.btn-ghost{background:transparent;border-color:rgba(255,255,255,0.14);color:#b7b7c0;}.btn-ghost:hover{border-color:rgba(255,255,255,0.3);color:#fff;}
+.canvas.paper .btn-ghost{border-color:rgba(0,0,0,0.15);color:#55555e;}
+.bc-preview{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:10px;margin-bottom:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);}
+.canvas.paper .bc-preview{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.05);}
+.bc-preview .pl{font-size:11px;font-weight:600;color:#ededf0;}
+.canvas.paper .bc-preview .pl{color:#201e2a;}
+.bc-preview .pt{font-size:10.5px;color:#8a8a95;}
+.bc-success{font-size:12.5px;font-weight:600;color:#7fbf80;margin-bottom:6px;}
+.bc-sub{font-size:11px;color:#8a8a95;line-height:1.5;margin:0 0 12px;}
+
+/* ===== OVERLAYS ===== */
+.overlay{position:relative;border-radius:20px;overflow:hidden;min-height:340px;display:flex;align-items:center;justify-content:center;padding:34px;
+  border:1px solid rgba(255,255,255,0.08);background:linear-gradient(180deg,#131317,#0c0c10);}
+.overlay .scrim{position:absolute;inset:0;background:rgba(6,6,9,0.6);}
+.rc-panel{position:relative;z-index:2;width:420px;padding:26px;border-radius:18px;text-align:left;
+  background:linear-gradient(180deg,rgba(26,26,32,0.99),rgba(16,16,20,0.99));border:1px solid rgba(255,255,255,0.12);box-shadow:0 30px 80px rgba(0,0,0,0.7);}
+.rc-kick{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6a6a75;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.rc-title{font-family:var(--serif);font-size:23px;font-weight:500;line-height:1.25;color:#fff;margin:0 0 10px;letter-spacing:-0.01em;}
+.rc-body{font-size:13.5px;line-height:1.55;color:#a2a2ad;margin:0 0 20px;}
+.rc-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.rc-textarea{width:100%;min-height:80px;margin-bottom:12px;padding:12px 14px;border-radius:12px;font-family:var(--font);font-size:13px;resize:vertical;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:#e7e7ea;}
+.rc-textarea:focus{outline:none;border-color:rgba(255,255,255,0.35);}
+.btn-lg{padding:11px 18px;font-size:13px;}
+/* guard hold gets a firmer frame — a goal is at stake */
+.rc-panel.guard{border-color:rgba(255,255,255,0.28);border-width:1.5px;}
+.rc-panel.guard .rc-kick{color:#c7c7cf;}
+
+.tabs{display:flex;gap:6px;margin:0 0 22px;}
+.tab{font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;color:#8a8a95;background:transparent;border:1px solid transparent;}
+.tab.on{color:#f2f2f4;background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.1);}
+
+.note{margin:34px 0 0;padding:20px 22px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);font-size:14px;line-height:1.65;color:#a8a8b2;}
+.note b{color:#e7e7ea;}
+footer{text-align:center;color:#55555e;font-size:12px;padding:60px 0 0;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
+@media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+.spec{display:flex;flex-direction:column;align-items:center;padding:26px 16px;border-radius:14px;background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.08);}
+.canvas.paper .spec{background:rgba(0,0,0,0.015);border-color:rgba(0,0,0,0.08);}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="brand">Nomon · Interventions</span>
+  <a href="nomon-redesign.html">← Gallery</a>
+  <a href="fab.html">FAB</a>
+  <a href="weekly-digest.html">Digest</a>
+  <a href="onboarding.html">Onboarding</a>
+  <a href="panel.html">Panel</a>
+  <span class="spacer"></span>
+  <div class="theme-switch"><button id="t-ink" class="on" onclick="setTheme('ink')">Ink</button><button id="t-paper" onclick="setTheme('paper')">Paper</button></div>
+</div>
+
+<div class="page">
+  <header class="hero">
+    <p class="eyebrow">Deep dive · In the conversation</p>
+    <h1>How Nomon speaks up — quietly, then only when it matters.</h1>
+    <p>A ladder of escalation: a passive strip under a reply, an optional disclosure badge, a reflection prompt before a big hand-off, and — only in Guard mode — a brief, always-bypassable hold. Mirror, never nanny.</p>
+  </header>
+
+  <!-- SIGNAL STRIPS -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">A — Signal strip (Ambient / Active)</div>
+      <h2>The lightest touch: a strip that teaches on hover</h2>
+      <p>Monochrome; the name carries the signal. Hover for the principle in plain language, cited against what you actually did. An optional one-line "why" can sit beneath.</p>
+    </div>
+    <div class="canvas" data-canvas>
+      <span class="canvas-label">Under an AI reply</span>
+      <div class="chat" style="margin-top:14px">
+        <div class="bubble you">Write the full investor update for Q3 — cover revenue, churn and the roadmap.</div>
+        <div class="bubble" style="margin-top:12px">Here's a complete draft of your Q3 investor update, structured into three sections with the key metrics highlighted…</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end">
+          <span class="strip">
+            <span class="d"></span><span class="nm">Hand-off</span><span class="sub">· you delegated the whole task</span><span class="arw">›</span>
+            <span class="tip"><b>Hand-off.</b> You asked the AI to write the full update from scratch, rather than starting a draft yourself. Want to sketch the shape first?</span>
+          </span>
+          <span class="why">You started by asking the AI to produce it all — not by outlining your own take.</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:26px">
+        <span class="strip"><span class="d"></span><span class="nm">Loop</span><span class="sub">· still with it?</span><span class="arw">›</span><span class="tip"><b>Loop.</b> Six exchanges without a question of your own — an easy place to slip into autopilot.</span></span>
+        <span class="strip"><span class="d"></span><span class="nm">Drift</span><span class="sub">· wandered from your prompt</span><span class="arw">›</span><span class="tip"><b>Drift.</b> The thread has moved a long way from what you first asked. Worth a re-anchor?</span></span>
+        <span class="strip"><span class="d"></span><span class="nm">Mismatch</span><span class="sub">· conflicts with a goal</span><span class="arw">›</span><span class="tip"><b>Mismatch.</b> This asks the AI to write your first draft — but you set a goal to <i>write your own first drafts</i>.</span></span>
+        <span class="strip"><span class="d"></span><span class="nm">Depth</span><span class="sub">· think first?</span><span class="arw">›</span><span class="tip"><b>Depth.</b> A meaty question worth wrestling with yourself before you see an answer.</span></span>
+      </div>
+      <div class="cap">Hover any strip. Grayscale keeps the page calm; the tooltip does the teaching.</div>
+    </div>
+  </section>
+
+  <!-- BADGE FLOW -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">B — Transparency badge (the full flow)</div>
+      <h2>Affordance → inferred card → copy-ready badge</h2>
+      <p>Appears under substantial replies. The level is pre-inferred from behaviour with its evidence; one tap copies an embeddable badge.</p>
+    </div>
+    <div class="canvas" data-canvas>
+      <span class="canvas-label">Disclose flow</span>
+      <div class="grid2" style="margin-top:14px">
+        <div class="spec">
+          <div class="chat" style="margin:0;max-width:100%">
+            <div class="bubble">…and that completes the migration script with rollback handling and tests.</div>
+            <div style="margin-top:10px"><span class="disclose"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6z"/><path d="M9 12l2 2 4-4"/></svg> Disclose how you used AI <span style="color:#6d6d78">›</span></span></div>
+          </div>
+          <div class="cap">1 · The affordance, in place.</div>
+        </div>
+        <div class="spec">
+          <div class="badge-card">
+            <div class="bc-head">
+              <span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-7px;--ry:-4px"></span><span class="dot a" style="--rx:0;--ry:-4px"></span><span class="dot p" style="--rx:7px;--ry:-4px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span>
+              <div><div class="bc-brand">Nomon · transparency</div><div class="bc-title">How did you use AI here?</div></div>
+            </div>
+            <div class="bc-ev">You asked <b>4 clarifying questions</b> and revised twice before this reply → we'd suggest <b>AI-assisted</b>.</div>
+            <div class="bc-levels"><div class="bc-lvl">AI-led</div><div class="bc-lvl on">AI-assisted</div><div class="bc-lvl">Human-led</div></div>
+            <div class="bc-actions"><button class="btn btn-primary">Copy badge</button><button class="btn btn-ghost">Not now</button></div>
+          </div>
+          <div class="cap">2 · Inferred level + evidence.</div>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:24px">
+        <div class="spec">
+          <div class="badge-card">
+            <div class="bc-preview">
+              <span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-6px;--ry:-4px"></span><span class="dot a" style="--rx:0;--ry:-4px"></span><span class="dot p" style="--rx:6px;--ry:-4px"></span><span class="dot b" style="--rx:0;--ry:3px"></span></span></span>
+              <div><div class="pl">AI-assisted</div><div class="pt">Verified by Nomon · Claude · 17 Jul</div></div>
+            </div>
+            <div class="bc-success">Copied to clipboard</div>
+            <p class="bc-sub">Paste the badge anywhere — it embeds as clean HTML. Nothing about your chat leaves the device.</p>
+            <div class="bc-actions"><button class="btn btn-primary">Copy again</button><button class="btn btn-ghost">Done</button></div>
+          </div>
+          <div class="cap">3 · Copied — with a live preview of the artifact.</div>
+        </div>
+        <div class="spec" style="justify-content:center">
+          <div class="note" style="margin:0">
+            <b>Why surface it here.</b> Behaviour-inferred disclosure is the accountability moat — but only if it meets the reply. Evidence (“4 questions, 2 revisions”) turns a blank checkbox into a credible, one-tap claim.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECONSIDER OVERLAY -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">C — Reflection prompt (Active)</div>
+      <h2>Before a big hand-off — an invitation, not a block</h2>
+      <p>On a clear hand-off / loop / depth moment, the AI answer waits behind a calm prompt. "Draft something first" opens a box that gets prepended to your prompt; "Continue" just shows the answer.</p>
+    </div>
+    <div class="canvas" data-canvas style="padding:24px">
+      <span class="canvas-label">Reflection</span>
+      <div class="tabs" style="justify-content:center;margin-top:20px" id="rc-tabs">
+        <span class="tab on" data-rc="handoff">Hand-off</span>
+        <span class="tab" data-rc="loop">Loop</span>
+        <span class="tab" data-rc="depth">Depth</span>
+      </div>
+      <div class="overlay">
+        <div class="scrim"></div>
+        <div class="rc-panel">
+          <div class="rc-kick"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-7px;--ry:-4px"></span><span class="dot a" style="--rx:0;--ry:-4px"></span><span class="dot p" style="--rx:7px;--ry:-4px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span><span id="rc-kick">Nomon · hand-off</span></div>
+          <h2 class="rc-title" id="rc-title">Start with your own version?</h2>
+          <p class="rc-body" id="rc-body">You're handing the whole task to the AI. Even a rough sentence of your own first tends to sharpen what comes back — and keeps the thinking yours.</p>
+          <div class="rc-actions">
+            <button class="btn btn-primary btn-lg" id="rc-a1">I'll draft something first</button>
+            <button class="btn btn-ghost btn-lg" id="rc-a2">Continue — show the answer</button>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Switch the tabs to see the hand-off / loop / depth copy. Always one tap to continue.</div>
+    </div>
+  </section>
+
+  <!-- GUARD HOLD -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">D — Guard hold (opt-in)</div>
+      <h2>The firmest touch — and still bypassable</h2>
+      <p>Only in Guard mode, and only on a prompt that clearly conflicts with a goal you wrote. A slightly firmer frame signals a goal is at stake; "Send anyway" is always right there.</p>
+    </div>
+    <div class="canvas" data-canvas style="padding:24px">
+      <span class="canvas-label">Guard · send pause</span>
+      <div class="overlay" style="margin-top:20px">
+        <div class="scrim"></div>
+        <div class="rc-panel guard">
+          <div class="rc-kick"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-7px;--ry:-4px"></span><span class="dot a" style="--rx:0;--ry:-4px"></span><span class="dot p" style="--rx:7px;--ry:-4px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span>Nomon · guard</div>
+          <h2 class="rc-title">This hands over something you wanted to protect</h2>
+          <p class="rc-body">Your prompt asks the AI to make the call here — but you set a goal to <i>make my own decisions</i>. Take a beat?</p>
+          <div class="rc-actions">
+            <button class="btn btn-primary btn-lg">Draft my own first</button>
+            <button class="btn btn-ghost btn-lg">Send anyway</button>
+            <button class="btn btn-ghost btn-lg" style="border-color:transparent;color:#8a8a95">Remove this goal</button>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Three ways out: draft first, send anyway, or retire the goal if it's no longer yours.</div>
+    </div>
+    <div class="note">
+      <b>The escalation ladder, by mode.</b> Ambient = strips only · Active = strips + reflection prompts + badges · Guard = adds the opt-in send-hold · Ghost = nothing in-session, digest only. The design gets firmer only as the user opts in — never louder by default.
+    </div>
+  </section>
+
+  <footer>Nomon in-conversation surfaces · visual mockup, no product code changed.</footer>
+</div>
+
+<script>
+const RC={
+  handoff:{kick:'Nomon · hand-off',title:'Start with your own version?',body:"You're handing the whole task to the AI. Even a rough sentence of your own first tends to sharpen what comes back — and keeps the thinking yours.",a1:"I'll draft something first",a2:'Continue — show the answer'},
+  loop:{kick:'Nomon · loop',title:'Still steering this?',body:"A stretch of back-and-forth without a question of your own. A quick gut-check: what are you actually trying to decide here?",a1:'Note what I want',a2:'Continue — keep going'},
+  depth:{kick:'Nomon · depth',title:'Worth thinking through first?',body:"This is a meaty one. A moment with your own reasoning before the AI's tends to make the answer land deeper.",a1:'Jot my first thoughts',a2:'Continue — show the answer'}
+};
+document.getElementById('rc-tabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tab');if(!t)return;
+  document.querySelectorAll('#rc-tabs .tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');
+  const r=RC[t.dataset.rc];
+  document.getElementById('rc-kick').textContent=r.kick;
+  document.getElementById('rc-title').textContent=r.title;
+  document.getElementById('rc-body').textContent=r.body;
+  document.getElementById('rc-a1').textContent=r.a1;
+  document.getElementById('rc-a2').textContent=r.a2;
+});
+function setTheme(m){document.querySelectorAll('[data-canvas]').forEach(c=>c.classList.toggle('paper',m==='paper'));
+document.getElementById('t-ink').classList.toggle('on',m==='ink');document.getElementById('t-paper').classList.toggle('on',m==='paper');}
+</script>
+</body>
+</html>

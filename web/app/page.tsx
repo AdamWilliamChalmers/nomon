@@ -236,8 +236,8 @@ export default function HomePage() {
           <h2>Five signals, five meanings</h2>
           <p className="section-intro">
             One warning light can&rsquo;t mean five different things — so Nomon doesn&rsquo;t use
-            one. Each signal has its own name, colour and voice, and reads as quiet data under your
-            message. There is no red anywhere.
+            one. Each signal has its own name and voice, and reads as quiet monochrome data under
+            your message. No colour-coded alarms, no red anywhere.
           </p>
 
           <div className="signal-row">
@@ -366,7 +366,7 @@ export default function HomePage() {
                 <span>78%</span>
               </div>
               <div className="wbar-track">
-                <div className="wbar-fill bg-green" style={{ width: "78%" }} />
+                <div className="wbar-fill fill-win" style={{ width: "78%" }} />
               </div>
             </div>
             <div className="wbar">
@@ -375,7 +375,7 @@ export default function HomePage() {
                 <span>62%</span>
               </div>
               <div className="wbar-track">
-                <div className="wbar-fill bg-blue" style={{ width: "62%" }} />
+                <div className="wbar-fill fill-neutral" style={{ width: "62%" }} />
               </div>
             </div>
             <p className="sit-with">

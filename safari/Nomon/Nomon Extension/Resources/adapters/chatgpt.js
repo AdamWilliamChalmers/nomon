@@ -157,6 +157,102 @@ const LumenAdapterChatGPT = {
     return (el.innerText || el.textContent || "").trim();
   },
 
+  /**
+   * Read ChatGPT's model / intelligence picker near the composer.
+   * Returns enough for LumenCostModels.resolveChatGPTSelection().
+   *
+   * UI (Jul 2026): composer pill often shows "Medium" / "Instant" / "High";
+   * menus list "GPT-5.6 Sol", "GPT-5.5", "GPT-5.4", "GPT-5.3", "o3", "Instant 5.5".
+   */
+  getSelectedModel() {
+    const clean = (s) => String(s || "").replace(/\s+/g, " ").trim();
+
+    const INTEL_RE = /^(instant(?:\s*5\.5)?|medium|high)$/i;
+    const MODEL_RE =
+      /\b(gpt[-\s]?5(?:\.\d+)?(?:\s*(?:sol|terra|luna|mini|nano|instant|pro))?|o3(?:-mini|-pro)?|gpt[-\s]?4o(?:\s*mini)?)\b/i;
+
+    const texts = [];
+
+    const pushText = (raw, source) => {
+      const t = clean(raw);
+      if (!t || t.length > 80) return;
+      texts.push({ t, source });
+    };
+
+    // 1) Explicit model-switcher control (preferred)
+    const switcherSelectors = [
+      '[data-testid="model-switcher-dropdown-button"]',
+      '[data-testid="model-switcher-button"]',
+      'button[aria-label*="Model" i]',
+      'button[aria-label*="GPT" i]',
+      'button[data-testid*="model" i]',
+    ];
+    for (const sel of switcherSelectors) {
+      document.querySelectorAll(sel).forEach((el) => {
+        pushText(el.getAttribute("aria-label"), "switcher-aria");
+        pushText(el.textContent, "switcher");
+      });
+    }
+
+    // 2) Checked menu items (open or recently rendered menus)
+    document
+      .querySelectorAll(
+        '[role="menuitemradio"][aria-checked="true"], [role="menuitem"][aria-checked="true"], [role="option"][aria-selected="true"]'
+      )
+      .forEach((el) => {
+        pushText(el.getAttribute("aria-label") || el.textContent, "menu-checked");
+      });
+
+    // 3) Composer-adjacent buttons (ChatGPT nestles intelligence next to send)
+    const input = this.findChatInput();
+    const composer =
+      input?.closest("form") ||
+      input?.closest("[class*='composer']") ||
+      input?.parentElement?.parentElement;
+    if (composer) {
+      composer.querySelectorAll("button").forEach((btn) => {
+        const t = clean(btn.textContent);
+        if (INTEL_RE.test(t) || MODEL_RE.test(t)) pushText(t, "composer-btn");
+      });
+    }
+
+    let intelligence = null;
+    let modelLabel = null;
+    let label = null;
+
+    for (const { t } of texts) {
+      if (!intelligence && INTEL_RE.test(t)) intelligence = t;
+      const modelMatch = t.match(MODEL_RE);
+      if (!modelLabel && modelMatch) modelLabel = modelMatch[0];
+      // Prefer a string that names a concrete model
+      if (!label && MODEL_RE.test(t)) label = t;
+    }
+    if (!label && intelligence) label = intelligence;
+    if (!label && modelLabel) label = modelLabel;
+
+    if (!label && !intelligence && !modelLabel) {
+      return {
+        id: null,
+        label: null,
+        intelligence: null,
+        modelLabel: null,
+        confidence: "unknown",
+        host: "chatgpt",
+      };
+    }
+
+    // Prefer catalog resolve if available (content-script order loads models before adapters? 
+    // Actually adapters load BEFORE cost/models.js — so resolve later in LumenCost).
+    return {
+      id: null,
+      label,
+      intelligence,
+      modelLabel,
+      confidence: modelLabel ? "exact" : "mapped",
+      host: "chatgpt",
+    };
+  },
+
   findSendButton() {
     for (const selector of [
       'button[data-testid="send-button"]',
@@ -270,6 +366,128 @@ const LumenAdapterChatGPT = {
     const observer = new MutationObserver(() => callback());
     observer.observe(container, { childList: true, subtree: true });
     return observer;
+  },
+
+  /**
+   * Best-effort: open ChatGPT’s intelligence/model menu and pick the tip target.
+   * Instant ≈ GPT-5.6 Luna rates; Medium ≈ Terra; High ≈ Sol.
+   * @param {{ kind?: string, value?: string, uiLabel?: string }} action
+   * @returns {Promise<{ ok: boolean, method?: string, message?: string }>}
+   */
+  async switchModel(action = {}) {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const clean = (s) => String(s || "").replace(/\s+/g, " ").trim();
+    const clickEl = (el) => {
+      if (!el) return false;
+      el.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, cancelable: true }));
+      el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+      el.click();
+      el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true }));
+      return true;
+    };
+
+    const findMenuItem = (want) => {
+      const target = clean(want).toLowerCase();
+      const nodes = document.querySelectorAll(
+        '[role="menuitemradio"], [role="menuitem"], [role="option"]'
+      );
+      for (const el of nodes) {
+        const t = clean(el.getAttribute("aria-label") || el.textContent).toLowerCase();
+        if (!t) continue;
+        if (t === target) return el;
+        if (target === "instant" && /^instant(\s*5\.5)?$/.test(t)) return el;
+        if (target === "medium" && t === "medium") return el;
+        if (target === "high" && t === "high") return el;
+        if (t.includes(target) && target.length >= 4) return el;
+      }
+      return null;
+    };
+
+    const openIntelligenceMenu = () => {
+      const input = this.findChatInput?.();
+      const composer =
+        input?.closest("form") ||
+        input?.closest("[class*='composer']") ||
+        input?.parentElement?.parentElement;
+      const INTEL_RE = /^(instant(?:\s*5\.5)?|medium|high)$/i;
+      const candidates = [];
+      const push = (el) => {
+        if (el && !candidates.includes(el)) candidates.push(el);
+      };
+      for (const sel of [
+        '[data-testid="model-switcher-dropdown-button"]',
+        '[data-testid="model-switcher-button"]',
+        'button[aria-label*="Model" i]',
+        'button[data-testid*="model" i]',
+      ]) {
+        document.querySelectorAll(sel).forEach(push);
+      }
+      if (composer) {
+        composer.querySelectorAll("button").forEach((btn) => {
+          if (INTEL_RE.test(clean(btn.textContent))) push(btn);
+        });
+      }
+      for (const el of candidates) {
+        if (clickEl(el)) return true;
+      }
+      return false;
+    };
+
+    const kind = action.kind || "intelligence";
+    const want =
+      kind === "intelligence"
+        ? action.value || action.uiLabel || "instant"
+        : action.uiLabel || action.value;
+
+    // Already on target?
+    const before = this.getSelectedModel?.() || {};
+    if (
+      kind === "intelligence" &&
+      clean(before.intelligence).toLowerCase().startsWith(clean(want).toLowerCase().slice(0, 7))
+    ) {
+      return { ok: true, method: "already" };
+    }
+
+    openIntelligenceMenu();
+    await sleep(180);
+
+    let item = findMenuItem(want);
+    if (!item && kind === "model") {
+      // Open nested "More models" if present
+      const more = findMenuItem("More models") || findMenuItem("GPT-5.6 Sol");
+      if (more) {
+        clickEl(more);
+        await sleep(180);
+        item = findMenuItem(want);
+      }
+    }
+
+    if (!item) {
+      return {
+        ok: false,
+        message: action.hint || `Pick ${want} in the model menu`,
+      };
+    }
+
+    clickEl(item);
+    await sleep(220);
+
+    const after = this.getSelectedModel?.() || {};
+    if (kind === "intelligence") {
+      const got = clean(after.intelligence || after.label).toLowerCase();
+      const need = clean(want).toLowerCase();
+      if (got.startsWith(need.slice(0, 7)) || got.includes(need)) {
+        return { ok: true, method: "menu" };
+      }
+    } else {
+      const got = clean(after.modelLabel || after.label).toLowerCase();
+      if (got.includes(clean(want).toLowerCase().slice(0, 8))) {
+        return { ok: true, method: "menu" };
+      }
+    }
+
+    // Menu click often works even if we can't re-read the pill yet
+    return { ok: true, method: "menu-unverified" };
   },
 };
 

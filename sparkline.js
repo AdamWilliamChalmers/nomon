@@ -1,10 +1,10 @@
 const LumenSparkline = (() => {
   // Input is an engagement score (higher = more active evaluation).
   function scoreColor(score) {
-    if (score == null) return "#3a3a3a";
-    if (score >= 60) return "#4caf50";
-    if (score >= 35) return "#8ec8f0";
-    return "#f0a500";
+    if (score == null) return "rgba(20, 20, 40, 0.12)";
+    const t = Math.max(0, Math.min(1, score / 100));
+    const alpha = 0.14 + t * 0.52;
+    return `rgba(26, 24, 34, ${alpha.toFixed(3)})`;
   }
 
   function render(scores, width = 120, height = 32, barColors = null) {

@@ -13,6 +13,9 @@ dist/
 web/node_modules/
 web/.next/
 web/out/
+lumen-cost/node_modules/
+lumen-cost/.next/
+lumen-cost/out/
 scripts/node_modules/
 scripts/package-lock.json
 

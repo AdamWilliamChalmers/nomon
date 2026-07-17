@@ -61,6 +61,11 @@ const LumenGoals = (() => {
     shareAnonymisedData: true,
     crowdCalibration: null,
     fabPosition: null,
+    // Which pillar the resting FAB represents (Mirror / Badge / Cost). Clicking
+    // the pill opens the panel scrolled to that pillar; the pill's label/glyph
+    // reflect that pillar's status. No hover-expand rail — keeps the FAB small
+    // and draggable.
+    fabPillar: "mirror",
     // ISO week (e.g. "2026-W27") the user last viewed or dismissed their weekly
     // digest for. Drives the "digest ready" FAB indicator: while this differs
     // from the current ISO week, the indicator persists across page loads until
@@ -82,6 +87,18 @@ const LumenGoals = (() => {
     lastSetupReviewAt: null,
     // Runtime-only: set by fetchJudgeCapability(), never persisted.
     judgeAvailable: false,
+    // Cost coach — OPT-IN. Orthogonal to Ghost/Ambient/Active/Guard.
+    // When on, analyzes the composer draft on-device (never uploaded for cost).
+    costEnabled: false,
+    // "subtle" = one-line strip; "full" = strip + tip panel.
+    costLevel: "subtle",
+    // When on, Cost coach auto-clicks the host model picker for switch tips.
+    costAutoSwitch: false,
+    // Optional override; null → hostname heuristic (Claude→Sonnet, etc.).
+    costPreferredModel: null,
+    // Used for $/month projections in tips.
+    costMonthlyVolume: 1000,
+    costAssumedOutput: 400,
   };
 
   const VALID_MODES = new Set(MODES.map((m) => m.value));
@@ -292,6 +309,21 @@ const LumenGoals = (() => {
     return Boolean(cache.paused);
   }
 
+  /** Cost coach master switch (respects Pause). Independent of Ghost mode. */
+  function isCostEnabled() {
+    return !isPaused() && Boolean(cache.costEnabled);
+  }
+
+  function costLevel() {
+    if (!isCostEnabled()) return "off";
+    return cache.costLevel === "full" ? "full" : "subtle";
+  }
+
+  /** Auto-switch recommended model in the host picker (requires Cost coach on). */
+  function isCostAutoSwitch() {
+    return isCostEnabled() && Boolean(cache.costAutoSwitch);
+  }
+
   function setPaused(value) {
     return save({ paused: Boolean(value) });
   }
@@ -480,6 +512,9 @@ const LumenGoals = (() => {
     isActive,
     isPaused,
     setPaused,
+    isCostEnabled,
+    costLevel,
+    isCostAutoSwitch,
     modeMeta,
     normalizeMode,
     listModes,

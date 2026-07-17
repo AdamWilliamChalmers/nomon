@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nomon — Weekly digest deep dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --font:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+  --serif:"Newsreader",Georgia,serif;
+  --dot-green:#5ba85c; --dot-amber:#e5a33d; --dot-purple:#8e6fd8; --dot-blue:#5b9bd5;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font);background:#08080b;color:#e7e7ea;-webkit-font-smoothing:antialiased;}
+.page{max-width:1080px;margin:0 auto;padding:0 28px 120px;}
+
+.toolbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:14px 0;background:rgba(8,8,11,0.72);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.06);}
+.toolbar .brand{font-weight:700;margin-right:6px;}
+.toolbar a{font-size:13px;color:#9a9aa5;text-decoration:none;padding:6px 11px;border-radius:8px;transition:.15s var(--ease);}
+.toolbar a:hover{color:#fff;background:rgba(255,255,255,0.06);}
+.toolbar .spacer{flex:1;}
+.theme-switch{display:inline-flex;padding:3px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);}
+.theme-switch button{border:0;background:transparent;color:#9a9aa5;font-family:var(--font);font-size:12px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;transition:.15s var(--ease);}
+.theme-switch button.on{background:#f2f2f4;color:#111;}
+
+.hero{position:relative;padding:70px 0 34px;overflow:hidden;}
+.hero::before{content:"";position:absolute;top:-160px;left:15%;width:720px;height:520px;
+  background:radial-gradient(circle at 30% 40%,rgba(255,255,255,0.18),transparent 55%),radial-gradient(circle at 70% 55%,rgba(91,155,213,0.12),transparent 55%);filter:blur(20px);}
+.hero>*{position:relative;}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:#8a8a95;margin:0 0 16px;}
+.hero h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-0.03em;margin:0 0 16px;
+  background:linear-gradient(180deg,#fff,#b7b7c2);-webkit-background-clip:text;background-clip:text;color:transparent;max-width:660px;}
+.hero p{font-size:16px;line-height:1.6;color:#a2a2ad;max-width:600px;margin:0;}
+
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:28px 0 24px;}
+.controls .lab{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#6a6a75;margin-right:2px;}
+.seg-switch{display:inline-flex;padding:3px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);}
+.seg-switch button{border:0;background:transparent;color:#9a9aa5;font-family:var(--font);font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:9px;cursor:pointer;transition:.15s var(--ease);}
+.seg-switch button.on{background:rgba(255,255,255,0.1);color:#fff;}
+
+/* stage where the digest sits */
+.stage{position:relative;border-radius:24px;padding:50px 30px;display:flex;justify-content:center;overflow:hidden;
+  border:1px solid rgba(255,255,255,0.08);
+  background:radial-gradient(1000px 400px at 80% -10%,rgba(255,255,255,0.12),transparent 60%),radial-gradient(800px 460px at 10% 110%,rgba(91,155,213,0.08),transparent 60%),linear-gradient(180deg,#101014,#0b0b0e);}
+.stage.paper{border-color:rgba(0,0,0,0.08);
+  background:radial-gradient(900px 400px at 85% -15%,rgba(255,255,255,0.08),transparent 60%),radial-gradient(700px 460px at 5% 115%,rgba(91,155,213,0.06),transparent 60%),linear-gradient(180deg,#fbfbfd,#f3f3f6);}
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+.stage.paper::after{opacity:.5;mix-blend-mode:multiply;}
+.stage>*{position:relative;z-index:1;}
+
+/* ===== the four-dot mark ===== */
+.nm-mark{position:relative;width:24px;height:24px;flex-shrink:0;--dur:4.6s;--e:cubic-bezier(0.45,0,0.55,1);}
+.nm-mark .spin{position:absolute;inset:0;}
+.nm-mark .dot{position:absolute;top:50%;left:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;transform:translate(var(--rx),var(--ry));}
+.nm-mark .g{background:var(--dot-green);color:var(--dot-green);}.nm-mark .a{background:var(--dot-amber);color:var(--dot-amber);}
+.nm-mark .p{background:var(--dot-purple);color:var(--dot-purple);}.nm-mark .b{background:var(--dot-blue);color:var(--dot-blue);}
+@keyframes nm-cycle{0%,18%{transform:translate(var(--rx),var(--ry)) scale(1);}30%{transform:translate(0,0) scale(.86);}38%{transform:translate(0,0) scale(1.3);}44%{transform:translate(0,0) scale(.95);}56%,74%{transform:translate(var(--ex),var(--ey)) scale(1);}86%{transform:translate(0,0) scale(.85);}100%{transform:translate(var(--rx),var(--ry)) scale(1);}}
+@keyframes nm-spin{0%,52%{transform:rotate(0);}80%,100%{transform:rotate(360deg);}}
+.nm-mark.run .spin{animation:nm-spin var(--dur) var(--e) infinite;}.nm-mark.run .dot{animation:nm-cycle var(--dur) var(--e) infinite;}
+
+/* ===== DIGEST CARD ===== */
+.digest{width:452px;border-radius:24px;overflow:hidden;text-align:left;
+  background:linear-gradient(180deg,rgba(24,24,30,0.98),rgba(15,15,19,0.98));border:1px solid rgba(255,255,255,0.10);
+  box-shadow:0 30px 80px rgba(0,0,0,0.6);animation:rise .4s var(--ease);}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.985);}to{opacity:1;transform:none;}}
+.stage.paper .digest{background:linear-gradient(180deg,#fff,#f6f6f9);border-color:rgba(0,0,0,0.08);box-shadow:0 30px 70px rgba(20,20,40,0.18);}
+
+.d-hero{position:relative;padding:26px 26px 22px;overflow:hidden;border-bottom:1px solid rgba(255,255,255,0.07);}
+.stage.paper .d-hero{border-bottom-color:rgba(0,0,0,0.06);}
+.d-hero::before{content:"";position:absolute;top:-90px;right:-50px;width:280px;height:280px;background:radial-gradient(circle,rgba(255,255,255,0.28),transparent 70%);filter:blur(10px);}
+.d-hero>*{position:relative;}
+.d-kicker{display:flex;align-items:center;gap:9px;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#9a9aa5;margin-bottom:16px;}
+.shape-badge{display:inline-flex;align-items:center;gap:10px;padding:6px 15px 6px 9px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);margin-bottom:15px;}
+.stage.paper .shape-badge{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.08);}
+.shape-badge .em{font-size:17px;}
+.shape-badge .tx{font-size:12.5px;font-weight:600;color:#e7e7ea;}
+.stage.paper .shape-badge .tx{color:#26262c;}
+.shape-badge .tx b{color:#c7c7cf;}
+.stage.paper .shape-badge .tx b{color:#55555e;}
+.d-headline{font-family:var(--serif);font-size:26px;line-height:1.24;font-weight:500;color:#fff;margin:0;letter-spacing:-0.01em;}
+.stage.paper .d-headline{color:#17151f;}
+.d-headline em{font-style:italic;color:#c7c7cf;}
+.stage.paper .d-headline em{color:#55555e;}
+
+.d-body{padding:20px 26px 24px;}
+
+.win-card{display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:15px;margin-bottom:18px;
+  background:linear-gradient(90deg,rgba(91,168,92,0.14),rgba(255,255,255,0.02));border:1px solid rgba(91,168,92,0.3);}
+.stage.paper .win-card{background:linear-gradient(90deg,rgba(91,168,92,0.12),#fff);border-color:rgba(91,168,92,0.35);}
+.win-card .em{font-size:21px;}
+.win-card .l{font-size:9.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7fbf80;}
+.win-card .t{font-size:13px;font-weight:600;color:#edf3ed;margin-top:3px;line-height:1.4;}
+.stage.paper .win-card .t{color:#24312a;}
+
+/* tabs */
+.tabs{display:flex;gap:6px;margin-bottom:18px;padding-bottom:2px;}
+.tab{font-size:12px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;color:#8a8a95;background:transparent;border:1px solid transparent;transition:.15s var(--ease);}
+.tab:hover{color:#c7c7cf;}
+.tab.on{color:#f2f2f4;background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.1);}
+.stage.paper .tab.on{color:#1a1822;background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.07);}
+
+.tabpane{display:none;animation:fade .25s var(--ease);}
+.tabpane.on{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+/* this-week pane */
+.pill-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px;}
+.stat-pill{display:inline-flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:999px;font-size:11.5px;color:#9a9aa5;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);}
+.stage.paper .stat-pill{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.06);color:#6f6f79;}
+.stat-pill b{font-size:13px;font-weight:700;color:#ededf0;}
+.stage.paper .stat-pill b{color:#201e2a;}
+.sit-with{padding:16px 17px;border-radius:15px;margin-bottom:6px;background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.06);border-left:2px solid #9a9aa5;}
+.stage.paper .sit-with{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.05);border-left-color:#c2c2cc;}
+.sit-with .l{font-size:9.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#8a8a95;margin-bottom:7px;}
+.sit-with .t{font-family:var(--serif);font-style:italic;font-size:15.5px;line-height:1.5;color:#e0dcef;}
+.stage.paper .sit-with .t{color:#3a3448;}
+
+/* profile pane */
+.contrast{font-size:12.5px;line-height:1.55;color:#b7b7c0;margin:0 0 14px;}
+.stage.paper .contrast{color:#55555e;}
+.profile-card{display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:14px;margin-bottom:9px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);}
+.stage.paper .profile-card{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.05);}
+.profile-card .ai{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;font-weight:700;font-size:13px;
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e7e7ea;}
+.stage.paper .profile-card .ai{background:#fff;border-color:rgba(0,0,0,0.08);color:#26262c;}
+.profile-card .meta{flex:1;min-width:0;}
+.profile-card .name{font-size:13px;font-weight:600;color:#ededf0;}
+.stage.paper .profile-card .name{color:#201e2a;}
+.profile-card .sub{font-size:11px;color:#8a8a95;margin-top:1px;}
+/* the axis meter: learning ── mixed ── hands-on */
+.axis{margin-top:7px;height:5px;border-radius:999px;position:relative;background:linear-gradient(90deg,var(--dot-blue),#8a8a95,var(--dot-green));opacity:.85;}
+.axis i{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.5),0 0 0 2px rgba(0,0,0,.35);}
+.stage.paper .axis i{box-shadow:0 1px 4px rgba(0,0,0,.25),0 0 0 2px #fff;}
+.axis-legend{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:#6a6a75;margin-top:5px;}
+
+/* goals pane */
+.goal-row{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:12px;margin-bottom:8px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);}
+.stage.paper .goal-row{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.05);}
+.goal-row .tick{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+  background:rgba(91,168,92,.16);border:1px solid rgba(91,168,92,.4);}
+.goal-row .tick svg{width:11px;height:11px;stroke:var(--dot-green);}
+.goal-row.flagged .tick{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.45);}
+.goal-row.flagged .tick svg{stroke:#a2a2ad;}
+.stage.paper .goal-row.flagged .tick svg{stroke:#77777f;}
+.goal-row .g{flex:1;font-size:13px;color:#ededf0;}
+.stage.paper .goal-row .g{color:#201e2a;}
+.goal-row .c{font-size:11px;font-weight:600;color:#7fbf80;white-space:nowrap;}
+.goal-row.flagged .c{color:#c7c7cf;}
+.goals-foot{font-size:11.5px;color:#8a8a95;margin:10px 2px 0;line-height:1.5;}
+
+/* actions */
+.d-actions{display:flex;gap:9px;margin-top:20px;}
+.btn{font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;padding:11px 16px;border-radius:11px;border:1px solid transparent;transition:.15s var(--ease);}
+.btn-primary{background:#f2f2f4;color:#16161a;flex:1;}.btn-primary:hover{background:#fff;}
+.stage.paper .btn-primary{background:#1a1822;color:#fff;}
+.btn-ghost{background:transparent;border-color:rgba(255,255,255,0.14);color:#b7b7c0;}.btn-ghost:hover{border-color:rgba(255,255,255,0.3);color:#fff;}
+.stage.paper .btn-ghost{border-color:rgba(0,0,0,0.15);color:#55555e;}
+
+/* empty state */
+.empty{padding:26px;text-align:center;}
+.empty .em{font-size:34px;}
+.empty h3{font-family:var(--serif);font-weight:500;font-size:21px;margin:14px 0 8px;color:#fff;}
+.stage.paper .empty h3{color:#17151f;}
+.empty p{font-size:13px;line-height:1.6;color:#9a9aa5;margin:0 auto;max-width:300px;}
+.spark{display:flex;gap:4px;justify-content:center;margin:18px 0 4px;align-items:flex-end;height:34px;}
+.spark i{width:8px;border-radius:3px;background:rgba(255,255,255,0.12);}
+.stage.paper .spark i{background:rgba(0,0,0,0.1);}
+
+/* share card preview */
+.share-card{width:360px;border-radius:20px;overflow:hidden;position:relative;
+  background:linear-gradient(150deg,#141418,#0c0c10);border:1px solid rgba(255,255,255,0.1);box-shadow:0 24px 60px rgba(0,0,0,.6);}
+.share-card::before{content:"";position:absolute;top:-60px;right:-40px;width:220px;height:220px;background:radial-gradient(circle,rgba(255,255,255,.4),transparent 70%);filter:blur(8px);}
+.share-card>*{position:relative;}
+.share-card .sc-body{padding:26px 24px;}
+.share-card .sc-brand{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#c7c7cf;margin-bottom:22px;}
+.share-card .sc-shape{font-size:15px;color:#c7c7cf;font-weight:600;margin-bottom:6px;}
+.share-card .sc-big{font-family:var(--serif);font-size:30px;line-height:1.2;color:#fff;font-weight:500;margin:0 0 20px;}
+.share-card .sc-stats{display:flex;gap:18px;}
+.share-card .sc-stat .v{font-size:22px;font-weight:700;color:#fff;}
+.share-card .sc-stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9a9aa5;margin-top:2px;}
+.share-card .sc-foot{padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#8a8a95;}
+
+.note{margin:34px 0 0;padding:20px 22px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);font-size:14px;line-height:1.65;color:#a8a8b2;}
+.note b{color:#e7e7ea;}
+.two-up{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
+@media(max-width:900px){.two-up{grid-template-columns:1fr;}}
+section{padding:48px 0 10px;}
+.sec-head{margin-bottom:8px;max-width:720px;}
+.sec-num{font-size:12px;font-weight:700;letter-spacing:0.2em;color:#6a6a75;text-transform:uppercase;}
+.sec-head h2{font-size:24px;font-weight:700;letter-spacing:-0.02em;margin:8px 0 10px;}
+.sec-head p{font-size:14px;line-height:1.6;color:#9a9aa5;margin:0 0 6px;}
+footer{text-align:center;color:#55555e;font-size:12px;padding:60px 0 0;}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="brand">Nomon · Weekly digest</span>
+  <a href="nomon-redesign.html">← Gallery</a>
+  <a href="fab.html">FAB</a>
+  <span class="spacer"></span>
+  <div class="theme-switch"><button id="t-ink" class="on" onclick="setTheme('ink')">Ink</button><button id="t-paper" onclick="setTheme('paper')">Paper</button></div>
+</div>
+
+<div class="page">
+  <header class="hero">
+    <p class="eyebrow">Deep dive · The weekly moment</p>
+    <h1>Shape first. One win. Numbers as pills. Everything else behind a tab.</h1>
+    <p>The digest should be a <b style="color:#d7d7dc">glance</b>, not a read. It opens on your shape, names a single biggest win, and folds the profile and goals detail into tabs so the front page stays calm.</p>
+  </header>
+
+  <div class="controls">
+    <span class="lab">Try a shape</span>
+    <div class="seg-switch">
+      <button class="on" onclick="setShape('thinker')">Thinker</button>
+      <button onclick="setShape('maker')">Maker</button>
+      <button onclick="setShape('delegator')">Delegator</button>
+    </div>
+    <span class="lab" style="margin-left:14px">State</span>
+    <div class="seg-switch">
+      <button class="on" onclick="setState('full')">Full week</button>
+      <button onclick="setState('empty')">First week</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <!-- FULL DIGEST -->
+    <div class="digest" id="digest-full">
+      <div class="d-hero">
+        <div class="d-kicker">
+          <span class="nm-mark run"><span class="spin"><span class="dot g" style="--rx:-7px;--ry:-4px;--ex:0;--ey:-6px"></span><span class="dot a" style="--rx:0;--ry:-4px;--ex:6px;--ey:0"></span><span class="dot p" style="--rx:7px;--ry:-4px;--ex:0;--ey:6px"></span><span class="dot b" style="--rx:0;--ry:4px;--ex:-6px;--ey:0"></span></span></span>
+          Weekly review
+        </div>
+        <div class="shape-badge"><span class="tx">You were a <b id="shape-name">Thinker</b> this week</span></div>
+        <h2 class="d-headline" id="shape-headline">You brought your own questions <em>more often than not</em> — and it showed.</h2>
+      </div>
+      <div class="d-body">
+        <div class="win-card">
+          <div><div class="l">Biggest win</div><div class="t" id="win-text">You asked 2 more substantive questions in Claude, and Cost coach saved you $3.20.</div></div>
+        </div>
+
+        <div class="tabs">
+          <span class="tab on" data-tab="week" onclick="setTab('week')">This week</span>
+          <span class="tab" data-tab="profile" onclick="setTab('profile')">AI profile</span>
+          <span class="tab" data-tab="goals" onclick="setTab('goals')">Goals</span>
+        </div>
+
+        <!-- WEEK -->
+        <div class="tabpane on" data-pane="week">
+          <div class="pill-row">
+            <span class="stat-pill"><b>9%</b> questions</span>
+            <span class="stat-pill"><b>37</b> word avg</span>
+            <span class="stat-pill"><b>4%</b> passive</span>
+            <span class="stat-pill"><b>0</b> goal mismatches</span>
+            <span class="stat-pill"><b>2</b> badges</span>
+          </div>
+          <div class="sit-with"><div class="l">Sit with</div><div class="t" id="sit-text">"When did you reach for the AI before you'd formed your own view?"</div></div>
+        </div>
+
+        <!-- PROFILE -->
+        <div class="tabpane" data-pane="profile">
+          <p class="contrast">You work differently in each tool — hands-on where you know the terrain, learning where you don't.</p>
+          <div class="profile-card">
+            <div class="ai">C</div>
+            <div class="meta">
+              <div class="name">Claude</div><div class="sub">Mostly hands-on · you draft, then refine</div>
+              <div class="axis"><i style="left:78%"></i></div>
+              <div class="axis-legend"><span>Learning</span><span>Mixed</span><span>Hands-on</span></div>
+            </div>
+          </div>
+          <div class="profile-card">
+            <div class="ai">G</div>
+            <div class="meta">
+              <div class="name">ChatGPT</div><div class="sub">Mixed · half delegating, half steering</div>
+              <div class="axis"><i style="left:48%"></i></div>
+              <div class="axis-legend"><span>Learning</span><span>Mixed</span><span>Hands-on</span></div>
+            </div>
+          </div>
+          <div class="profile-card">
+            <div class="ai">✦</div>
+            <div class="meta">
+              <div class="name">Gemini</div><div class="sub">Learning · asking it to explain, not do</div>
+              <div class="axis"><i style="left:22%"></i></div>
+              <div class="axis-legend"><span>Learning</span><span>Mixed</span><span>Hands-on</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GOALS -->
+        <div class="tabpane" data-pane="goals">
+          <div class="goal-row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><span class="g">Write my own first drafts</span><span class="c">0 mismatches</span></div>
+          <div class="goal-row flagged"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16v.5"/></svg></span><span class="g">Make my own decisions</span><span class="c">1 flagged</span></div>
+          <div class="goal-row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><span class="g">Do my own analysis</span><span class="c">0 mismatches</span></div>
+          <p class="goals-foot">Nomon only flags prompts against goals you set. One nudge this week — on a decision you handed over in ChatGPT.</p>
+        </div>
+
+        <div class="d-actions">
+          <button class="btn btn-primary">Share this week</button>
+          <button class="btn btn-ghost">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPTY -->
+    <div class="digest" id="digest-empty" style="display:none">
+      <div class="d-hero">
+        <div class="d-kicker"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-7px;--ry:-4px"></span><span class="dot a" style="--rx:0;--ry:-4px"></span><span class="dot p" style="--rx:7px;--ry:-4px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span>Weekly review</div>
+        <h2 class="d-headline">Your first week is taking <em>shape</em>.</h2>
+      </div>
+      <div class="d-body">
+        <div class="empty">
+          <span class="nm-mark run" style="display:inline-block;transform:scale(1.7);margin:10px auto 16px;"><span class="spin"><span class="dot g" style="--rx:-8px;--ry:-5px;--ex:0;--ey:-7px"></span><span class="dot a" style="--rx:0;--ry:-5px;--ex:7px;--ey:0"></span><span class="dot p" style="--rx:8px;--ry:-5px;--ex:0;--ey:7px"></span><span class="dot b" style="--rx:0;--ry:4px;--ex:-7px;--ey:0"></span></span></span>
+          <h3>A few more days and your mirror fills in</h3>
+          <p>Shapes, wins and prompts appear once Nomon has seen a handful of sessions. Nothing to do — just keep working.</p>
+          <div class="spark"><i style="height:40%"></i><i style="height:70%"></i><i style="height:30%"></i><i style="height:85%"></i><i style="height:55%"></i><i style="height:20%"></i><i style="height:60%"></i></div>
+        </div>
+        <div class="d-actions"><button class="btn btn-ghost" style="flex:1">Got it</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHARE CARD -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">The share artifact</div>
+      <h2>"Share this week" generates a clean, on-brand card</h2>
+      <p>The only place gradients get rich — a shareable card leading with the shape and one headline number. Copy-ready, no chat content.</p>
+    </div>
+    <div class="two-up" style="margin-top:22px">
+      <div class="stage" id="stage2" style="padding:44px 20px">
+        <div class="share-card">
+          <div class="sc-body">
+            <div class="sc-brand"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-7px;--ry:-4px"></span><span class="dot a" style="--rx:0;--ry:-4px"></span><span class="dot p" style="--rx:7px;--ry:-4px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span>Nomon</div>
+            <div class="sc-shape" id="sc-shape">Thinker</div>
+            <h2 class="sc-big">My week<br/>with AI.</h2>
+            <div class="sc-stats">
+              <div class="sc-stat"><div class="v">9%</div><div class="l">Questions</div></div>
+              <div class="sc-stat"><div class="v">0</div><div class="l">Mismatches</div></div>
+              <div class="sc-stat"><div class="v">$3.20</div><div class="l">Saved</div></div>
+            </div>
+          </div>
+          <div class="sc-foot">Local. Private. A mirror, not a scoreboard.</div>
+        </div>
+      </div>
+      <div class="note" style="margin:0">
+        <b>Design notes</b><br/>
+        • The digest front page carries <b>one</b> emphasised number (the win); everything else is a quiet pill — this is the "40% more scannable" move.<br/><br/>
+        • <b>Serif display type</b> (Newsreader) on the headline, prompt and share card gives the moment an editorial, considered weight that plain UI sans can't. It's the one typographic flourish.<br/><br/>
+        • The <b>profile axis</b> replaces prose with a single learning→hands-on meter per tool — dense but glanceable.<br/><br/>
+        • Colour stays mark-only, except the share card, where richer gradient is appropriate for a social artifact.
+      </div>
+    </div>
+  </section>
+
+  <footer>Nomon weekly-digest deep dive · shape-first, tabbed detail · visual mockup, no product code changed.</footer>
+</div>
+
+<script>
+const SHAPES = {
+  thinker:{name:'Thinker',headline:'You brought your own questions <em>more often than not</em> — and it showed.',win:'You asked 2 more substantive questions in Claude, and Cost coach saved you $3.20.',sit:'"When did you reach for the AI before you\'d formed your own view?"'},
+  maker:{name:'Maker',headline:'You built <em>with</em> the AI, not <em>from</em> it — steering every step.',win:'You revised 6 drafts by hand before shipping — your highest week yet.',sit:'"Which of this week\'s outputs would you still stand behind next month?"'},
+  delegator:{name:'Delegator',headline:'You handed off the heavy lifting — <em>fast</em>, but worth a glance.',win:'You cleared 14 tasks — though 3 were whole hand-offs against a goal.',sit:'"Was there one hand-off this week you wish you\'d attempted first?"'}
+};
+function setShape(k){
+  const s=SHAPES[k];
+  document.getElementById('shape-name').textContent=s.name;
+  document.getElementById('shape-headline').innerHTML=s.headline;
+  document.getElementById('win-text').textContent=s.win;
+  document.getElementById('sit-text').textContent=s.sit;
+  document.getElementById('sc-shape').textContent=s.name;
+  document.querySelectorAll('.controls .seg-switch:first-of-type button').forEach((b,i)=>b.classList.toggle('on',['thinker','maker','delegator'][i]===k));
+}
+function setTab(t){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.dataset.tab===t));
+  document.querySelectorAll('.tabpane').forEach(el=>el.classList.toggle('on',el.dataset.pane===t));
+}
+function setState(s){
+  document.getElementById('digest-full').style.display=s==='full'?'':'none';
+  document.getElementById('digest-empty').style.display=s==='empty'?'':'none';
+  document.querySelectorAll('.controls .seg-switch:nth-of-type(2) button').forEach((b,i)=>b.classList.toggle('on',['full','empty'][i]===s));
+}
+function setTheme(m){document.querySelectorAll('#stage,#stage2').forEach(c=>c.classList.toggle('paper',m==='paper'));
+document.getElementById('t-ink').classList.toggle('on',m==='ink');document.getElementById('t-paper').classList.toggle('on',m==='paper');}
+</script>
+</body>
+</html>

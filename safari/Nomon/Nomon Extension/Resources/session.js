@@ -4,6 +4,15 @@ const LumenSession = (() => {
   const ATTESTATIONS_KEY = "lumenAttestations";
   const MAX_ATTESTATIONS = 50;
 
+  /** False after extension reload while an old content script is still alive. */
+  function extensionAlive() {
+    try {
+      return Boolean(chrome?.runtime?.id);
+    } catch (_) {
+      return false;
+    }
+  }
+
   const defaultSession = () => ({
     loopScores: [],
     sessionScore: 0,
@@ -122,11 +131,16 @@ const LumenSession = (() => {
   // reconcile so this tab's FAB catches up without a full page reload. Our own
   // writes echo here too, but sync() is a no-op when nothing actually changed.
   if (chrome?.storage?.onChanged?.addListener) {
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "session" && areaName !== "local") return;
-      if (!changes?.[sessionStorageKey()]) return;
-      sync();
-    });
+    try {
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (!extensionAlive()) return;
+        if (areaName !== "session" && areaName !== "local") return;
+        if (!changes?.[sessionStorageKey()]) return;
+        sync();
+      });
+    } catch (_) {
+      /* extension context already gone */
+    }
   }
 
   function loadDigestLog() {
@@ -727,57 +741,83 @@ const LumenSession = (() => {
       const finish = (data) => resolve(Array.isArray(data) ? data : []);
 
       const migrateFromSync = (fallback) => {
-        if (!chrome?.storage?.sync?.get) {
+        if (!extensionAlive() || !chrome?.storage?.sync?.get) {
           finish(fallback);
           return;
         }
-        chrome.storage.sync.get(HISTORY_KEY, (result) => {
-          if (chrome.runtime?.lastError) {
-            finish(fallback);
-            return;
-          }
-          const synced = result?.[HISTORY_KEY];
-          if (Array.isArray(synced) && synced.length) {
-            if (chrome?.storage?.local?.set) {
-              chrome.storage.local.set({ [HISTORY_KEY]: synced }, () => void chrome.runtime?.lastError);
+        try {
+          chrome.storage.sync.get(HISTORY_KEY, (result) => {
+            try {
+              if (chrome.runtime?.lastError) {
+                finish(fallback);
+                return;
+              }
+              const synced = result?.[HISTORY_KEY];
+              if (Array.isArray(synced) && synced.length) {
+                if (extensionAlive() && chrome?.storage?.local?.set) {
+                  try {
+                    chrome.storage.local.set({ [HISTORY_KEY]: synced }, () => {
+                      void chrome.runtime?.lastError;
+                    });
+                  } catch (_) {
+                    /* ignore */
+                  }
+                }
+                finish(synced);
+                return;
+              }
+              finish(fallback);
+            } catch (_) {
+              finish(fallback);
             }
-            finish(synced);
-            return;
-          }
+          });
+        } catch (_) {
           finish(fallback);
-        });
+        }
       };
 
-      if (!chrome?.storage?.local?.get) {
+      if (!extensionAlive() || !chrome?.storage?.local?.get) {
         migrateFromSync(readHistoryFromLocalStorage());
         return;
       }
 
-      chrome.storage.local.get(HISTORY_KEY, (result) => {
-        if (chrome.runtime?.lastError) {
-          migrateFromSync(readHistoryFromLocalStorage());
-          return;
-        }
-        const local = result?.[HISTORY_KEY];
-        if (Array.isArray(local) && local.length) {
-          finish(local);
-          return;
-        }
-        migrateFromSync(readHistoryFromLocalStorage());
-      });
+      try {
+        chrome.storage.local.get(HISTORY_KEY, (result) => {
+          try {
+            if (chrome.runtime?.lastError) {
+              migrateFromSync(readHistoryFromLocalStorage());
+              return;
+            }
+            const local = result?.[HISTORY_KEY];
+            if (Array.isArray(local) && local.length) {
+              finish(local);
+              return;
+            }
+            migrateFromSync(readHistoryFromLocalStorage());
+          } catch (_) {
+            finish(readHistoryFromLocalStorage());
+          }
+        });
+      } catch (_) {
+        finish(readHistoryFromLocalStorage());
+      }
     });
   }
 
   function writeHistory(history) {
     const ops = [];
-    if (chrome?.storage?.local?.set) {
+    if (extensionAlive() && chrome?.storage?.local?.set) {
       ops.push(
-        new Promise((resolve) =>
-          chrome.storage.local.set({ [HISTORY_KEY]: history }, () => {
-            void chrome.runtime?.lastError;
+        new Promise((resolve) => {
+          try {
+            chrome.storage.local.set({ [HISTORY_KEY]: history }, () => {
+              void chrome.runtime?.lastError;
+              resolve();
+            });
+          } catch (_) {
             resolve();
-          })
-        )
+          }
+        })
       );
     }
     // Best-effort mirror for older builds / tests without chrome.storage.

@@ -481,7 +481,115 @@ const LumenNudges = (() => {
       });
   }
 
-  function buildDigest({ history, session, digestLog }) {
+  const SHAPE_EDITORIAL = {
+    Thinker: {
+      headline:
+        "You brought your own questions <em>more often than not</em> — and it showed.",
+      prompt: "When did you reach for the AI before you'd formed your own view?",
+    },
+    Maker: {
+      headline: "You built <em>with</em> the AI, not <em>from</em> it — steering every step.",
+      prompt: "Which of this week's outputs would you still stand behind next month?",
+    },
+    Delegator: {
+      headline: "You handed off the heavy lifting — <em>fast</em>, but worth a glance.",
+      prompt: "Was there one hand-off this week you wish you'd attempted first?",
+    },
+    Balanced: {
+      headline: "Mostly steady engagement — a <em>mixed</em> week across your tools.",
+      prompt: null,
+    },
+  };
+
+  function weekStartMs(days = 7) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - (days - 1));
+    return d.getTime();
+  }
+
+  function eventsSince(events = [], since) {
+    return (events || []).filter((e) => (e.at || 0) >= since);
+  }
+
+  function classifyWeekShape(week, digestLog = {}) {
+    if (!week.length) return "Balanced";
+    const avgQuestion = week.reduce((s, e) => s + e.questionRatio, 0) / week.length;
+    const avgPassive = week.reduce((s, e) => s + e.passiveRate, 0) / week.length;
+    const totalMsg = week.reduce((s, e) => s + (e.messageCount || 0), 0);
+    const depthMoments = (digestLog.depthMoments || []).length;
+    const depthRate = totalMsg ? depthMoments / totalMsg : 0;
+
+    if (avgQuestion >= 0.35 || depthRate >= 0.08) return "Thinker";
+    if (avgPassive >= 0.45 && avgQuestion < 0.2) return "Delegator";
+    if (avgPassive < 0.35 && avgQuestion < 0.3) return "Maker";
+    return "Balanced";
+  }
+
+  function buildBiggestWin({ week, prior, digestLog, responses, costUsdWeek = 0 }) {
+    const wins = [];
+    if (week.length && prior.length) {
+      const avgQ = week.reduce((s, e) => s + e.questionRatio, 0) / week.length;
+      const priorQ = prior.reduce((s, e) => s + e.questionRatio, 0) / prior.length;
+      const delta = Math.round((avgQ - priorQ) * 100);
+      if (delta >= 5) {
+        wins.push(`You asked ${delta}% more questions than last week.`);
+      }
+    }
+    if (responses?.drafted > 0) {
+      wins.push(
+        `You drafted first ${responses.drafted} time${responses.drafted === 1 ? "" : "s"} before handing off.`
+      );
+    }
+    if (responses?.reflected > 0) {
+      wins.push(
+        `You paused to reflect ${responses.reflected} time${responses.reflected === 1 ? "" : "s"} on high-stakes prompts.`
+      );
+    }
+    if (costUsdWeek >= 0.01) {
+      wins.push(`Cost coach saved you about $${costUsdWeek.toFixed(2)} this week.`);
+    }
+    const since = weekStartMs(7);
+    const draftedOnGuard = eventsSince(digestLog.guardEvents, since).filter(
+      (e) => e.action === "draft-submitted"
+    ).length;
+    if (draftedOnGuard > 0) {
+      wins.push(
+        `Guard mode helped you draft first ${draftedOnGuard} time${draftedOnGuard === 1 ? "" : "s"}.`
+      );
+    }
+    if (!wins.length && week.length) {
+      const avgPassive = week.reduce((s, e) => s + e.passiveRate, 0) / week.length;
+      if (avgPassive < 0.35) {
+        wins.push("You stayed engaged — fewer passive replies than a typical week.");
+      } else {
+        wins.push("You kept Nomon active across the week — the mirror is filling in.");
+      }
+    }
+    return wins[0] || "Keep going — your weekly mirror fills in as Nomon sees more sessions.";
+  }
+
+  function buildStatPills({ week, avgQuestion, digestLog, responses }) {
+    if (!week.length) return [];
+    const avgLen = Math.round(
+      week.reduce((s, e) => s + e.avgPromptLength, 0) / week.length
+    );
+    const avgPassive = Math.round(
+      (week.reduce((s, e) => s + e.passiveRate, 0) / week.length) * 100
+    );
+    const since = weekStartMs(7);
+    const mismatches = eventsSince(digestLog.mismatchEvents, since).length;
+    const badges = responses?.engaged || 0;
+    return [
+      { label: "questions", value: `${Math.round(avgQuestion * 100)}%` },
+      { label: "word avg", value: String(avgLen) },
+      { label: "passive", value: `${avgPassive}%` },
+      { label: "goal mismatches", value: String(mismatches) },
+      { label: "badges", value: String(badges) },
+    ];
+  }
+
+  function buildDigest({ history, session, digestLog, costUsdWeek = 0 }) {
     const week = history.slice(-7);
     const avgQuestion =
       week.length ? week.reduce((s, e) => s + e.questionRatio, 0) / week.length : 0;
@@ -502,17 +610,30 @@ const LumenNudges = (() => {
         ]
       : ["Not enough data yet — keep chatting with Nomon active."];
 
+    const responses = summariseResponses(digestLog);
+    const shape = classifyWeekShape(week, digestLog);
+    const editorial = SHAPE_EDITORIAL[shape] || SHAPE_EDITORIAL.Balanced;
+    const since = weekStartMs(7);
+    const weeklyMismatches = eventsSince(digestLog.mismatchEvents, since).length;
+
     return {
       headline,
+      shape,
+      shapeHeadline: editorial.headline,
+      biggestWin: buildBiggestWin({ week, prior, digestLog, responses, costUsdWeek }),
+      statPills: buildStatPills({ week, avgQuestion, digestLog, responses }),
+      profileContrast: buildProfileContrast(history),
       loopTrend,
       driftLines,
       platforms: summarisePlatforms(week),
       profile: buildProfile(history),
       depthMoments: (digestLog.depthMoments || []).slice(-3),
       mismatchSummary: `${session.mismatchCount || 0} intention checks this session`,
+      weeklyMismatchCount: weeklyMismatches,
       guardSummary: summariseGuardEvents(digestLog.guardEvents || []),
-      responses: summariseResponses(digestLog),
-      prompt: pickRandom(DIGEST_PROMPTS),
+      responses,
+      prompt: editorial.prompt || pickRandom(DIGEST_PROMPTS),
+      hasWeekData: week.length > 0,
     };
   }
 

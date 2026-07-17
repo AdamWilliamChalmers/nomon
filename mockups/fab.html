@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nomon — FAB deep dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --font:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+  --dot-green:#5ba85c; --dot-amber:#e5a33d; --dot-purple:#8e6fd8; --dot-blue:#5b9bd5;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font);background:#08080b;color:#e7e7ea;-webkit-font-smoothing:antialiased;}
+.page{max-width:1120px;margin:0 auto;padding:0 28px 120px;}
+
+/* toolbar */
+.toolbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:14px 0;background:rgba(8,8,11,0.72);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.06);}
+.toolbar .brand{font-weight:700;margin-right:6px;}
+.toolbar a{font-size:13px;color:#9a9aa5;text-decoration:none;padding:6px 11px;border-radius:8px;transition:.15s var(--ease);}
+.toolbar a:hover{color:#fff;background:rgba(255,255,255,0.06);}
+.toolbar .spacer{flex:1;}
+.theme-switch{display:inline-flex;padding:3px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);}
+.theme-switch button{border:0;background:transparent;color:#9a9aa5;font-family:var(--font);font-size:12px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;transition:.15s var(--ease);}
+.theme-switch button.on{background:#f2f2f4;color:#111;}
+
+/* hero */
+.hero{position:relative;padding:70px 0 40px;overflow:hidden;}
+.hero::before{content:"";position:absolute;top:-160px;left:20%;width:700px;height:520px;
+  background:radial-gradient(circle at 30% 40%,rgba(255,255,255,0.16),transparent 55%),radial-gradient(circle at 70% 55%,rgba(91,155,213,0.13),transparent 55%);
+  filter:blur(20px);pointer-events:none;}
+.hero>*{position:relative;}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:#8a8a95;margin:0 0 16px;}
+.hero h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-0.03em;margin:0 0 16px;
+  background:linear-gradient(180deg,#fff,#b7b7c2);-webkit-background-clip:text;background-clip:text;color:transparent;max-width:640px;}
+.hero p{font-size:16px;line-height:1.6;color:#a2a2ad;max-width:600px;margin:0;}
+
+section{padding:44px 0 10px;scroll-margin-top:70px;}
+.sec-head{margin-bottom:22px;max-width:720px;}
+.sec-num{font-size:12px;font-weight:700;letter-spacing:0.2em;color:#6a6a75;text-transform:uppercase;}
+.sec-head h2{font-size:26px;font-weight:700;letter-spacing:-0.02em;margin:8px 0 10px;}
+.sec-head p{font-size:14.5px;line-height:1.65;color:#9a9aa5;margin:0;}
+
+.canvas{position:relative;border-radius:22px;padding:40px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);
+  background:radial-gradient(1200px 400px at 80% -10%,rgba(255,255,255,0.10),transparent 60%),radial-gradient(900px 500px at 10% 110%,rgba(91,155,213,0.08),transparent 60%),linear-gradient(180deg,#101014,#0b0b0e);}
+.canvas.paper{border-color:rgba(0,0,0,0.08);
+  background:radial-gradient(1000px 400px at 85% -15%,rgba(255,255,255,0.07),transparent 60%),radial-gradient(800px 460px at 5% 115%,rgba(91,155,213,0.06),transparent 60%),linear-gradient(180deg,#fbfbfd,#f3f3f6);}
+.canvas::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+.canvas.paper::after{opacity:.5;mix-blend-mode:multiply;}
+.canvas>*{position:relative;z-index:1;}
+.canvas-label{position:absolute;top:14px;left:18px;z-index:2;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6a6a75;}
+.canvas.paper .canvas-label{color:#9a9aa5;}
+
+.grid{display:grid;gap:24px;}
+.grid.two{grid-template-columns:1fr 1fr;}
+.grid.three{grid-template-columns:repeat(3,1fr);}
+.grid.four{grid-template-columns:repeat(4,1fr);}
+@media(max-width:900px){.grid.two,.grid.three,.grid.four{grid-template-columns:1fr;}}
+.specimen{display:flex;flex-direction:column;align-items:center;gap:14px;padding:34px 18px;border-radius:16px;
+  background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.08);min-height:120px;justify-content:center;}
+.canvas.paper .specimen{background:rgba(0,0,0,0.015);border-color:rgba(0,0,0,0.08);}
+.specimen .cap{font-size:12px;color:#8a8a95;text-align:center;line-height:1.5;max-width:280px;}
+.specimen .cap b{color:#d7d7dc;font-weight:600;}
+.canvas.paper .specimen .cap{color:#77777f;}
+.canvas.paper .specimen .cap b{color:#26262c;}
+
+/* ===== the four-dot mark ===== */
+.nm-mark{position:relative;width:26px;height:26px;flex-shrink:0;--dur:4.6s;--e:cubic-bezier(0.45,0,0.55,1);}
+.nm-mark .spin{position:absolute;inset:0;}
+.nm-mark .dot{position:absolute;top:50%;left:50%;width:6.5px;height:6.5px;margin:-3.25px 0 0 -3.25px;border-radius:50%;
+  transform:translate(var(--rx),var(--ry));will-change:transform;}
+.nm-mark .g{background:var(--dot-green);color:var(--dot-green);}
+.nm-mark .a{background:var(--dot-amber);color:var(--dot-amber);}
+.nm-mark .p{background:var(--dot-purple);color:var(--dot-purple);}
+.nm-mark .b{background:var(--dot-blue);color:var(--dot-blue);}
+@keyframes nm-cycle{0%,18%{transform:translate(var(--rx),var(--ry)) scale(1);}30%{transform:translate(0,0) scale(.86);}
+  38%{transform:translate(0,0) scale(1.3);}44%{transform:translate(0,0) scale(.95);}
+  56%,74%{transform:translate(var(--ex),var(--ey)) scale(1);}86%{transform:translate(0,0) scale(.85);}100%{transform:translate(var(--rx),var(--ry)) scale(1);}}
+@keyframes nm-spin{0%,52%{transform:rotate(0);}80%,100%{transform:rotate(360deg);}}
+.nm-mark.run .spin{animation:nm-spin var(--dur) var(--e) infinite;}
+.nm-mark.run .dot{animation:nm-cycle var(--dur) var(--e) infinite;}
+@media(prefers-reduced-motion:reduce){.nm-mark.run .spin,.nm-mark.run .dot{animation:none;}}
+
+/* ===== FAB base ===== */
+.fab{display:inline-flex;align-items:center;padding:9px 13px;border-radius:999px;cursor:pointer;user-select:none;
+  background:linear-gradient(180deg,rgba(30,30,36,0.92),rgba(20,20,25,0.92));border:1px solid rgba(255,255,255,0.10);
+  box-shadow:0 8px 30px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.06);transition:.2s var(--ease);position:relative;}
+.canvas.paper .fab{background:linear-gradient(180deg,#fff,#f6f6f9);border-color:rgba(0,0,0,0.08);box-shadow:0 8px 26px rgba(20,20,40,0.12),0 1px 2px rgba(20,20,40,0.06);}
+.fab .lead-dot{width:7px;height:7px;border-radius:50%;margin-right:10px;}
+.fab .word{font-size:13px;font-weight:600;letter-spacing:-0.01em;margin-left:10px;}
+.fab .word{color:#e7e7ea;}
+.canvas.paper .fab .word{color:#1a1822;}
+
+/* signal state — neutral, no colour, no glow. The label carries the meaning. */
+.fab.s-loop,.fab.s-drift,.fab.s-mismatch,.fab.s-depth{
+  border-color:rgba(255,255,255,0.26);box-shadow:0 10px 32px rgba(0,0,0,0.5);}
+.canvas.paper .fab.s-loop,.canvas.paper .fab.s-drift,.canvas.paper .fab.s-mismatch,.canvas.paper .fab.s-depth{
+  border-color:rgba(0,0,0,0.22);box-shadow:0 10px 30px rgba(20,20,40,0.14);}
+.fab .lead-dot{background:#a2a2ad;}
+.canvas.paper .fab .lead-dot{background:#8a8a95;}
+
+/* mode looks — differentiated by border weight, not colour */
+.fab.m-active{border-color:rgba(255,255,255,0.22);}
+.canvas.paper .fab.m-active{border-color:rgba(0,0,0,0.18);}
+.fab.m-guard{border-color:rgba(255,255,255,0.4);border-width:1.5px;}
+.canvas.paper .fab.m-guard{border-color:rgba(0,0,0,0.32);border-width:1.5px;}
+.fab.m-ghost{opacity:.45;border-style:dashed;box-shadow:none;}
+.fab.paused{opacity:.5;filter:grayscale(1);border-style:dashed;box-shadow:none;}
+
+/* digest notification dot — subtle opacity breathe, no glow */
+.fab .digest-dot{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;
+  background:#c9c9d0;border:2px solid #14141a;animation:breathe 3s ease-in-out infinite;}
+.canvas.paper .fab .digest-dot{background:#55555e;border-color:#fff;}
+@keyframes breathe{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ===== interactive expand (shared) ===== */
+.fab-live{display:inline-flex;align-items:center;padding:7px;border-radius:20px;cursor:pointer;
+  background:linear-gradient(180deg,rgba(28,28,34,0.96),rgba(18,18,23,0.96));border:1px solid rgba(255,255,255,0.10);
+  box-shadow:0 12px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);transition:box-shadow .25s var(--ease),transform .25s var(--ease);}
+.canvas.paper .fab-live{background:linear-gradient(180deg,#fff,#f5f5f8);border-color:rgba(0,0,0,0.08);box-shadow:0 14px 38px rgba(20,20,40,0.14);}
+.fab-live:hover{transform:translateY(-2px);box-shadow:0 20px 54px rgba(0,0,0,0.6);}
+.canvas.paper .fab-live:hover{box-shadow:0 22px 50px rgba(20,20,40,0.2);}
+.fab-live .rail-mark{padding:3px 8px;display:flex;align-items:center;}
+.fab-live .word{font-size:11px;color:#7f7f8a;padding:0 12px 0 6px;white-space:nowrap;max-width:120px;overflow:hidden;
+  transition:max-width .3s var(--ease),opacity .2s var(--ease),padding .3s var(--ease);}
+.fab-live:hover .word{max-width:0;opacity:0;padding:0;}
+
+.pillar{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:14px;border:1px solid transparent;cursor:pointer;
+  position:relative;overflow:hidden;max-width:0;padding-left:0;padding-right:0;opacity:0;white-space:nowrap;
+  transition:max-width .32s var(--ease),opacity .22s var(--ease),padding .32s var(--ease),background .15s var(--ease);}
+.fab-live:hover .pillar{max-width:240px;padding-left:13px;padding-right:13px;opacity:1;}
+.pillar:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.09);}
+.canvas.paper .pillar:hover{background:rgba(0,0,0,0.035);border-color:rgba(0,0,0,0.06);}
+.pillar .glyph{width:26px;height:26px;border-radius:9px;flex-shrink:0;display:grid;place-items:center;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);}
+.canvas.paper .pillar .glyph{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.06);}
+.pillar .glyph svg{width:15px;height:15px;}
+.pillar .txt{display:flex;flex-direction:column;line-height:1.2;text-align:left;}
+.pillar .txt .t{font-size:12.5px;font-weight:600;color:#ededf0;}
+.pillar .txt .s{font-size:10.5px;color:#8f8f9a;margin-top:1px;}
+.canvas.paper .pillar .txt .t{color:#201e2a;}
+.canvas.paper .pillar .txt .s{color:#83838d;}
+.pillar .st{position:absolute;top:7px;right:9px;width:6px;height:6px;border-radius:50%;opacity:0;transition:opacity .2s var(--ease);}
+.fab-live:hover .pillar .st{opacity:1;}
+.glyph.mirror svg,.glyph.badge svg,.glyph.cost svg{stroke:#b7b7c0;}
+.canvas.paper .glyph.mirror svg,.canvas.paper .glyph.badge svg,.canvas.paper .glyph.cost svg{stroke:#6f6f79;}
+.pillar[data-p=mirror] .st,.pillar[data-p=badge] .st,.pillar[data-p=cost] .st{background:#c9c9d0;}
+.canvas.paper .pillar[data-p=mirror] .st,.canvas.paper .pillar[data-p=badge] .st,.canvas.paper .pillar[data-p=cost] .st{background:#8a8a95;}
+
+/* ===== variant B: vertical stack ===== */
+.fab-stack{position:relative;display:inline-flex;flex-direction:column;align-items:flex-end;gap:10px;}
+.fab-stack .stack-items{display:flex;flex-direction:column;gap:8px;align-items:flex-end;
+  opacity:0;transform:translateY(10px);pointer-events:none;transition:.28s var(--ease);}
+.fab-stack:hover .stack-items{opacity:1;transform:translateY(0);pointer-events:auto;}
+.stack-item{display:inline-flex;align-items:center;gap:10px;padding:8px 14px 8px 10px;border-radius:14px;cursor:pointer;
+  background:linear-gradient(180deg,rgba(28,28,34,0.96),rgba(18,18,23,0.96));border:1px solid rgba(255,255,255,0.10);
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);transition:.15s var(--ease);}
+.canvas.paper .stack-item{background:#fff;border-color:rgba(0,0,0,0.08);box-shadow:0 8px 22px rgba(20,20,40,0.12);}
+.stack-item:hover{transform:translateX(-3px);}
+.stack-item .glyph{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);}
+.canvas.paper .stack-item .glyph{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.06);}
+.stack-item .glyph svg{width:14px;height:14px;}
+.stack-item .t{font-size:12.5px;font-weight:600;}
+.canvas.paper .stack-item .t{color:#201e2a;}
+.stack-trigger{align-self:flex-end;}
+
+/* ===== variant C: labels-below ===== */
+.fab-below{display:inline-flex;flex-direction:column;align-items:center;gap:0;padding:9px 12px 8px;border-radius:22px;cursor:pointer;
+  background:linear-gradient(180deg,rgba(28,28,34,0.96),rgba(18,18,23,0.96));border:1px solid rgba(255,255,255,0.10);
+  box-shadow:0 10px 34px rgba(0,0,0,0.5);transition:.24s var(--ease);}
+.canvas.paper .fab-below{background:linear-gradient(180deg,#fff,#f6f6f9);border-color:rgba(0,0,0,0.08);box-shadow:0 10px 30px rgba(20,20,40,0.12);}
+.fab-below .row{display:flex;gap:6px;max-height:0;opacity:0;overflow:hidden;transition:.28s var(--ease);margin-top:0;}
+.fab-below:hover .row{max-height:60px;opacity:1;margin-top:9px;}
+.fab-below .seg{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 10px;border-radius:12px;cursor:pointer;transition:.15s var(--ease);}
+.fab-below .seg:hover{background:rgba(255,255,255,0.06);}
+.canvas.paper .fab-below .seg:hover{background:rgba(0,0,0,0.035);}
+.fab-below .seg .glyph{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);}
+.canvas.paper .fab-below .seg .glyph{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.06);}
+.fab-below .seg .glyph svg{width:13px;height:13px;}
+.fab-below .seg .l{font-size:10px;font-weight:600;color:#b7b7c0;}
+.canvas.paper .fab-below .seg .l{color:#55555e;}
+
+.note{margin:34px 0 0;padding:20px 22px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);font-size:14px;line-height:1.65;color:#a8a8b2;}
+.note b{color:#e7e7ea;}
+footer{text-align:center;color:#55555e;font-size:12px;padding:60px 0 0;}
+.recommend{display:inline-block;margin-left:8px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7fbf80;border:1px solid rgba(127,191,128,.4);padding:2px 8px;border-radius:999px;vertical-align:middle;}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="brand">Nomon · FAB</span>
+  <a href="nomon-redesign.html">← Gallery</a>
+  <a href="#expand">Expansion</a>
+  <a href="#signals">Signals</a>
+  <a href="#modes">Modes</a>
+  <a href="#variants">Layout variants</a>
+  <span class="spacer"></span>
+  <div class="theme-switch"><button id="t-ink" class="on" onclick="setTheme('ink')">Ink</button><button id="t-paper" onclick="setTheme('paper')">Paper</button></div>
+</div>
+
+<div class="page">
+  <header class="hero">
+    <p class="eyebrow">Deep dive · The floating pill</p>
+    <h1>The FAB, in every state — and three ways it could name its jobs.</h1>
+    <p>The mark never changes. What changes is how clearly the pill communicates <b style="color:#7fbf80">Mirror</b>, <b style="color:#c7c7cf">Badge</b> and <b style="color:#8fbfe8">Cost</b>, and how it reacts to signals, modes and the weekly digest. Hover anything to see it move.</p>
+  </header>
+
+  <!-- EXPANSION -->
+  <section id="expand">
+    <div class="sec-head">
+      <div class="sec-num">A — The primary interaction</div>
+      <h2>Rest → hover/tap → three-pillar rail</h2>
+      <p>At rest it's just the mark and a quiet wordmark. On hover the wordmark folds away and the three pillars slide out, each with a glyph, a purpose line, and a status dot showing what's on right now.</p>
+    </div>
+    <div class="canvas" data-canvas>
+      <span class="canvas-label">Hover the pill</span>
+      <div class="specimen" style="padding:64px 20px">
+        <div class="fab-live">
+          <div class="rail-mark"><span class="nm-mark run">
+            <span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px;--ex:0;--ey:-8px"></span><span class="dot a" style="--rx:0;--ry:-5px;--ex:8px;--ey:0"></span><span class="dot p" style="--rx:9px;--ry:-5px;--ex:0;--ey:8px"></span><span class="dot b" style="--rx:0;--ry:4px;--ex:-8px;--ey:0"></span></span>
+          </span></div>
+          <span class="word">Nomon</span>
+          <div class="pillar" data-p="mirror"><span class="st"></span><span class="glyph mirror"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M9 21c0-3 6-3 6 0"/></svg></span><span class="txt"><span class="t">Mirror</span><span class="s">Notice your thinking</span></span></div>
+          <div class="pillar" data-p="badge"><span class="st"></span><span class="glyph badge"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="txt"><span class="t">Badge</span><span class="s">Disclose AI use</span></span></div>
+          <div class="pillar" data-p="cost"><span class="st"></span><span class="glyph cost"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 6c-1-1.5-3-2-5-2-3 0-5 1.5-5 4s2 3 5 3.5 5 1 5 3.5-2 4-5 4c-2 0-4-.5-5-2"/></svg></span><span class="txt"><span class="t">Cost</span><span class="s">Same answer, less spend</span></span></div>
+        </div>
+        <div class="cap">Variant A — <b>horizontal rail</b> <span class="recommend">Recommended</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIGNALS -->
+  <section id="signals">
+    <div class="sec-head">
+      <div class="sec-num">B — Reacting to signals</div>
+      <h2>A grayscale label + one coloured lead dot</h2>
+      <p>When a message scores, the pill grows a label. The ring and the single lead dot take the signal colour — no full-colour pill, no rainbow.</p>
+    </div>
+    <div class="canvas" data-canvas>
+      <span class="canvas-label">Transient — fades after a few seconds</span>
+      <div class="grid two" style="margin-top:18px">
+        <div class="specimen"><div class="fab s-mismatch"><span class="lead-dot"></span><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span><span class="word">Mismatch · conflicts with a goal</span></div><div class="cap">Mismatch · purple</div></div>
+        <div class="specimen"><div class="fab s-loop"><span class="lead-dot"></span><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span><span class="word">Loop · still with it?</span></div><div class="cap">Loop · green</div></div>
+        <div class="specimen"><div class="fab s-drift"><span class="lead-dot"></span><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span><span class="word">Drift · fewer questions</span></div><div class="cap">Drift · amber</div></div>
+        <div class="specimen"><div class="fab s-depth"><span class="lead-dot"></span><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span><span class="word">Depth · worth thinking first?</span></div><div class="cap">Depth · neutral</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODES + digest -->
+  <section id="modes">
+    <div class="sec-head">
+      <div class="sec-num">C — Modes &amp; the weekly nudge</div>
+      <h2>A glance tells you which mode you're in</h2>
+      <p>Ambient is the clean rest pill. Active gets a soft green ring. Guard a firmer purple ring (a goal is live). Ghost fades to dashed. Paused desaturates. The digest-ready dot pulses purple until viewed.</p>
+    </div>
+    <div class="canvas" data-canvas>
+      <span class="canvas-label">Persistent state</span>
+      <div class="grid three" style="margin-top:18px">
+        <div class="specimen"><div class="fab"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span></div><div class="cap"><b>Ambient</b> · dots only</div></div>
+        <div class="specimen"><div class="fab m-active"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span></div><div class="cap"><b>Active</b> · soft green ring</div></div>
+        <div class="specimen"><div class="fab m-guard"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span></div><div class="cap"><b>Guard</b> · firmer purple ring</div></div>
+        <div class="specimen"><div class="fab m-ghost"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span></div><div class="cap"><b>Ghost</b> · faded, dashed</div></div>
+        <div class="specimen"><div class="fab paused"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span><span class="word">Paused</span></div><div class="cap"><b>Paused</b> · greyscale</div></div>
+        <div class="specimen"><div class="fab"><span class="digest-dot"></span><span class="nm-mark run"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px;--ex:0;--ey:-8px"></span><span class="dot a" style="--rx:0;--ry:-5px;--ex:8px;--ey:0"></span><span class="dot p" style="--rx:9px;--ry:-5px;--ex:0;--ey:8px"></span><span class="dot b" style="--rx:0;--ry:4px;--ex:-8px;--ey:0"></span></span></span></div><div class="cap"><b>Digest ready</b> · pulsing dot</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VARIANTS -->
+  <section id="variants">
+    <div class="sec-head">
+      <div class="sec-num">D — Expansion layouts to compare</div>
+      <h2>Same three pillars, three shapes</h2>
+      <p>All three name Mirror / Badge / Cost explicitly. Pick the one whose motion and footprint feel right — or mix (e.g. rail on desktop, stack on narrow).</p>
+    </div>
+    <div class="canvas" data-canvas>
+      <span class="canvas-label">Hover each</span>
+      <div class="grid three" style="margin-top:18px;align-items:end">
+
+        <!-- A recap -->
+        <div class="specimen" style="min-height:200px">
+          <div class="fab-live">
+            <div class="rail-mark"><span class="nm-mark"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px"></span><span class="dot a" style="--rx:0;--ry:-5px"></span><span class="dot p" style="--rx:9px;--ry:-5px"></span><span class="dot b" style="--rx:0;--ry:4px"></span></span></span></div>
+            <span class="word">Nomon</span>
+            <div class="pillar" data-p="mirror"><span class="st"></span><span class="glyph mirror"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M9 21c0-3 6-3 6 0"/></svg></span><span class="txt"><span class="t">Mirror</span><span class="s">Notice thinking</span></span></div>
+            <div class="pillar" data-p="badge"><span class="st"></span><span class="glyph badge"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="txt"><span class="t">Badge</span><span class="s">Disclose AI</span></span></div>
+            <div class="pillar" data-p="cost"><span class="st"></span><span class="glyph cost"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 6c-1-1.5-3-2-5-2-3 0-5 1.5-5 4s2 3 5 3.5 5 1 5 3.5-2 4-5 4c-2 0-4-.5-5-2"/></svg></span><span class="txt"><span class="t">Cost</span><span class="s">Less spend</span></span></div>
+          </div>
+          <div class="cap">A · <b>horizontal rail</b> <span class="recommend">Rec</span></div>
+        </div>
+
+        <!-- B vertical stack -->
+        <div class="specimen" style="min-height:200px">
+          <div class="fab-stack">
+            <div class="stack-items">
+              <div class="stack-item" data-p="mirror"><span class="glyph mirror"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M9 21c0-3 6-3 6 0"/></svg></span><span class="t">Mirror</span></div>
+              <div class="stack-item" data-p="badge"><span class="glyph badge"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="t">Badge</span></div>
+              <div class="stack-item" data-p="cost"><span class="glyph cost"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 6c-1-1.5-3-2-5-2-3 0-5 1.5-5 4s2 3 5 3.5 5 1 5 3.5-2 4-5 4c-2 0-4-.5-5-2"/></svg></span><span class="t">Cost</span></div>
+            </div>
+            <div class="fab stack-trigger"><span class="nm-mark run"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px;--ex:0;--ey:-8px"></span><span class="dot a" style="--rx:0;--ry:-5px;--ex:8px;--ey:0"></span><span class="dot p" style="--rx:9px;--ry:-5px;--ex:0;--ey:8px"></span><span class="dot b" style="--rx:0;--ry:4px;--ex:-8px;--ey:0"></span></span></span></div>
+          </div>
+          <div class="cap">B · <b>vertical stack</b> — smallest resting footprint</div>
+        </div>
+
+        <!-- C labels below -->
+        <div class="specimen" style="min-height:200px">
+          <div class="fab-below">
+            <span class="nm-mark run"><span class="spin"><span class="dot g" style="--rx:-9px;--ry:-5px;--ex:0;--ey:-8px"></span><span class="dot a" style="--rx:0;--ry:-5px;--ex:8px;--ey:0"></span><span class="dot p" style="--rx:9px;--ry:-5px;--ex:0;--ey:8px"></span><span class="dot b" style="--rx:0;--ry:4px;--ex:-8px;--ey:0"></span></span></span>
+            <div class="row">
+              <div class="seg"><span class="glyph mirror"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M9 21c0-3 6-3 6 0"/></svg></span><span class="l">Mirror</span></div>
+              <div class="seg"><span class="glyph badge"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="l">Badge</span></div>
+              <div class="seg"><span class="glyph cost"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 6c-1-1.5-3-2-5-2-3 0-5 1.5-5 4s2 3 5 3.5 5 1 5 3.5-2 4-5 4c-2 0-4-.5-5-2"/></svg></span><span class="l">Cost</span></div>
+            </div>
+          </div>
+          <div class="cap">C · <b>labels below</b> — grows downward, stays put horizontally</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>Recommendation:</b> the <b>horizontal rail (A)</b> reads best on desktop AI sites — the pillars appear left of the mark (toward page centre, away from the screen edge), each fully labelled with a purpose line. Fall back to the <b>vertical stack (B)</b> on narrow widths where a wide rail would run off-screen.
+    </div>
+  </section>
+
+  <footer>Nomon FAB deep dive · mark-only colour · visual mockup, no product code changed.</footer>
+</div>
+
+<script>
+function setTheme(m){document.querySelectorAll('[data-canvas]').forEach(c=>c.classList.toggle('paper',m==='paper'));
+document.getElementById('t-ink').classList.toggle('on',m==='ink');document.getElementById('t-paper').classList.toggle('on',m==='paper');}
+</script>
+</body>
+</html>
