@@ -88,6 +88,9 @@ const LumenWidget = (() => {
     document.querySelectorAll(".lumen-attest-row").forEach((row) => {
       row.setAttribute("data-lumen-theme", theme);
     });
+    document.querySelectorAll("#lumen-cost-coach").forEach((el) => {
+      el.setAttribute("data-lumen-theme", theme);
+    });
   }
 
   function watchHostTheme() {
@@ -339,11 +342,14 @@ const LumenWidget = (() => {
   function ensureRoot() {
     ensureHideStyles();
     let existing = document.getElementById("lumen-root");
-    // Rebuild if this tab still has a pre–mode-seg / pre–badge-toggle popover
-    // (extension update without full page reload).
+    // Rebuild if this tab still has a pre–mode-seg / pre–badge-toggle popover,
+    // or a pre–inline-savings / pre–pillar-scope layout (extension update without reload).
     if (
       existing &&
-      (!document.getElementById("lumen-mode-seg") || !document.getElementById("lumen-badge-seg"))
+      (!document.getElementById("lumen-mode-seg") ||
+        !document.getElementById("lumen-badge-seg") ||
+        !document.getElementById("lumen-cost-inline") ||
+        !document.querySelector("#lumen-popover [data-pillar-scope]"))
     ) {
       existing.remove();
       existing = null;
@@ -402,7 +408,7 @@ const LumenWidget = (() => {
         </div>
 
         <div class="lumen-popover-scroll">
-          <div class="lumen-popover-stats" aria-label="Today's stats">
+          <div class="lumen-popover-stats" data-pillar-scope="mirror" aria-label="Today's stats">
             <div class="lumen-popover-mini">
               <div class="lumen-popover-mini-stat" title="Your prompts today across ChatGPT, Gemini, Claude, and other connected tools">
                 <div class="lumen-popover-mini-v" id="lumen-stat-messages">0</div>
@@ -432,9 +438,9 @@ const LumenWidget = (() => {
               </div>
             </div>
           </div>
-          <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Nomon fills this in as you chat.</p>
+          <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty" data-pillar-scope="mirror">Nomon fills this in as you chat.</p>
 
-          <div class="lumen-mode-strip" id="lumen-mode-strip">
+          <div class="lumen-mode-strip" id="lumen-mode-strip" data-pillar-scope="mirror">
             <div class="lumen-mode-row">
               <label class="lumen-popover-label lumen-mode-label">Mode</label>
               <div class="lumen-mode-seg" id="lumen-mode-seg" role="radiogroup" aria-label="Nomon mode">
@@ -510,7 +516,8 @@ const LumenWidget = (() => {
               <option value="on">On</option>
             </select>
             <p class="lumen-popover-hint" id="lumen-badge-hint">Off by default. Turn on to show a Disclose strip under long AI replies.</p>
-            <p class="lumen-popover-hint">Disclosures you've created — tap “Disclose” under any long reply to add one.</p>
+            <label class="lumen-popover-label">Your disclosures</label>
+            <p class="lumen-popover-hint">Tap “Disclose” under any long reply to add one.</p>
             <p class="lumen-popover-hint lumen-hidden" id="lumen-attestations-empty">No disclosures yet.</p>
             <div class="lumen-attestations" id="lumen-attestations"></div>
             <button type="button" class="lumen-attest-recopy lumen-hidden" id="lumen-attest-recopy">Re-copy latest</button>
@@ -540,11 +547,23 @@ const LumenWidget = (() => {
               </label>
               <p class="lumen-popover-hint" id="lumen-cost-auto-hint">When Cost coach suggests Instant / Haiku / Flash-Lite / etc., switch the host picker automatically and log the save.</p>
             </div>
-            <button type="button" class="lumen-popover-disc" id="lumen-cost-savings-cta"><span>Savings over time</span><span aria-hidden="true">›</span></button>
-            <p class="lumen-popover-hint lumen-hidden" id="lumen-cost-savings-blurb"></p>
+            <div class="lumen-cost-inline" id="lumen-cost-inline">
+              <label class="lumen-popover-label">Estimated spend</label>
+              <p class="lumen-popover-hint">Refined after each reply from prompt + answer length. Estimates only.</p>
+              <div class="lumen-cost-savings-stats" id="lumen-cost-spend-stats"></div>
+              <p class="lumen-popover-hint lumen-hidden" id="lumen-cost-spend-meta"></p>
+
+              <label class="lumen-popover-label" style="margin-top:12px;">Tip savings</label>
+              <p class="lumen-popover-hint">Logged when you Switch, Auto-switch, or tap Log on a tip.</p>
+              <div class="lumen-cost-savings-stats" id="lumen-cost-savings-stats"></div>
+              <div class="lumen-cost-savings-list" id="lumen-cost-savings-list"></div>
+              <p class="lumen-popover-hint" id="lumen-cost-savings-footnote">Not a receipt · API-equivalent rates.</p>
+              <button type="button" class="lumen-popover-reset" id="lumen-cost-savings-clear">Clear Cost history</button>
+            </div>
+            <p class="lumen-popover-hint" id="lumen-cost-privacy-hint">Estimates stay on this device — never uploaded for cost analysis.</p>
           </div>
 
-          <details class="lumen-popover-more">
+          <details class="lumen-popover-more" data-pillar-scope="mirror">
             <summary>Charts &amp; this week</summary>
             <label class="lumen-popover-label" id="lumen-session-chart-label" title="Each bar is one message today">Today's messages</label>
             <div class="lumen-popover-sparkline" id="lumen-sparkline"></div>
@@ -561,22 +580,22 @@ const LumenWidget = (() => {
             <button class="lumen-popover-reset" id="lumen-reset-session">Reset session</button>
           </details>
 
-          <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Set up Nomon →</button>
-          <button type="button" class="lumen-popover-howto" id="lumen-tutorial-cta">How it works</button>
+          <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta" data-pillar-scope="mirror">Set up Nomon →</button>
+          <button type="button" class="lumen-popover-howto" id="lumen-tutorial-cta" data-pillar-scope="mirror">How it works</button>
 
           <button
             type="button"
             id="lumen-privacy-toggle"
             class="lumen-privacy-toggle"
+            data-pillar-scope="mirror"
             aria-expanded="false"
             aria-controls="lumen-privacy-panel"
           >
             <span>Privacy &amp; data</span>
             <span class="lumen-privacy-toggle-chevron" aria-hidden="true">›</span>
           </button>
-          <div id="lumen-privacy-panel" class="lumen-privacy-panel lumen-hidden">
+          <div id="lumen-privacy-panel" class="lumen-privacy-panel lumen-hidden" data-pillar-scope="mirror">
             <p class="lumen-popover-hint">Scoring runs locally. Turn off anything below you don't want sent to Nomon's servers.</p>
-            <p class="lumen-popover-hint">Cost coach also stays on-device — it reads your draft for token estimates but never sends it for cost analysis.</p>
             <label class="lumen-popover-check">
               <input type="checkbox" id="lumen-llm-judge" />
               LLM second opinion · catches subtle hand-offs
@@ -621,21 +640,6 @@ const LumenWidget = (() => {
           <div class="lumen-weekly-actions">
             <button type="button" class="lumen-weekly-btn" id="lumen-weekly-share">Share this week</button>
             <button type="button" class="lumen-weekly-btn lumen-weekly-btn--secondary" id="lumen-weekly-done">Done</button>
-          </div>
-        </div>
-      </div>
-      <div id="lumen-cost-savings" class="lumen-cost-savings" role="dialog" aria-modal="true" aria-labelledby="lumen-cost-savings-title">
-        <div class="lumen-cost-savings-panel">
-          <button type="button" class="lumen-cost-savings-close" id="lumen-cost-savings-close" aria-label="Close">×</button>
-          <div class="lumen-cost-savings-kicker">Nomon · cost coach</div>
-          <h2 class="lumen-cost-savings-title" id="lumen-cost-savings-title">Savings over time</h2>
-          <p class="lumen-cost-savings-lead">Estimated savings from Cost tips you applied or logged — kept on this device across every AI.</p>
-          <div class="lumen-cost-savings-stats" id="lumen-cost-savings-stats"></div>
-          <div class="lumen-cost-savings-list" id="lumen-cost-savings-list"></div>
-          <p class="lumen-cost-savings-footnote">Estimates only · not a receipt. Turn on Cost coach to keep collecting tips.</p>
-          <div class="lumen-cost-savings-actions">
-            <button type="button" class="lumen-cost-savings-btn" id="lumen-cost-savings-done">Done</button>
-            <button type="button" class="lumen-cost-savings-btn lumen-cost-savings-btn--ghost" id="lumen-cost-savings-clear">Clear history</button>
           </div>
         </div>
       </div>
@@ -1066,29 +1070,18 @@ const LumenWidget = (() => {
       setCostAutoSwitch(Boolean(event.target.checked));
     });
 
-    document.getElementById("lumen-cost-savings-cta")?.addEventListener("click", (event) => {
-      event.stopPropagation();
-      openCostSavingsModal();
-    });
-
-    document.getElementById("lumen-cost-savings-close")?.addEventListener("click", (event) => {
-      event.stopPropagation();
-      closeCostSavingsModal();
-    });
-    document.getElementById("lumen-cost-savings-done")?.addEventListener("click", (event) => {
-      event.stopPropagation();
-      closeCostSavingsModal();
-    });
     document.getElementById("lumen-cost-savings-clear")?.addEventListener("click", (event) => {
       event.stopPropagation();
       if (!globalThis.LumenCostLedger) return;
-      if (!confirm("Clear all Cost savings history on this device?")) return;
+      if (
+        !confirm(
+          "Clear estimated spend and tip savings on this device? This cannot be undone."
+        )
+      ) {
+        return;
+      }
       globalThis.LumenCostLedger.clear();
-      renderCostSavingsModal();
-      syncCostSavingsBlurb();
-    });
-    document.getElementById("lumen-cost-savings")?.addEventListener("click", (event) => {
-      if (event.target?.id === "lumen-cost-savings") closeCostSavingsModal();
+      renderCostSavingsPanel();
     });
 
     document.getElementById("lumen-llm-judge")?.addEventListener("change", (event) => {
@@ -1153,10 +1146,6 @@ const LumenWidget = (() => {
       if (event.key !== "Escape") return;
       if (tourActive) {
         endTour();
-      } else if (
-        document.getElementById("lumen-cost-savings")?.classList.contains("lumen-cost-savings--open")
-      ) {
-        closeCostSavingsModal();
       } else if (document.getElementById("lumen-weekly")?.classList.contains("lumen-weekly--open")) {
         closeWeeklyReview();
       } else if (popoverOpen) {
@@ -1979,19 +1968,120 @@ const LumenWidget = (() => {
   }
 
   function syncCostSavingsBlurb() {
-    const blurb = document.getElementById("lumen-cost-savings-blurb");
-    if (!blurb) return;
-    const summary = globalThis.LumenCostLedger?.summarize?.();
+    renderCostSavingsPanel();
+  }
+
+  function renderCostSavingsPanel() {
+    const spendStats = document.getElementById("lumen-cost-spend-stats");
+    const spendMeta = document.getElementById("lumen-cost-spend-meta");
+    const stats = document.getElementById("lumen-cost-savings-stats");
+    const list = document.getElementById("lumen-cost-savings-list");
+    if (!stats || !list) return;
+
     const formatUsd = globalThis.LumenCost?.formatUsd || ((n) => `$${n}`);
-    if (!summary || summary.eventCount === 0) {
-      blurb.classList.add("lumen-hidden");
-      blurb.textContent = "";
+    const formatTokens = globalThis.LumenCost?.formatTokens || String;
+    const summary = globalThis.LumenCostLedger?.summarize?.() || {
+      eventCount: 0,
+      usdAllTime: 0,
+      usdThisWeek: 0,
+      recent: [],
+      spend: {
+        callCount: 0,
+        callsThisWeek: 0,
+        usdAllTime: 0,
+        usdThisWeek: 0,
+        emaOutputTokens: null,
+        outputSampleCount: 0,
+      },
+    };
+    const spend = summary.spend || {
+      callCount: 0,
+      callsThisWeek: 0,
+      usdAllTime: 0,
+      usdThisWeek: 0,
+      emaOutputTokens: null,
+      outputSampleCount: 0,
+    };
+
+    if (spendStats) {
+      spendStats.innerHTML = `
+        <div class="lumen-cost-savings-stat">
+          <span class="lumen-cost-savings-stat-label">This week</span>
+          <span class="lumen-cost-savings-stat-value">${escapeHtml(
+            formatUsd(spend.usdThisWeek || 0)
+          )}</span>
+        </div>
+        <div class="lumen-cost-savings-stat">
+          <span class="lumen-cost-savings-stat-label">All time</span>
+          <span class="lumen-cost-savings-stat-value">${escapeHtml(
+            formatUsd(spend.usdAllTime || 0)
+          )}</span>
+        </div>
+      `;
+    }
+    if (spendMeta) {
+      const calls = spend.callsThisWeek || 0;
+      const ema = spend.emaOutputTokens;
+      const samples = spend.outputSampleCount || 0;
+      if (!spend.callCount) {
+        spendMeta.textContent = "Send a prompt with Cost on — spend fills in after the reply.";
+        spendMeta.classList.remove("lumen-hidden");
+      } else {
+        const parts = [
+          `${calls} call${calls === 1 ? "" : "s"} this week`,
+          `${spend.callCount} logged`,
+        ];
+        if (ema && samples >= 3) {
+          parts.push(`avg reply ~${formatTokens(Math.round(ema))} tok`);
+        }
+        spendMeta.textContent = parts.join(" · ");
+        spendMeta.classList.remove("lumen-hidden");
+      }
+    }
+
+    stats.innerHTML = `
+      <div class="lumen-cost-savings-stat">
+        <span class="lumen-cost-savings-stat-label">This week</span>
+        <span class="lumen-cost-savings-stat-value">${escapeHtml(formatUsd(summary.usdThisWeek))}</span>
+      </div>
+      <div class="lumen-cost-savings-stat">
+        <span class="lumen-cost-savings-stat-label">All time</span>
+        <span class="lumen-cost-savings-stat-value">${escapeHtml(formatUsd(summary.usdAllTime))}</span>
+      </div>
+    `;
+
+    if (!summary.recent.length) {
+      list.innerHTML = `<p class="lumen-cost-savings-empty">No tip saves yet. Tap <strong>Switch</strong> on a tip — or Log after you use one.</p>`;
       return;
     }
-    blurb.classList.remove("lumen-hidden");
-    blurb.textContent = `${formatUsd(summary.usdAllTime)} logged so far · ${formatUsd(
-      summary.usdThisWeek
-    )} this week`;
+
+    list.innerHTML = summary.recent
+      .slice(0, 8)
+      .map((e) => {
+        const when = new Date(e.at).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        });
+        const host = (e.host || "").replace(/^www\./, "");
+        const via =
+          e.source === "auto-switched"
+            ? " · auto"
+            : e.source === "switched"
+              ? " · switched"
+              : e.source === "applied"
+                ? " · applied"
+                : "";
+        return `<div class="lumen-cost-savings-row">
+          <div>
+            <div class="lumen-cost-savings-row-title">${escapeHtml(e.title)}</div>
+            <div class="lumen-cost-savings-row-meta">${escapeHtml(when)}${
+          host ? ` · ${escapeHtml(host)}` : ""
+        }${via}${e.tokens ? ` · ~${escapeHtml(formatTokens(e.tokens))} tok` : ""}</div>
+          </div>
+          <div class="lumen-cost-savings-row-usd">${escapeHtml(formatUsd(e.usd))}</div>
+        </div>`;
+      })
+      .join("");
   }
 
   function updateModeHint() {
@@ -2216,88 +2306,9 @@ const LumenWidget = (() => {
     if (on) globalThis.LumenCostCoach?.refresh?.();
   }
 
-  function openCostSavingsModal() {
-    ensureRoot();
-    closePopover();
-    renderCostSavingsModal();
-    document.getElementById("lumen-cost-savings")?.classList.add("lumen-cost-savings--open");
-  }
-
-  function closeCostSavingsModal() {
-    document.getElementById("lumen-cost-savings")?.classList.remove("lumen-cost-savings--open");
-  }
-
-  function renderCostSavingsModal() {
-    const stats = document.getElementById("lumen-cost-savings-stats");
-    const list = document.getElementById("lumen-cost-savings-list");
-    if (!stats || !list) return;
-
-    const formatUsd = globalThis.LumenCost?.formatUsd || ((n) => `$${n}`);
-    const formatTokens = globalThis.LumenCost?.formatTokens || String;
-    const summary = globalThis.LumenCostLedger?.summarize?.() || {
-      usdAllTime: 0,
-      usdThisWeek: 0,
-      usdThisMonth: 0,
-      tokensAllTime: 0,
-      eventCount: 0,
-      recent: [],
-    };
-
-    stats.innerHTML = `
-      <div class="lumen-cost-savings-stat">
-        <span class="lumen-cost-savings-stat-label">All time</span>
-        <span class="lumen-cost-savings-stat-value">${escapeHtml(formatUsd(summary.usdAllTime))}</span>
-      </div>
-      <div class="lumen-cost-savings-stat">
-        <span class="lumen-cost-savings-stat-label">This month</span>
-        <span class="lumen-cost-savings-stat-value">${escapeHtml(formatUsd(summary.usdThisMonth))}</span>
-      </div>
-      <div class="lumen-cost-savings-stat">
-        <span class="lumen-cost-savings-stat-label">This week</span>
-        <span class="lumen-cost-savings-stat-value">${escapeHtml(formatUsd(summary.usdThisWeek))}</span>
-      </div>
-      <div class="lumen-cost-savings-stat">
-        <span class="lumen-cost-savings-stat-label">Tips logged</span>
-        <span class="lumen-cost-savings-stat-value">${summary.eventCount}</span>
-      </div>
-    `;
-
-    if (!summary.recent.length) {
-      list.innerHTML = `<p class="lumen-cost-savings-empty">No logged savings yet. When Cost coach suggests a cheaper model, tap <strong>Switch</strong> — Nomon logs the save when the picker changes. Or tap Log after you use a tip.</p>`;
-      return;
-    }
-
-    list.innerHTML = summary.recent
-      .map((e) => {
-        const when = new Date(e.at).toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-        });
-        const host = (e.host || "").replace(/^www\./, "");
-        const via =
-          e.source === "auto-switched"
-            ? " · auto-switched"
-            : e.source === "switched"
-              ? " · switched"
-              : e.source === "applied"
-                ? " · applied"
-                : "";
-        return `<div class="lumen-cost-savings-row">
-          <div>
-            <div class="lumen-cost-savings-row-title">${escapeHtml(e.title)}</div>
-            <div class="lumen-cost-savings-row-meta">${escapeHtml(when)}${
-          host ? ` · ${escapeHtml(host)}` : ""
-        }${via}${e.tokens ? ` · ~${escapeHtml(formatTokens(e.tokens))} tok` : ""}</div>
-          </div>
-          <div class="lumen-cost-savings-row-usd">${escapeHtml(formatUsd(e.usd))}</div>
-        </div>`;
-      })
-      .join("");
-  }
-
   /**
-   * Compose-time Cost coach strip (+ optional tip panel).
-   * Anchored near the chat input; never blocks send.
+   * Compose-time Cost coach strip (+ optional tip). Same family as Mirror
+   * signal strips — compact, theme-aware, one surface. Never blocks send.
    */
   function renderCostCoach(analysis, adapter) {
     clearCostCoach();
@@ -2312,63 +2323,20 @@ const LumenWidget = (() => {
 
     const LumenCost = globalThis.LumenCost;
     const formatUsd = LumenCost?.formatUsd || ((n) => `$${n}`);
+    const formatTokens = LumenCost?.formatTokens || ((n) => String(n));
     const level = analysis.level || "subtle";
     const top = analysis.top;
     const autoOn = Boolean(LumenGoals.isCostAutoSwitch?.() || LumenGoals.get().costAutoSwitch);
     const draftText = adapter.getChatInputText?.() || "";
+    const theme = isHostDark() ? "dark" : "light";
 
     const shell = document.createElement("div");
     shell.id = "lumen-cost-coach";
     shell.className = "lumen-cost-coach";
     shell.setAttribute("data-lumen-cost-level", level);
+    shell.setAttribute("data-lumen-theme", theme);
     shell.setAttribute("role", "status");
 
-    const tipActionsHtml = (m, idx) => {
-      const parts = [];
-      if (m.switchAction && !autoOn) {
-        parts.push(
-          `<button type="button" class="lumen-cost-switch" data-tip-idx="${idx}">${escapeHtml(
-            m.switchAction.buttonLabel || "Switch"
-          )}</button>`
-        );
-      }
-      if (m.rewrittenPrompt) {
-        parts.push(
-          `<button type="button" class="lumen-cost-apply" data-tip-idx="${idx}">Apply compact JSON</button>`
-        );
-      }
-      parts.push(
-        `<button type="button" class="lumen-cost-log" data-tip-idx="${idx}">Log this save</button>`
-      );
-      return `<div class="lumen-cost-tip-actions">${parts.join("")}</div>`;
-    };
-
-    const tipHtml =
-      level === "full" && analysis.matches?.length
-        ? `<div class="lumen-cost-coach-panel">
-            ${analysis.matches
-              .slice(0, 3)
-              .map(
-                (m, idx) => `<div class="lumen-cost-tip" data-tip-idx="${idx}">
-              <div class="lumen-cost-tip-head">
-                <span class="lumen-cost-tip-title">${escapeHtml(m.title)}</span>
-                <span class="lumen-cost-tip-save">${escapeHtml(
-                  formatUsd(m.estimate.usdPerMonth)
-                )}/mo</span>
-              </div>
-              <p class="lumen-cost-tip-body">${escapeHtml(m.summary)}</p>
-              <p class="lumen-cost-tip-suggestion">${escapeHtml(m.suggestion)}</p>
-              ${tipActionsHtml(m, idx)}
-            </div>`
-              )
-              .join("")}
-            <p class="lumen-cost-coach-footnote">API-equivalent rates · prices as of ${escapeHtml(
-              analysis.pricesUpdatedAt || ""
-            )} · Auto switch changes the host picker when a tip recommends it · guidance, not a quality guarantee</p>
-          </div>`
-        : "";
-
-    const formatTokens = LumenCost?.formatTokens || ((n) => String(n));
     const tokensLabel = formatTokens(analysis.inputTokens || 0);
     const saveUsd = top ? formatUsd(top.estimate?.usdPerCall || 0) : null;
     const meterPct = Math.max(
@@ -2376,34 +2344,55 @@ const LumenWidget = (() => {
       Math.min(92, Math.round(((analysis.inputTokens || 0) / 3200) * 100))
     );
 
-    const lineHtml =
-      level === "full" && top && saveUsd
-        ? `This prompt ≈ <b>${escapeHtml(tokensLabel)}</b> · a lighter model saves ~<b>${escapeHtml(
-            saveUsd
-          )}</b>`
-        : `≈ <b>${escapeHtml(tokensLabel)}</b> this prompt`;
-
-    const subHtml =
-      level === "full"
-        ? "Estimated on-device · nothing uploaded · savings are hypothetical"
-        : "On-device estimate";
-
     const swapLabel =
       top?.switchAction?.buttonLabel ||
-      (top?.switchAction?.uiLabel ? `Use ${top.switchAction.uiLabel} →` : null) ||
-      (top ? "Try lighter model →" : null);
+      (top?.switchAction?.uiLabel ? `Use ${top.switchAction.uiLabel}` : null) ||
+      (top ? "Try lighter model" : null);
 
-    // Mockup: Loud = swap pill; Quiet = spend only (no CTA column).
+    // Loud: one primary swap on the strip. Quiet: spend only (+ Tips if a tip exists).
     const showSwap = Boolean(!autoOn && top?.switchAction && level === "full");
-    const showDetails = Boolean(level === "subtle" && top);
+    const showTipsLink = Boolean(level === "subtle" && top);
 
-    const autoBtn = `<button type="button" class="lumen-cost-coach-auto${
-      autoOn ? " lumen-cost-coach-auto--on" : ""
-    }" aria-pressed="${autoOn ? "true" : "false"}" title="${
-      autoOn
-        ? "Auto switch on — tap to turn off"
-        : "Auto switch off — tap to apply recommended models automatically"
-    }">Auto</button>`;
+    const lineHtml =
+      level === "full" && top && saveUsd
+        ? `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · lighter model saves ~<b>${escapeHtml(
+            saveUsd
+          )}</b>`
+        : `≈ <b>${escapeHtml(tokensLabel)} tokens</b>`;
+
+    // Loud tip: top match only, one suggestion line — no stacked dark panel.
+    let tipHtml = "";
+    if (level === "full" && top) {
+      const tipParts = [];
+      if (top.rewrittenPrompt) {
+        tipParts.push(
+          `<button type="button" class="lumen-cost-apply" data-tip-idx="0">Apply rewrite</button>`
+        );
+      }
+      if (!showSwap && top.switchAction && !autoOn) {
+        tipParts.push(
+          `<button type="button" class="lumen-cost-switch" data-tip-idx="0">${escapeHtml(
+            top.switchAction.buttonLabel || "Switch"
+          )}</button>`
+        );
+      }
+      tipParts.push(
+        `<button type="button" class="lumen-cost-log" data-tip-idx="0">Log save</button>`
+      );
+      tipHtml = `
+        <div class="lumen-cost-coach-panel">
+          <div class="lumen-cost-tip" data-tip-idx="0">
+            <div class="lumen-cost-tip-head">
+              <span class="lumen-cost-tip-title">${escapeHtml(top.title)}</span>
+              <span class="lumen-cost-tip-save">${escapeHtml(
+                formatUsd(top.estimate?.usdPerMonth || 0)
+              )}/mo</span>
+            </div>
+            <p class="lumen-cost-tip-suggestion">${escapeHtml(top.suggestion || top.summary || "")}</p>
+            <div class="lumen-cost-tip-actions">${tipParts.join("")}</div>
+          </div>
+        </div>`;
+    }
 
     const actionsHtml = `
       <div class="lumen-cost-coach-actions">
@@ -2414,28 +2403,41 @@ const LumenWidget = (() => {
               )}">${escapeHtml(swapLabel)}</button>`
             : ""
         }
-        ${level === "full" ? autoBtn : ""}
         ${
-          showDetails
-            ? `<button type="button" class="lumen-cost-coach-more" title="Show cost tips">Details</button>`
+          level === "full"
+            ? `<button type="button" class="lumen-cost-coach-auto${
+                autoOn ? " lumen-cost-coach-auto--on" : ""
+              }" aria-pressed="${autoOn ? "true" : "false"}" title="${
+                autoOn
+                  ? "Auto switch on — tap to turn off"
+                  : "Auto switch off — tap to apply recommended models automatically"
+              }">Auto</button>`
+            : ""
+        }
+        ${
+          showTipsLink
+            ? `<button type="button" class="lumen-cost-coach-more" title="Show cost tip">Tips</button>`
             : ""
         }
         <button type="button" class="lumen-cost-coach-dismiss" title="Hide for this draft" aria-label="Hide cost tip">×</button>
       </div>`;
 
     shell.innerHTML = `
-      <div class="lumen-cost-coach-strip">
-        <span class="lumen-cost-coach-ic" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 6c-1-1.5-3-2-5-2-3 0-5 1.5-5 4s2 3 5 3.5 5 1 5 3.5-2 4-5 4c-2 0-4-.5-5-2"/></svg>
-        </span>
-        <div class="lumen-cost-coach-bd">
-          <div class="lumen-cost-coach-ln">${lineHtml}</div>
-          <div class="lumen-cost-coach-meter" aria-hidden="true"><i style="width:${meterPct}%"></i></div>
-          <div class="lumen-cost-coach-sb">${subHtml}</div>
+      <div class="lumen-cost-coach-card">
+        <div class="lumen-cost-coach-strip">
+          <span class="lumen-cost-coach-dot" aria-hidden="true"></span>
+          <div class="lumen-cost-coach-bd">
+            <div class="lumen-cost-coach-ln">${lineHtml}</div>
+            ${
+              level === "full"
+                ? `<div class="lumen-cost-coach-meter" aria-hidden="true"><i style="width:${meterPct}%"></i></div>`
+                : `<div class="lumen-cost-coach-sb">On-device estimate</div>`
+            }
+          </div>
+          ${actionsHtml}
         </div>
-        ${actionsHtml}
+        ${tipHtml}
       </div>
-      ${tipHtml}
     `;
 
     const host =
@@ -2801,11 +2803,15 @@ const LumenWidget = (() => {
       panel.hidden = !on;
     });
 
-    const modeStrip = document.getElementById("lumen-mode-strip");
-    if (modeStrip) {
-      const onMirror = pillar === "mirror";
-      modeStrip.classList.toggle("lumen-hidden", !onMirror);
-      modeStrip.hidden = !onMirror;
+    // Mirror-only sections use [data-pillar-scope] + CSS on #lumen-popover[data-pillar]
+    // so their own lumen-hidden state (stats empty, privacy open) is preserved.
+
+    // Collapse Privacy when leaving Mirror so it doesn't reopen expanded on return.
+    if (pillar !== "mirror") {
+      const privacyBtn = document.getElementById("lumen-privacy-toggle");
+      if (privacyBtn?.getAttribute("aria-expanded") === "true") {
+        togglePrivacyPanel(false);
+      }
     }
   }
 
@@ -4618,13 +4624,6 @@ const LumenWidget = (() => {
     playFabLoadAnimation();
     globalThis.LumenCostLedger?.onChange?.(() => {
       syncCostSavingsBlurb();
-      if (
-        document
-          .getElementById("lumen-cost-savings")
-          ?.classList.contains("lumen-cost-savings--open")
-      ) {
-        renderCostSavingsModal();
-      }
     });
   }
 
@@ -4640,7 +4639,6 @@ const LumenWidget = (() => {
     showGuardHold,
     renderCostCoach,
     clearCostCoach,
-    openCostSavingsModal,
     playPendingCostSaveCoin,
     /** Dev/test: force the piggy-bank animation, e.g. LumenWidget.debugCostCoin(0.006) */
     debugCostCoin: (usd = 0.0061) => playCostSaveCoin(usd),

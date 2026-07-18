@@ -97,6 +97,69 @@
 
   let guardBypassUntil = 0;
   let costCoachTimer = null;
+  let costSpendBootstrapped = false;
+  /** Assistant message ids present on first scan — never backfill as spend. */
+  const costSpendBootstrapIds = new Set();
+  /** Assistant ids we are actively refining (post-bootstrap replies). */
+  const costSpendTracked = new Set();
+
+  /**
+   * After an assistant reply lands (and as it streams), quietly upsert an
+   * on-device spend estimate. Tip savings stay separate.
+   */
+  function maybeRecordCostSpend(messageList) {
+    const { goals: LumenGoals } = deps();
+    const LumenCost = g.LumenCost;
+    const ledger = g.LumenCostLedger;
+    if (!LumenGoals?.isCostEnabled?.() || LumenGoals.isPaused?.()) return;
+    if (!LumenCost?.estimateCompletedCall || !ledger?.recordSpend) return;
+    if (!Array.isArray(messageList) || !messageList.length) return;
+
+    if (!costSpendBootstrapped) {
+      messageList.forEach((m) => {
+        if (m?.role === "assistant" && m.id) costSpendBootstrapIds.add(m.id);
+      });
+      costSpendBootstrapped = true;
+      return;
+    }
+
+    const selectedModel = adapter?.getSelectedModel?.() || null;
+    const goals = LumenGoals.get();
+
+    for (let i = 0; i < messageList.length; i++) {
+      const msg = messageList[i];
+      if (msg?.role !== "assistant" || !msg.id || !msg.text) continue;
+      if (costSpendBootstrapIds.has(msg.id)) continue;
+
+      let user = null;
+      for (let j = i - 1; j >= 0; j--) {
+        if (messageList[j]?.role === "user") {
+          user = messageList[j];
+          break;
+        }
+      }
+      if (!user?.text) continue;
+      if (String(msg.text).trim().length < 24) continue;
+
+      const estimate = LumenCost.estimateCompletedCall(user.text, msg.text, goals, {
+        hostname: location.hostname,
+        selectedModel,
+      });
+      if (!estimate) continue;
+
+      costSpendTracked.add(msg.id);
+      ledger.recordSpend({
+        messageId: msg.id,
+        userMessageId: user.id || null,
+        inputTokens: estimate.inputTokens,
+        outputTokens: estimate.outputTokens,
+        usd: estimate.usd,
+        modelId: estimate.model?.id || null,
+        modelLabel: estimate.modelLabel || null,
+        host: location.hostname,
+      });
+    }
+  }
 
   function bindCostCoach() {
     const { goals: LumenGoals, widget: LumenWidget } = deps();
@@ -315,6 +378,10 @@
 
     syncMessagesFromDom();
     const session = LumenSession.get();
+
+    // Cost spend: refine quietly after replies (independent of Ghost — but still
+    // respects Cost off + Pause inside maybeRecordCostSpend).
+    maybeRecordCostSpend(messages);
 
     // Transparency badges are user-requested disclosure — available in Ghost mode.
     for (const msg of messages) {

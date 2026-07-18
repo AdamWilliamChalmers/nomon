@@ -80,7 +80,11 @@ const LumenCost = (() => {
     const effort = resolved.effort || null;
     const outputMult = Number(resolved.outputMult) > 0 ? Number(resolved.outputMult) : 1;
     const monthlyVolume = Math.max(1, Number(goals.costMonthlyVolume) || 1000);
-    const baseAssumedOutput = Math.max(1, Number(goals.costAssumedOutput) || 400);
+    const learnedOutput = globalThis.LumenCostLedger?.summarize?.()?.suggestedAssumedOutput;
+    const baseAssumedOutput = Math.max(
+      1,
+      Number(learnedOutput) || Number(goals.costAssumedOutput) || 400
+    );
     const assumedOutputTokens = Math.max(1, Math.round(baseAssumedOutput * outputMult));
 
     const inputTokens = approxTokenCount(trimmed);
@@ -187,8 +191,44 @@ const LumenCost = (() => {
     };
   }
 
+  /**
+   * Post-reply estimate using actual answer text (still approx tokens, not a receipt).
+   */
+  function estimateCompletedCall(inputText, outputText, goals = {}, opts = {}) {
+    const models = globalThis.LumenCostModels;
+    if (!models) return null;
+
+    const resolved = models.resolveForAnalysis(
+      {
+        hostname: opts.hostname || (typeof location !== "undefined" ? location.hostname : ""),
+        selectedModel: opts.selectedModel || null,
+      },
+      goals
+    );
+    const model = resolved.model;
+    if (!model) return null;
+
+    const inputTokens = approxTokenCount(String(inputText || "").trim());
+    const outputTokens = approxTokenCount(String(outputText || "").trim());
+    if (inputTokens + outputTokens < 8) return null;
+
+    const callCost = estimateCallCost(model, inputTokens, outputTokens);
+    return {
+      model,
+      modelLabel: resolved.label || model.name,
+      modelConfidence: resolved.confidence,
+      inputTokens,
+      outputTokens,
+      tokens: inputTokens + outputTokens,
+      callCost,
+      usd: callCost.totalUsd,
+      approx: true,
+    };
+  }
+
   return {
     analyze,
+    estimateCompletedCall,
     approxTokenCount,
     estimateCallCost,
     formatUsd,

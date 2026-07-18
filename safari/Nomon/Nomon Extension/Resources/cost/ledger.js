@@ -1,16 +1,48 @@
 /**
- * Local ledger of Cost-coach savings the user applied or marked as used.
- * chrome.storage.local only — never uploaded.
+ * Local Cost ledgers (chrome.storage.local / localStorage — never uploaded):
+ * - events: tip savings the user applied / logged / switched
+ * - spend: post-reply call estimates (input + actual answer length)
  */
 const LumenCostLedger = (() => {
   const STORAGE_KEY = "lumenCostSavings";
   const MAX_EVENTS = 500;
+  const MAX_SPEND = 800;
   const chromeApi = globalThis.chrome;
 
-  /** @type {{ version: number, events: object[] }} */
-  let cache = { version: 1, events: [] };
+  /** @type {{ version: number, events: object[], spend: object[], emaOutputTokens: number|null, outputSampleCount: number }} */
+  let cache = {
+    version: 2,
+    events: [],
+    spend: [],
+    emaOutputTokens: null,
+    outputSampleCount: 0,
+  };
   let loaded = false;
   const listeners = new Set();
+
+  function emptyCache() {
+    return {
+      version: 2,
+      events: [],
+      spend: [],
+      emaOutputTokens: null,
+      outputSampleCount: 0,
+    };
+  }
+
+  function normalize(data) {
+    if (!data || typeof data !== "object") return emptyCache();
+    return {
+      version: 2,
+      events: Array.isArray(data.events) ? data.events.slice(-MAX_EVENTS) : [],
+      spend: Array.isArray(data.spend) ? data.spend.slice(-MAX_SPEND) : [],
+      emaOutputTokens:
+        Number.isFinite(Number(data.emaOutputTokens)) && Number(data.emaOutputTokens) > 0
+          ? Number(data.emaOutputTokens)
+          : null,
+      outputSampleCount: Math.max(0, Math.round(Number(data.outputSampleCount) || 0)),
+    };
+  }
 
   function notify() {
     listeners.forEach((cb) => {
@@ -29,7 +61,7 @@ const LumenCostLedger = (() => {
   }
 
   function persist() {
-    const payload = { version: 1, events: cache.events.slice(-MAX_EVENTS) };
+    const payload = normalize(cache);
     cache = payload;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -47,11 +79,7 @@ const LumenCostLedger = (() => {
   function load() {
     return new Promise((resolve) => {
       const finish = (data) => {
-        if (data && Array.isArray(data.events)) {
-          cache = { version: 1, events: data.events.slice(-MAX_EVENTS) };
-        } else {
-          cache = { version: 1, events: [] };
-        }
+        cache = normalize(data);
         loaded = true;
         notify();
         resolve(cache);
@@ -83,11 +111,8 @@ const LumenCostLedger = (() => {
   if (chromeApi?.storage?.onChanged?.addListener) {
     chromeApi.storage.onChanged.addListener((changes, area) => {
       if (area !== "local" || !changes?.[STORAGE_KEY]) return;
-      const next = changes[STORAGE_KEY].newValue;
-      if (next && Array.isArray(next.events)) {
-        cache = { version: 1, events: next.events.slice(-MAX_EVENTS) };
-        notify();
-      }
+      cache = normalize(changes[STORAGE_KEY].newValue);
+      notify();
     });
   }
 
@@ -157,8 +182,100 @@ const LumenCostLedger = (() => {
     return event;
   }
 
+  const lastEmaAtByMessage = new Map();
+
+  function noteOutputTokens(outputTokens, messageId = null) {
+    const n = Math.max(1, Math.round(Number(outputTokens) || 0));
+    if (!Number.isFinite(n) || n < 24) return;
+    if (messageId) {
+      const prevAt = lastEmaAtByMessage.get(messageId) || 0;
+      if (Date.now() - prevAt < 2800) return;
+      lastEmaAtByMessage.set(messageId, Date.now());
+    }
+    const prev = cache.emaOutputTokens;
+    const count = cache.outputSampleCount || 0;
+    // Warm up with early samples, then EMA.
+    if (prev == null || count < 3) {
+      cache.emaOutputTokens = prev == null ? n : (prev * count + n) / (count + 1);
+    } else {
+      cache.emaOutputTokens = prev * 0.88 + n * 0.12;
+    }
+    cache.outputSampleCount = count + 1;
+  }
+
+  /**
+   * Upsert a post-reply spend estimate keyed by assistant message id.
+   * Streaming replies refine the same row as the answer grows.
+   */
+  function recordSpend({
+    messageId,
+    userMessageId = null,
+    inputTokens = 0,
+    outputTokens = 0,
+    usd = 0,
+    modelId = null,
+    modelLabel = null,
+    host = null,
+  }) {
+    const id = String(messageId || "").trim();
+    if (!id) return null;
+    const inTok = Math.max(0, Math.round(Number(inputTokens) || 0));
+    const outTok = Math.max(0, Math.round(Number(outputTokens) || 0));
+    const usdNum = Number(usd);
+    if (!Number.isFinite(usdNum) || usdNum < 0) return null;
+    if (inTok + outTok < 8) return null;
+
+    const hostName = host || (typeof location !== "undefined" ? location.hostname : "");
+    const existing = cache.spend.find((e) => e.messageId === id);
+    if (existing) {
+      // Only grow / refine — ignore shrinks from transient DOM glitches.
+      if (outTok < (existing.outputTokens || 0) * 0.85 && outTok < existing.outputTokens) {
+        return existing;
+      }
+      existing.at = Date.now();
+      existing.inputTokens = inTok;
+      existing.outputTokens = Math.max(existing.outputTokens || 0, outTok);
+      existing.tokens = existing.inputTokens + existing.outputTokens;
+      existing.usd = usdNum;
+      existing.modelId = modelId || existing.modelId;
+      existing.modelLabel = modelLabel || existing.modelLabel;
+      existing.host = hostName || existing.host;
+      noteOutputTokens(existing.outputTokens, id);
+      persist();
+      return existing;
+    }
+
+    const event = {
+      id: `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      messageId: id,
+      userMessageId: userMessageId || null,
+      at: Date.now(),
+      host: hostName,
+      modelId: modelId || null,
+      modelLabel: modelLabel || null,
+      inputTokens: inTok,
+      outputTokens: outTok,
+      tokens: inTok + outTok,
+      usd: usdNum,
+    };
+    cache.spend.push(event);
+    noteOutputTokens(outTok, id);
+    persist();
+    return event;
+  }
+
   function clear() {
-    cache = { version: 1, events: [] };
+    cache = emptyCache();
+    persist();
+  }
+
+  function clearSavings() {
+    cache.events = [];
+    persist();
+  }
+
+  function clearSpend() {
+    cache.spend = [];
     persist();
   }
 
@@ -177,20 +294,17 @@ const LumenCostLedger = (() => {
     return d.getTime();
   }
 
-  function sumSince(since) {
-    return cache.events
-      .filter((e) => e.at >= since)
-      .reduce((n, e) => n + (e.usd || 0), 0);
+  function sumSince(list, since) {
+    return list.filter((e) => e.at >= since).reduce((n, e) => n + (e.usd || 0), 0);
   }
 
-  function summarize() {
+  function summarizeSavings() {
     const now = Date.now();
-    const week = sumSince(startOfIsoWeek(now));
-    const month = sumSince(startOfMonth(now));
+    const week = sumSince(cache.events, startOfIsoWeek(now));
+    const month = sumSince(cache.events, startOfMonth(now));
     const all = cache.events.reduce((n, e) => n + (e.usd || 0), 0);
     const tokens = cache.events.reduce((n, e) => n + (e.tokens || 0), 0);
     return {
-      loaded,
       eventCount: cache.events.length,
       usdAllTime: all,
       usdThisWeek: week,
@@ -200,11 +314,57 @@ const LumenCostLedger = (() => {
     };
   }
 
+  function summarizeSpend() {
+    const now = Date.now();
+    const week = sumSince(cache.spend, startOfIsoWeek(now));
+    const month = sumSince(cache.spend, startOfMonth(now));
+    const all = cache.spend.reduce((n, e) => n + (e.usd || 0), 0);
+    const tokens = cache.spend.reduce((n, e) => n + (e.tokens || 0), 0);
+    const callsWeek = cache.spend.filter((e) => e.at >= startOfIsoWeek(now)).length;
+    return {
+      callCount: cache.spend.length,
+      callsThisWeek: callsWeek,
+      usdAllTime: all,
+      usdThisWeek: week,
+      usdThisMonth: month,
+      tokensAllTime: tokens,
+      emaOutputTokens: cache.emaOutputTokens,
+      outputSampleCount: cache.outputSampleCount || 0,
+      recent: [...cache.spend].reverse().slice(0, 12),
+    };
+  }
+
+  function summarize() {
+    const savings = summarizeSavings();
+    const spend = summarizeSpend();
+    return {
+      loaded,
+      // Back-compat fields (tip savings) — existing callers keep working.
+      eventCount: savings.eventCount,
+      usdAllTime: savings.usdAllTime,
+      usdThisWeek: savings.usdThisWeek,
+      usdThisMonth: savings.usdThisMonth,
+      tokensAllTime: savings.tokensAllTime,
+      recent: savings.recent,
+      savings,
+      spend,
+      suggestedAssumedOutput:
+        spend.emaOutputTokens && spend.outputSampleCount >= 3
+          ? Math.round(spend.emaOutputTokens)
+          : null,
+    };
+  }
+
   return {
     load,
     recordApplied,
+    recordSpend,
     clear,
+    clearSavings,
+    clearSpend,
     summarize,
+    summarizeSavings,
+    summarizeSpend,
     onChange,
   };
 })();

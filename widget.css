@@ -725,6 +725,81 @@
 }
 
 /* Cost savings modal (FAB → Savings over time) */
+#lumen-root .lumen-cost-inline {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--lm-border);
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-stat {
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--lm-cost-tint);
+  border: 0.5px solid var(--lm-cost-border);
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-stat-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lm-cost);
+  margin-bottom: 2px;
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-stat-value {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--lm-cost-text);
+  font-variant-numeric: tabular-nums;
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-list {
+  max-height: 168px;
+  overflow-y: auto;
+  margin: 0 0 8px;
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-empty {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--lm-slate);
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--lm-border);
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-row:last-child {
+  border-bottom: 0;
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-row-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lm-dusk);
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-row-meta {
+  font-size: 10.5px;
+  color: var(--lm-haze);
+  margin-top: 2px;
+}
+#lumen-root .lumen-cost-inline .lumen-cost-savings-row-usd {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--lm-cost);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+#lumen-root .lumen-cost-inline #lumen-cost-savings-clear {
+  margin-top: 4px;
+}
+
 #lumen-root #lumen-cost-savings {
   position: fixed;
   inset: 0;
@@ -1950,6 +2025,19 @@
   color: var(--lm-cost);
   background: var(--lm-cost-tint);
   box-shadow: inset 0 0 0 1px var(--lm-cost-border);
+}
+
+/* Strict pillar scoping: Mirror chrome (stats, mode, charts, setup, privacy)
+   stays off Badge and Cost. Uses data-pillar on the popover so nested
+   lumen-hidden state (stats empty, privacy open) is preserved. */
+#lumen-root #lumen-popover:not([data-pillar="mirror"]) [data-pillar-scope="mirror"] {
+  display: none !important;
+}
+#lumen-root #lumen-popover:not([data-pillar="badge"]) [data-pillar-scope="badge"] {
+  display: none !important;
+}
+#lumen-root #lumen-popover:not([data-pillar="cost"]) [data-pillar-scope="cost"] {
+  display: none !important;
 }
 
 #lumen-root .lumen-pillar-block {
@@ -4024,11 +4112,23 @@
   display: none !important;
 }
 
-/* ── Cost coach (compose-time; host DOM, outside #lumen-root) ── */
+/* ── Cost coach (compose-time; host DOM, outside #lumen-root) ──
+   Same family as Mirror signal strips: quiet chip, theme-aware ink,
+   one shared card surface. Blue is the only Cost accent. */
 .lumen-cost-coach {
+  --lm-cost: #5b9bd5;
+  --lm-cost-tint: rgba(91, 155, 213, 0.10);
+  --lm-cost-border: rgba(91, 155, 213, 0.22);
+  --lm-cost-text: #3d7eb0;
+  --lm-cost-ink: #3a3a44;
+  --lm-cost-haze: #7b7a8a;
+  --lm-cost-card: rgba(255, 255, 255, 0.92);
+  --lm-cost-line: rgba(26, 24, 37, 0.08);
+  --lm-cost-meter-track: rgba(26, 24, 37, 0.08);
+  --lm-cost-shadow: 0 1px 2px rgba(26, 24, 37, 0.04), 0 8px 24px rgba(26, 24, 37, 0.06);
   font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-  margin: 8px 0 12px;
-  max-width: min(520px, 100%);
+  margin: 8px 0 10px;
+  max-width: min(440px, 100%);
   pointer-events: auto;
   user-select: none;
   position: relative;
@@ -4036,36 +4136,58 @@
   -webkit-font-smoothing: antialiased;
 }
 
+.lumen-cost-coach[data-lumen-theme="dark"] {
+  --lm-cost-text: #8fbfe8;
+  --lm-cost-ink: #d0d0d6;
+  --lm-cost-haze: #a2a2ad;
+  --lm-cost-card: rgba(28, 28, 34, 0.94);
+  --lm-cost-line: rgba(255, 255, 255, 0.08);
+  --lm-cost-meter-track: rgba(255, 255, 255, 0.1);
+  --lm-cost-border: rgba(91, 155, 213, 0.28);
+  --lm-cost-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.lumen-cost-coach-card {
+  border-radius: 12px;
+  border: 0.5px solid var(--lm-cost-border);
+  background: var(--lm-cost-card);
+  box-shadow: var(--lm-cost-shadow);
+  overflow: hidden;
+}
+
 .lumen-cost-coach-strip {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 11px 15px;
-  border-radius: 14px;
-  border: 1px solid rgba(91, 155, 213, 0.28);
-  background: linear-gradient(90deg, rgba(91, 155, 213, 0.10), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
-  color: #cfcfd6;
+  gap: 10px;
+  padding: 9px 12px 9px 11px;
+}
+
+.lumen-cost-coach[data-lumen-cost-level="subtle"] .lumen-cost-coach-card {
+  box-shadow: none;
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(91, 155, 213, 0.18);
+}
+
+.lumen-cost-coach[data-lumen-theme="dark"][data-lumen-cost-level="subtle"] .lumen-cost-coach-card {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(91, 155, 213, 0.22);
+}
+
+.lumen-cost-coach[data-lumen-cost-level="subtle"] .lumen-cost-coach-strip {
+  padding: 7px 10px 7px 11px;
+}
+
+.lumen-cost-coach-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--lm-cost);
+  box-shadow: 0 0 0 3px var(--lm-cost-tint);
 }
 
 .lumen-cost-coach-ic {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(91, 155, 213, 0.16);
-  border: 1px solid rgba(91, 155, 213, 0.3);
-}
-.lumen-cost-coach-ic svg {
-  width: 16px;
-  height: 16px;
-  stroke: var(--lm-cost);
-  fill: none;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  display: none !important;
 }
 
 .lumen-cost-coach-bd {
@@ -4074,22 +4196,25 @@
 }
 
 .lumen-cost-coach-ln {
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.35;
-  color: #cfcfd6;
+  color: var(--lm-cost-haze);
+  letter-spacing: -0.01em;
 }
+
 .lumen-cost-coach-ln b {
-  color: #fff;
-  font-weight: 700;
+  color: var(--lm-cost-ink);
+  font-weight: 650;
 }
 
 .lumen-cost-coach-meter {
-  height: 4px;
+  height: 2.5px;
   border-radius: 999px;
-  margin-top: 7px;
+  margin-top: 6px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--lm-cost-meter-track);
 }
+
 .lumen-cost-coach-meter > i {
   display: block;
   height: 100%;
@@ -4101,16 +4226,16 @@
 
 .lumen-cost-coach-sb {
   font-size: 10.5px;
-  color: #8a8a95;
-  margin-top: 4px;
+  color: var(--lm-cost-haze);
+  margin-top: 2px;
   line-height: 1.3;
+  opacity: 0.9;
 }
 
 .lumen-cost-coach-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -4119,17 +4244,18 @@
   font-family: inherit;
   font-size: 11.5px;
   font-weight: 600;
-  padding: 7px 13px;
-  border-radius: 999px;
+  padding: 6px 11px;
+  border-radius: 8px;
   background: var(--lm-cost);
   color: #fff;
   border: 0;
   cursor: pointer;
   white-space: nowrap;
 }
+
 .lumen-cost-coach-swap:hover,
 .lumen-cost-coach-switch:hover {
-  filter: brightness(0.96);
+  filter: brightness(0.97);
   text-decoration: none;
 }
 
@@ -4144,9 +4270,11 @@
   cursor: pointer;
   font-family: inherit;
   font-size: 11px;
-  color: var(--lm-cost-text);
-  padding: 2px 4px;
+  font-weight: 550;
+  color: var(--lm-cost-haze);
+  padding: 4px 6px;
   flex-shrink: 0;
+  border-radius: 6px;
 }
 
 .lumen-cost-coach-more:hover,
@@ -4154,18 +4282,16 @@
 .lumen-cost-switch:hover,
 .lumen-cost-apply:hover,
 .lumen-cost-log:hover {
-  text-decoration: underline;
+  color: var(--lm-cost-ink);
+  background: var(--lm-cost-tint);
+  text-decoration: none;
 }
 
 .lumen-cost-coach-auto {
   font-weight: 600;
-  letter-spacing: 0.02em;
-  border-radius: 999px;
-  padding: 3px 9px;
-  border: 1px solid var(--lm-cost-border);
-  background: rgba(255, 255, 255, 0.7);
-  text-decoration: none !important;
-  color: var(--lm-cost-text);
+  letter-spacing: 0.01em;
+  border: 0.5px solid var(--lm-cost-line);
+  padding: 4px 8px;
 }
 
 .lumen-cost-coach-auto--on {
@@ -4175,32 +4301,90 @@
 }
 
 .lumen-cost-coach-dismiss {
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1;
-  color: #6f6f79;
-  padding: 2px 6px;
-}
-.lumen-cost-coach-dismiss:hover {
-  color: #16161a;
+  color: var(--lm-cost-haze);
+  opacity: 0.55;
+  padding: 2px 5px;
 }
 
-.lumen-cost-coach[data-lumen-cost-level="subtle"] .lumen-cost-coach-meter {
-  display: none;
+.lumen-cost-coach-dismiss:hover {
+  opacity: 1;
+  color: var(--lm-cost-ink);
+  background: transparent;
 }
-.lumen-cost-coach[data-lumen-cost-level="subtle"] .lumen-cost-coach-strip {
-  padding: 10px 14px;
+
+.lumen-cost-coach[data-lumen-cost-level="subtle"] .lumen-cost-coach-dismiss {
+  opacity: 0;
+}
+
+.lumen-cost-coach[data-lumen-cost-level="subtle"]:hover .lumen-cost-coach-dismiss {
+  opacity: 0.7;
 }
 
 .lumen-cost-auto-row {
   margin: 2px 0 8px;
 }
 
+.lumen-cost-coach-panel {
+  margin: 0;
+  padding: 9px 12px 10px;
+  border: 0;
+  background: transparent;
+  border-top: 0.5px solid var(--lm-cost-line);
+}
+
+.lumen-cost-tip {
+  padding: 0;
+  border: 0;
+}
+
+.lumen-cost-tip-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.lumen-cost-tip-title {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--lm-cost-ink);
+  letter-spacing: -0.01em;
+}
+
+.lumen-cost-tip-save {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--lm-cost-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lumen-cost-tip-body {
+  display: none;
+}
+
+.lumen-cost-tip-suggestion {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--lm-cost-haze);
+}
+
 .lumen-cost-tip-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 2px 8px;
   margin-top: 6px;
   align-items: center;
+}
+
+.lumen-cost-apply {
+  margin-top: 0;
+  padding: 2px 0;
+  font-weight: 600;
+  color: var(--lm-cost-text);
 }
 
 .lumen-cost-log:disabled,
@@ -4213,70 +4397,7 @@
   cursor: default;
 }
 
-.lumen-cost-coach-panel {
-  margin-top: 8px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--lm-cost-border);
-  background: rgba(20, 20, 25, 0.96);
-}
-
-.lumen-cost-tip {
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.lumen-cost-tip:last-of-type {
-  border-bottom: none;
-}
-
-.lumen-cost-tip-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: baseline;
-}
-
-.lumen-cost-tip-title {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #ededf0;
-}
-
-.lumen-cost-tip-save {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--lm-cost);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.lumen-cost-tip-body,
-.lumen-cost-tip-suggestion {
-  margin: 4px 0 0;
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: #9a9aa5;
-}
-
-.lumen-cost-tip-suggestion {
-  color: var(--lm-cost-text);
-}
-
-.lumen-cost-apply {
-  margin-top: 6px;
-  padding: 0;
-  font-weight: 600;
-}
-
-.lumen-cost-coach-footnote {
-  font-size: 10px;
-  line-height: 1.4;
-  color: #6f6f79;
-  margin: 10px 0 0;
-}
-
-.lumen-cost-coach-dot,
+.lumen-cost-coach-footnote,
 .lumen-cost-coach-label,
 .lumen-cost-coach-model,
 .lumen-cost-coach-state {
