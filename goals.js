@@ -18,11 +18,9 @@ const LumenGoals = (() => {
     },
   ];
 
-  // Everything is opt-OUT by default: a fresh user starts with every AI use
-  // case and every protected goal switched on, and trims down what doesn't
-  // apply (rather than having to opt in). These must mirror the option lists in
-  // the onboarding cards / popover so "select all" and "the defaults" match.
-  const DEFAULT_USE_CASES = [
+  // Use-case chips: most start on (opt-out); Coding and Admin start off — users
+  // who need them can switch on. Must stay in sync with onboarding / popover lists.
+  const ALL_USE_CASES = [
     "Research",
     "Writing",
     "Coding",
@@ -31,6 +29,9 @@ const LumenGoals = (() => {
     "Creative work",
     "Work tasks",
   ];
+  const DEFAULT_USE_CASES = ALL_USE_CASES.filter(
+    (useCase) => useCase !== "Coding" && useCase !== "Admin"
+  );
   const DEFAULT_PROTECTED_GOALS = [
     "Write my own first drafts",
     "Make my own decisions",
@@ -278,6 +279,14 @@ const LumenGoals = (() => {
     return [...DEFAULT_PROTECTED_GOALS];
   }
 
+  function listDefaultUseCases() {
+    return [...DEFAULT_USE_CASES];
+  }
+
+  function listAllUseCases() {
+    return [...ALL_USE_CASES];
+  }
+
   function splitProtectedGoals(protectedGoals = []) {
     const presetSet = new Set(DEFAULT_PROTECTED_GOALS);
     return {
@@ -502,6 +511,8 @@ const LumenGoals = (() => {
     setUseCases,
     removeProtectedGoal,
     listPresetGoals,
+    listDefaultUseCases,
+    listAllUseCases,
     splitProtectedGoals,
     mergeProtectedGoals,
     addTaskTypeExemption,

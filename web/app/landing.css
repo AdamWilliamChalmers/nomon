@@ -49,6 +49,7 @@ html:has(.lumen-landing) {
 }
 
 .lumen-landing {
+  position: relative;
   background: var(--ll-paper);
   color: var(--ll-body);
   font-family: var(--ll-sans);
@@ -56,6 +57,11 @@ html:has(.lumen-landing) {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  /* Soft luminous atmosphere from mockups — white + cost-blue only, never aurora rose */
+  background-image:
+    radial-gradient(1000px 420px at 78% -8%, rgba(255, 255, 255, 0.07), transparent 60%),
+    radial-gradient(820px 480px at 8% 108%, rgba(91, 155, 213, 0.055), transparent 60%);
+  background-attachment: fixed;
 }
 
 .lumen-landing *,
@@ -298,11 +304,31 @@ html:has(.lumen-landing) {
    Hero
 ———————————————————————————————————————— */
 .lumen-landing .hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
   gap: 64px;
   align-items: center;
   padding: 88px 0 96px;
+  overflow: hidden;
+}
+.lumen-landing .hero::before {
+  content: "";
+  position: absolute;
+  top: -180px;
+  left: 8%;
+  width: min(720px, 90vw);
+  height: 520px;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.14), transparent 55%),
+    radial-gradient(circle at 70% 55%, rgba(91, 155, 213, 0.11), transparent 55%);
+  filter: blur(22px);
+  pointer-events: none;
+  z-index: 0;
+}
+.lumen-landing .hero > * {
+  position: relative;
+  z-index: 1;
 }
 .lumen-landing .hero h1 {
   font-family: var(--ll-serif);
@@ -935,8 +961,29 @@ html:has(.lumen-landing) {
    Closing + footer
 ———————————————————————————————————————— */
 .lumen-landing .closing {
+  position: relative;
   text-align: center;
   padding: 110px 0;
+  overflow: hidden;
+}
+.lumen-landing .closing::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 520px;
+  height: 360px;
+  transform: translate(-50%, -55%);
+  background:
+    radial-gradient(circle at 40% 45%, rgba(255, 255, 255, 0.1), transparent 60%),
+    radial-gradient(circle at 62% 58%, rgba(91, 155, 213, 0.08), transparent 55%);
+  filter: blur(28px);
+  pointer-events: none;
+  z-index: 0;
+}
+.lumen-landing .closing > * {
+  position: relative;
+  z-index: 1;
 }
 .lumen-landing .closing .mark-anim {
   margin: 0 auto 34px;

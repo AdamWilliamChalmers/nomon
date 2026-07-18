@@ -240,30 +240,96 @@ const LumenWidget = (() => {
     document.getElementById("lumen-fab-rail")?.remove();
     document.querySelectorAll("#lumen-popover .lumen-fab-pin").forEach((el) => el.remove());
     ensurePillarTabs();
+    migrateModeStripCompact();
     fab.classList.remove("lumen-fab--open");
     fab.title = "Nomon — drag to move, click to open";
   }
 
+  function migrateModeStripCompact() {
+    const strip = document.getElementById("lumen-mode-strip");
+    const mini = document.querySelector("#lumen-popover .lumen-popover-mini");
+    const scroll = document.querySelector("#lumen-popover .lumen-popover-scroll");
+    if (
+      strip &&
+      mini &&
+      scroll &&
+      mini.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_PRECEDING
+    ) {
+      // Mode was above scores — flip so scores lead.
+      scroll.insertBefore(mini, strip);
+      const statRow = document.querySelector("#lumen-popover .lumen-popover-stat-row");
+      const statsEmpty = document.getElementById("lumen-stats-empty");
+      if (statRow) scroll.insertBefore(statRow, strip);
+      if (statsEmpty) scroll.insertBefore(statsEmpty, strip);
+    }
+    if (strip && !strip.querySelector(".lumen-mode-row")) {
+      const seg = document.getElementById("lumen-mode-seg");
+      const label = strip.querySelector(":scope > .lumen-popover-label");
+      if (seg && label) {
+        const row = document.createElement("div");
+        row.className = "lumen-mode-row";
+        label.classList.add("lumen-mode-label");
+        label.textContent = "Mode";
+        strip.insertBefore(row, strip.firstChild);
+        row.appendChild(label);
+        row.appendChild(seg);
+      }
+    }
+    const label =
+      strip?.querySelector(".lumen-mode-label") ||
+      strip?.querySelector(":scope > .lumen-popover-label");
+    if (label) label.textContent = "Mode";
+    const guard = document.getElementById("lumen-guard-toggle");
+    if (guard) {
+      guard.title =
+        "Brief hold before send when a prompt clearly conflicts with a protected goal. Always bypassable.";
+      guard.querySelector(".lumen-guard-toggle-meta")?.remove();
+      const nestedTitle = guard.querySelector(".lumen-guard-toggle-text .lumen-guard-toggle-title");
+      if (nestedTitle && !guard.querySelector(":scope > .lumen-guard-toggle-title")) {
+        guard.insertBefore(nestedTitle, guard.firstChild);
+        guard.querySelector(".lumen-guard-toggle-text")?.remove();
+      }
+    }
+    const hint = document.getElementById("lumen-mode-hint");
+    if (hint && guard && hint.nextElementSibling === guard) {
+      guard.insertAdjacentElement("afterend", hint);
+    }
+  }
+
   function ensurePillarTabs() {
-    const popover = document.getElementById("lumen-popover");
-    const mirror = document.getElementById("lumen-pillar-mirror");
-    if (!popover || !mirror || document.getElementById("lumen-pillar-tabs")) return;
-    const tabs = document.createElement("div");
-    tabs.id = "lumen-pillar-tabs";
-    tabs.className = "lumen-pillar-tabs";
-    tabs.setAttribute("role", "tablist");
-    tabs.setAttribute("aria-label", "Nomon pillars");
-    tabs.innerHTML = `
+    const chrome = document.querySelector("#lumen-popover .lumen-popover-chrome");
+    const head = chrome?.querySelector(".lumen-popover-head") || document.querySelector("#lumen-popover .lumen-popover-head");
+    if (!head) return;
+    let tabs = document.getElementById("lumen-pillar-tabs");
+    if (!tabs) {
+      tabs = document.createElement("div");
+      tabs.id = "lumen-pillar-tabs";
+      tabs.className = "lumen-pillar-tabs";
+      tabs.setAttribute("role", "tablist");
+      tabs.setAttribute("aria-label", "Nomon pillars");
+      tabs.innerHTML = `
       <button type="button" class="lumen-pillar-tab" data-pillar="mirror" role="tab" aria-selected="true">Mirror</button>
       <button type="button" class="lumen-pillar-tab" data-pillar="badge" role="tab" aria-selected="false">Badge</button>
       <button type="button" class="lumen-pillar-tab" data-pillar="cost" role="tab" aria-selected="false">Cost</button>
     `;
-    mirror.parentNode.insertBefore(tabs, mirror);
+    }
+    // Keep tabs in the sticky chrome, directly under the header.
+    if (tabs.previousElementSibling !== head) {
+      head.insertAdjacentElement("afterend", tabs);
+    }
   }
 
   function ensureRoot() {
     ensureHideStyles();
-    const existing = document.getElementById("lumen-root");
+    let existing = document.getElementById("lumen-root");
+    // Rebuild if this tab still has a pre–mode-seg popover (extension update without reload).
+    if (existing && !document.getElementById("lumen-mode-seg")) {
+      existing.remove();
+      existing = null;
+      reconsiderEventsBound = false;
+      guardHoldEventsBound = false;
+      tourEventsBound = false;
+    }
     if (existing) {
       migrateFabMarkup();
       ensureReconsiderShell();
@@ -292,192 +358,202 @@ const LumenWidget = (() => {
         </span>
       </div>
       <div id="lumen-popover">
-        <div class="lumen-popover-head">
-          <span class="lumen-popover-mark" aria-hidden="true">
-            <span class="lumen-dot lumen-dot-green" style="--rx:-7px;--ry:-4px"></span>
-            <span class="lumen-dot lumen-dot-amber" style="--rx:0;--ry:-4px"></span>
-            <span class="lumen-dot lumen-dot-purple" style="--rx:7px;--ry:-4px"></span>
-            <span class="lumen-dot lumen-dot-blue" style="--rx:0;--ry:4px"></span>
-          </span>
-          <div class="lumen-popover-head-text">
-            <div class="lumen-popover-title">Nomon</div>
-            <div class="lumen-popover-sub">Today · across all AIs</div>
-          </div>
-          <button id="lumen-pause-toggle" class="lumen-popover-pause" type="button">Pause</button>
-        </div>
-
-        <div class="lumen-popover-mini" aria-label="Today's stats">
-          <div class="lumen-popover-mini-stat" title="Your prompts today across ChatGPT, Gemini, Claude, and other connected tools">
-            <div class="lumen-popover-mini-v" id="lumen-stat-messages">0</div>
-            <div class="lumen-popover-mini-l">Messages</div>
-          </div>
-          <div class="lumen-popover-mini-stat" title="Whole tasks you asked AI to do from scratch">
-            <div class="lumen-popover-mini-v" id="lumen-stat-handoff">0</div>
-            <div class="lumen-popover-mini-l">Hand-offs</div>
-          </div>
-          <div class="lumen-popover-mini-stat" title="Prompts that conflicted with a goal you set">
-            <div class="lumen-popover-mini-v" id="lumen-stat-mismatch">0</div>
-            <div class="lumen-popover-mini-l">Mismatch</div>
-          </div>
-        </div>
-        <div class="lumen-popover-stat-row lumen-hidden" aria-hidden="true">
-          <div class="lumen-popover-stat"><span>Loops</span><span class="lumen-popover-stat-value" id="lumen-stat-loop">0</span></div>
-          <div class="lumen-popover-stat"><span>Drift</span><span class="lumen-popover-stat-value" id="lumen-stat-drift">0</span></div>
-          <div class="lumen-popover-stat"><span>Depth</span><span class="lumen-popover-stat-value" id="lumen-stat-depth">0</span></div>
-        </div>
-        <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Nomon fills this in as you chat.</p>
-        <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Set up Nomon →</button>
-        <button type="button" class="lumen-popover-howto" id="lumen-tutorial-cta">How it works</button>
-
-        <div id="lumen-pillar-tabs" class="lumen-pillar-tabs" role="tablist" aria-label="Nomon pillars">
-          <button type="button" class="lumen-pillar-tab" data-pillar="mirror" role="tab" aria-selected="true">Mirror</button>
-          <button type="button" class="lumen-pillar-tab" data-pillar="badge" role="tab" aria-selected="false">Badge</button>
-          <button type="button" class="lumen-pillar-tab" data-pillar="cost" role="tab" aria-selected="false">Cost</button>
-        </div>
-
-        <!-- MIRROR -->
-        <div class="lumen-pillar-block" id="lumen-pillar-mirror" data-pillar-panel="mirror" role="tabpanel">
-          <div class="lumen-pillar-block-head">
-            <span class="lumen-pillar-block-glyph" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M9 21c0-3 6-3 6 0"/></svg>
+        <div class="lumen-popover-chrome">
+          <div class="lumen-popover-head">
+            <span class="lumen-popover-mark" aria-hidden="true">
+              <span class="lumen-dot lumen-dot-green" style="--rx:-7px;--ry:-4px"></span>
+              <span class="lumen-dot lumen-dot-amber" style="--rx:0;--ry:-4px"></span>
+              <span class="lumen-dot lumen-dot-purple" style="--rx:7px;--ry:-4px"></span>
+              <span class="lumen-dot lumen-dot-blue" style="--rx:0;--ry:4px"></span>
             </span>
-            <span class="lumen-pillar-block-name">Mirror</span>
-            <span class="lumen-pillar-block-tag" id="lumen-mirror-tag">Active mode</span>
+            <div class="lumen-popover-head-text">
+              <div class="lumen-popover-title">Nomon</div>
+              <div class="lumen-popover-sub">Today · across all AIs</div>
+            </div>
+            <button id="lumen-pause-toggle" class="lumen-popover-pause" type="button">Pause</button>
           </div>
-          <label class="lumen-popover-label">Visibility</label>
-          <select id="lumen-mode-select" class="lumen-popover-select">
-            <option value="ambient">Ambient — subtle inline cues only</option>
-            <option value="ghost">Ghost — weekly digest only</option>
-            <option value="active">Active — inline cues + reflection cards</option>
-            <option value="guard">Guard — optional hold on goal conflicts</option>
-          </select>
-          <p class="lumen-popover-hint" id="lumen-mode-hint"></p>
-          <label class="lumen-popover-label">Protected goals · <span class="lumen-popover-label-accent">on by default</span></label>
-          <p class="lumen-popover-hint" id="lumen-goals-hint">Tap to turn off what doesn't apply.</p>
-          <div class="lumen-popover-usecases" id="lumen-goal-chips">
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Write my own first drafts" /><span>Write my own first drafts</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Make my own decisions" /><span>Make my own decisions</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Understand the code, not just copy it" /><span>Understand my code</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Do my own analysis and reasoning" /><span>Do my own analysis</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Think independently on strategy" /><span>Think independently</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Form my own arguments before asking" /><span>Form my own arguments</span></label>
-          </div>
-          <label class="lumen-popover-label" style="margin-top:8px;">Add your own</label>
-          <p class="lumen-popover-hint" id="lumen-custom-goals-hint">Saved goals apply on every AI where Nomon runs.</p>
-          <div class="lumen-popover-usecases" id="lumen-custom-goals"></div>
-          <div class="lumen-custom-goal-add-row">
-            <input id="lumen-custom-goal-input" class="lumen-popover-focus" type="text" placeholder="e.g. Write my own emails" />
-            <button type="button" id="lumen-custom-goal-add" class="lumen-custom-goal-add-btn">Add</button>
-          </div>
-          <p class="lumen-popover-hint lumen-hidden" id="lumen-custom-goals-status" role="status" aria-live="polite"></p>
-          <label class="lumen-popover-label">What you use AI for</label>
-          <div class="lumen-popover-usecases" id="lumen-usecases">
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Research" /><span>Research</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Writing" /><span>Writing</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Coding" /><span>Coding</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Learning" /><span>Learning</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Admin" /><span>Admin</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Creative work" /><span>Creative work</span></label>
-            <label class="lumen-usecase-chip"><input type="checkbox" value="Work tasks" /><span>Work tasks</span></label>
+
+          <div id="lumen-pillar-tabs" class="lumen-pillar-tabs" role="tablist" aria-label="Nomon pillars">
+            <button type="button" class="lumen-pillar-tab" data-pillar="mirror" role="tab" aria-selected="true">Mirror</button>
+            <button type="button" class="lumen-pillar-tab" data-pillar="badge" role="tab" aria-selected="false">Badge</button>
+            <button type="button" class="lumen-pillar-tab" data-pillar="cost" role="tab" aria-selected="false">Cost</button>
           </div>
         </div>
 
-        <!-- BADGE -->
-        <div class="lumen-pillar-block" id="lumen-pillar-badge" data-pillar-panel="badge" role="tabpanel">
-          <div class="lumen-pillar-block-head">
-            <span class="lumen-pillar-block-glyph" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6z"/><path d="M9 12l2 2 4-4"/></svg>
-            </span>
-            <span class="lumen-pillar-block-name">Badge</span>
-            <span class="lumen-pillar-block-tag" id="lumen-badge-tag">0 this week</span>
+        <div class="lumen-popover-scroll">
+          <div class="lumen-popover-mini" aria-label="Today's stats">
+            <div class="lumen-popover-mini-stat" title="Your prompts today across ChatGPT, Gemini, Claude, and other connected tools">
+              <div class="lumen-popover-mini-v" id="lumen-stat-messages">0</div>
+              <div class="lumen-popover-mini-l">Messages</div>
+            </div>
+            <div class="lumen-popover-mini-stat" title="Whole tasks you asked AI to do from scratch">
+              <div class="lumen-popover-mini-v" id="lumen-stat-handoff">0</div>
+              <div class="lumen-popover-mini-l">Hand-offs</div>
+            </div>
+            <div class="lumen-popover-mini-stat" title="Prompts that conflicted with a goal you set">
+              <div class="lumen-popover-mini-v" id="lumen-stat-mismatch">0</div>
+              <div class="lumen-popover-mini-l">Mismatch</div>
+            </div>
           </div>
-          <p class="lumen-popover-hint">Disclosures you've created — tap “Disclose” under any long reply to add one.</p>
-          <p class="lumen-popover-hint lumen-hidden" id="lumen-attestations-empty">No disclosures yet.</p>
-          <div class="lumen-attestations" id="lumen-attestations"></div>
-          <button type="button" class="lumen-attest-recopy lumen-hidden" id="lumen-attest-recopy">Re-copy latest</button>
-        </div>
+          <div class="lumen-popover-stat-row lumen-hidden" aria-hidden="true">
+            <div class="lumen-popover-stat"><span>Loops</span><span class="lumen-popover-stat-value" id="lumen-stat-loop">0</span></div>
+            <div class="lumen-popover-stat"><span>Drift</span><span class="lumen-popover-stat-value" id="lumen-stat-drift">0</span></div>
+            <div class="lumen-popover-stat"><span>Depth</span><span class="lumen-popover-stat-value" id="lumen-stat-depth">0</span></div>
+          </div>
+          <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Nomon fills this in as you chat.</p>
 
-        <!-- COST -->
-        <div class="lumen-pillar-block" id="lumen-pillar-cost" data-pillar-panel="cost" role="tabpanel">
-          <div class="lumen-pillar-block-head">
-            <span class="lumen-pillar-block-glyph" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 6c-1-1.5-3-2-5-2-3 0-5 1.5-5 4s2 3 5 3.5 5 1 5 3.5-2 4-5 4c-2 0-4-.5-5-2"/></svg>
-            </span>
-            <span class="lumen-pillar-block-name">Cost</span>
-            <span class="lumen-pillar-block-tag lumen-pillar-block-tag--cost" id="lumen-cost-tag">Off</span>
+          <div class="lumen-mode-strip" id="lumen-mode-strip">
+            <div class="lumen-mode-row">
+              <label class="lumen-popover-label lumen-mode-label">Mode</label>
+              <div class="lumen-mode-seg" id="lumen-mode-seg" role="radiogroup" aria-label="Nomon mode">
+                <button type="button" class="lumen-mode-seg-btn" data-mode="ambient" role="radio" aria-checked="false" title="Subtle inline cues only">Ambient</button>
+                <button type="button" class="lumen-mode-seg-btn" data-mode="ghost" role="radio" aria-checked="false" title="Weekly digest only — nothing in-session">Ghost</button>
+                <button type="button" class="lumen-mode-seg-btn" data-mode="active" role="radio" aria-checked="true" title="Inline cues plus reflection cards when it matters">Active</button>
+              </div>
+            </div>
+            <select id="lumen-mode-select" class="lumen-popover-select lumen-sr-only" aria-hidden="true" tabindex="-1">
+              <option value="ambient">Ambient</option>
+              <option value="ghost">Ghost</option>
+              <option value="active">Active</option>
+              <option value="guard">Guard</option>
+            </select>
+            <button
+              type="button"
+              class="lumen-guard-toggle"
+              id="lumen-guard-toggle"
+              aria-pressed="false"
+              title="Brief hold before send when a prompt clearly conflicts with a protected goal. Always bypassable."
+            >
+              <span class="lumen-guard-toggle-title">Guard</span>
+              <span class="lumen-guard-toggle-switch" aria-hidden="true"></span>
+            </button>
+            <p class="lumen-popover-hint lumen-hidden" id="lumen-mode-hint"></p>
           </div>
-          <label class="lumen-popover-label">Coach</label>
-          <div class="lumen-cost-seg" id="lumen-cost-seg" role="group" aria-label="Cost coach level">
-            <button type="button" class="lumen-cost-seg-btn" data-cost="off">Off</button>
-            <button type="button" class="lumen-cost-seg-btn" data-cost="subtle">Quiet</button>
-            <button type="button" class="lumen-cost-seg-btn" data-cost="full">Loud</button>
+
+          <!-- MIRROR -->
+          <div class="lumen-pillar-block" id="lumen-pillar-mirror" data-pillar-panel="mirror" role="tabpanel">
+            <label class="lumen-popover-label">Protected goals · <span class="lumen-popover-label-accent">on by default</span></label>
+            <p class="lumen-popover-hint" id="lumen-goals-hint">Tap to turn off what doesn't apply.</p>
+            <div class="lumen-popover-usecases" id="lumen-goal-chips">
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Write my own first drafts" /><span>Write my own first drafts</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Make my own decisions" /><span>Make my own decisions</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Understand the code, not just copy it" /><span>Understand my code</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Do my own analysis and reasoning" /><span>Do my own analysis</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Think independently on strategy" /><span>Think independently</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Form my own arguments before asking" /><span>Form my own arguments</span></label>
+            </div>
+            <label class="lumen-popover-label" style="margin-top:8px;">Add your own</label>
+            <p class="lumen-popover-hint" id="lumen-custom-goals-hint">Saved goals apply on every AI where Nomon runs.</p>
+            <div class="lumen-popover-usecases" id="lumen-custom-goals"></div>
+            <div class="lumen-custom-goal-add-row">
+              <input id="lumen-custom-goal-input" class="lumen-popover-focus" type="text" placeholder="e.g. Write my own emails" />
+              <button type="button" id="lumen-custom-goal-add" class="lumen-custom-goal-add-btn">Add</button>
+            </div>
+            <p class="lumen-popover-hint lumen-hidden" id="lumen-custom-goals-status" role="status" aria-live="polite"></p>
+            <label class="lumen-popover-label">What you use AI for</label>
+            <div class="lumen-popover-usecases" id="lumen-usecases">
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Research" /><span>Research</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Writing" /><span>Writing</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Coding" /><span>Coding</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Learning" /><span>Learning</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Admin" /><span>Admin</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Creative work" /><span>Creative work</span></label>
+              <label class="lumen-usecase-chip"><input type="checkbox" value="Work tasks" /><span>Work tasks</span></label>
+            </div>
           </div>
-          <select id="lumen-cost-select" class="lumen-popover-select lumen-sr-only" aria-hidden="true" tabindex="-1">
-            <option value="off">Off</option>
-            <option value="subtle">On · quiet tip</option>
-            <option value="full">On · tips + details</option>
-          </select>
-          <p class="lumen-popover-hint" id="lumen-cost-hint">Off by default. Quiet = spend only. Loud = tips + savings.</p>
-          <div id="lumen-cost-auto-row" class="lumen-cost-auto-row lumen-hidden">
+
+          <!-- BADGE -->
+          <div class="lumen-pillar-block" id="lumen-pillar-badge" data-pillar-panel="badge" role="tabpanel">
+            <div class="lumen-pillar-block-head">
+              <span class="lumen-pillar-block-tag" id="lumen-badge-tag">0 this week</span>
+            </div>
+            <p class="lumen-popover-hint">Disclosures you've created — tap “Disclose” under any long reply to add one.</p>
+            <p class="lumen-popover-hint lumen-hidden" id="lumen-attestations-empty">No disclosures yet.</p>
+            <div class="lumen-attestations" id="lumen-attestations"></div>
+            <button type="button" class="lumen-attest-recopy lumen-hidden" id="lumen-attest-recopy">Re-copy latest</button>
+          </div>
+
+          <!-- COST -->
+          <div class="lumen-pillar-block" id="lumen-pillar-cost" data-pillar-panel="cost" role="tabpanel">
+            <div class="lumen-pillar-block-head">
+              <span class="lumen-pillar-block-tag lumen-pillar-block-tag--cost" id="lumen-cost-tag">Off</span>
+            </div>
+            <label class="lumen-popover-label">Coach</label>
+            <div class="lumen-cost-seg" id="lumen-cost-seg" role="group" aria-label="Cost coach level">
+              <button type="button" class="lumen-cost-seg-btn" data-cost="off">Off</button>
+              <button type="button" class="lumen-cost-seg-btn" data-cost="subtle">Quiet</button>
+              <button type="button" class="lumen-cost-seg-btn" data-cost="full">Loud</button>
+            </div>
+            <select id="lumen-cost-select" class="lumen-popover-select lumen-sr-only" aria-hidden="true" tabindex="-1">
+              <option value="off">Off</option>
+              <option value="subtle">On · quiet tip</option>
+              <option value="full">On · tips + details</option>
+            </select>
+            <p class="lumen-popover-hint" id="lumen-cost-hint">Off by default. Quiet = spend only. Loud = tips + savings.</p>
+            <div id="lumen-cost-auto-row" class="lumen-cost-auto-row lumen-hidden">
+              <label class="lumen-popover-check">
+                <input type="checkbox" id="lumen-cost-auto" />
+                Auto switch · apply recommended model
+              </label>
+              <p class="lumen-popover-hint" id="lumen-cost-auto-hint">When Cost coach suggests Instant / Haiku / Flash-Lite / etc., switch the host picker automatically and log the save.</p>
+            </div>
+            <button type="button" class="lumen-popover-disc" id="lumen-cost-savings-cta"><span>Savings over time</span><span aria-hidden="true">›</span></button>
+            <p class="lumen-popover-hint lumen-hidden" id="lumen-cost-savings-blurb"></p>
+          </div>
+
+          <details class="lumen-popover-more">
+            <summary>Charts &amp; this week</summary>
+            <label class="lumen-popover-label" id="lumen-session-chart-label" title="Each bar is one message today">Today's messages</label>
+            <div class="lumen-popover-sparkline" id="lumen-sparkline"></div>
+            <label class="lumen-popover-label" title="Your engagement across recent days">Recent days</label>
+            <div class="lumen-popover-sparkline" id="lumen-trend-sparkline"></div>
+            <p class="lumen-popover-hint lumen-hidden" id="lumen-trend-empty">A few days of use and your trend shows up here.</p>
+            <div class="lumen-popover-title">Why last flag</div>
+            <p class="lumen-popover-why" id="lumen-last-why">No flags yet this session.</p>
+            <div class="lumen-popover-title" title="How you tend to work in each AI tool">Your AI profile</div>
+            <div class="lumen-profile" id="lumen-profile"></div>
+            <div class="lumen-popover-title">This week</div>
+            <div class="lumen-popover-digest" id="lumen-digest"></div>
+            <p class="lumen-popover-hint">Drag the Nomon pill to move it out of the way.</p>
+            <button class="lumen-popover-reset" id="lumen-reset-session">Reset session</button>
+          </details>
+
+          <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Set up Nomon →</button>
+          <button type="button" class="lumen-popover-howto" id="lumen-tutorial-cta">How it works</button>
+
+          <button
+            type="button"
+            id="lumen-privacy-toggle"
+            class="lumen-privacy-toggle"
+            aria-expanded="false"
+            aria-controls="lumen-privacy-panel"
+          >
+            <span>Privacy &amp; data</span>
+            <span class="lumen-privacy-toggle-chevron" aria-hidden="true">›</span>
+          </button>
+          <div id="lumen-privacy-panel" class="lumen-privacy-panel lumen-hidden">
+            <p class="lumen-popover-hint">Scoring runs locally. Turn off anything below you don't want sent to Nomon's servers.</p>
+            <p class="lumen-popover-hint">Cost coach also stays on-device — it reads your draft for token estimates but never sends it for cost analysis.</p>
             <label class="lumen-popover-check">
-              <input type="checkbox" id="lumen-cost-auto" />
-              Auto switch · apply recommended model
+              <input type="checkbox" id="lumen-llm-judge" />
+              LLM second opinion · catches subtle hand-offs
             </label>
-            <p class="lumen-popover-hint" id="lumen-cost-auto-hint">When Cost coach suggests Instant / Haiku / Flash-Lite / etc., switch the host picker automatically and log the save.</p>
-          </div>
-          <button type="button" class="lumen-popover-disc" id="lumen-cost-savings-cta"><span>Savings over time</span><span aria-hidden="true">›</span></button>
-          <p class="lumen-popover-hint lumen-hidden" id="lumen-cost-savings-blurb"></p>
-        </div>
-
-        <details class="lumen-popover-more">
-          <summary>Charts &amp; this week</summary>
-          <label class="lumen-popover-label" id="lumen-session-chart-label" title="Each bar is one message today">Today's messages</label>
-          <div class="lumen-popover-sparkline" id="lumen-sparkline"></div>
-          <label class="lumen-popover-label" title="Your engagement across recent days">Recent days</label>
-          <div class="lumen-popover-sparkline" id="lumen-trend-sparkline"></div>
-          <p class="lumen-popover-hint lumen-hidden" id="lumen-trend-empty">A few days of use and your trend shows up here.</p>
-          <div class="lumen-popover-title">Why last flag</div>
-          <p class="lumen-popover-why" id="lumen-last-why">No flags yet this session.</p>
-          <div class="lumen-popover-title" title="How you tend to work in each AI tool">Your AI profile</div>
-          <div class="lumen-profile" id="lumen-profile"></div>
-          <div class="lumen-popover-title">This week</div>
-          <div class="lumen-popover-digest" id="lumen-digest"></div>
-          <p class="lumen-popover-hint">Drag the Nomon pill to move it out of the way.</p>
-          <button class="lumen-popover-reset" id="lumen-reset-session">Reset session</button>
-        </details>
-
-        <button
-          type="button"
-          id="lumen-privacy-toggle"
-          class="lumen-privacy-toggle"
-          aria-expanded="false"
-          aria-controls="lumen-privacy-panel"
-        >
-          <span>Privacy &amp; data</span>
-          <span class="lumen-privacy-toggle-chevron" aria-hidden="true">›</span>
-        </button>
-        <div id="lumen-privacy-panel" class="lumen-privacy-panel lumen-hidden">
-          <p class="lumen-popover-hint">Scoring runs locally. Turn off anything below you don't want sent to Nomon's servers.</p>
-          <p class="lumen-popover-hint">Cost coach also stays on-device — it reads your draft for token estimates but never sends it for cost analysis.</p>
-          <label class="lumen-popover-check">
-            <input type="checkbox" id="lumen-llm-judge" />
-            LLM second opinion · catches subtle hand-offs
-          </label>
-          <p class="lumen-popover-hint" id="lumen-judge-hint">On by default · borderline prompts only · cached per message · turn off to stay fully on-device</p>
-          <label class="lumen-popover-check">
-            <input type="checkbox" id="lumen-study-participant" />
-            Calibration study — post-session survey
-          </label>
-          <p class="lumen-popover-hint">On by default · opens a short survey when you leave a tab · turn off any time</p>
-          <label class="lumen-popover-check">
-            <input type="checkbox" id="lumen-share-data" />
-            Share anonymised session summary
-          </label>
-          <p class="lumen-popover-hint">On by default · daily counts and feedback snippets only, not full chats</p>
-          <div id="lumen-advanced" class="lumen-advanced lumen-hidden">
-            <label class="lumen-popover-label">Backend URL (for judge / calibration / sharing)</label>
-            <input id="lumen-backend-input" class="lumen-popover-focus" type="text" placeholder="http://localhost:3000" />
-            <p class="lumen-popover-hint">Developer setting. Set localStorage <code>lumenDev=1</code> to show this.</p>
+            <p class="lumen-popover-hint" id="lumen-judge-hint">On by default · borderline prompts only · cached per message · turn off to stay fully on-device</p>
+            <label class="lumen-popover-check">
+              <input type="checkbox" id="lumen-study-participant" />
+              Calibration study — post-session survey
+            </label>
+            <p class="lumen-popover-hint">On by default · opens a short survey when you leave a tab · turn off any time</p>
+            <label class="lumen-popover-check">
+              <input type="checkbox" id="lumen-share-data" />
+              Share anonymised session summary
+            </label>
+            <p class="lumen-popover-hint">On by default · daily counts and feedback snippets only, not full chats</p>
+            <div id="lumen-advanced" class="lumen-advanced lumen-hidden">
+              <label class="lumen-popover-label">Backend URL (for judge / calibration / sharing)</label>
+              <input id="lumen-backend-input" class="lumen-popover-focus" type="text" placeholder="http://localhost:3000" />
+              <p class="lumen-popover-hint">Developer setting. Set localStorage <code>lumenDev=1</code> to show this.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -540,7 +616,7 @@ const LumenWidget = (() => {
           </div>
           <div class="lumen-onboarding-step" data-step="1">
             <h2>Set up Nomon</h2>
-            <p>What do you use AI for? These are all on by default — switch off anything that doesn't fit.</p>
+            <p>What do you use AI for? Most start on — Coding and Admin are off until you need them. Switch anything else that doesn't fit.</p>
             <div class="lumen-onboarding-options" id="lumen-use-cases">
               <label class="lumen-onboarding-option"><input type="checkbox" value="Research" /><span>Research</span></label>
               <label class="lumen-onboarding-option"><input type="checkbox" value="Writing" /><span>Writing</span></label>
@@ -670,7 +746,7 @@ const LumenWidget = (() => {
     container.innerHTML = customGoals
       .map(
         (goal) => `
-      <label class="lumen-usecase-chip">
+      <label class="lumen-usecase-chip lumen-usecase-chip--on" aria-pressed="true">
         <input type="checkbox" value="${escapeHtml(goal)}" checked />
         <span>${escapeHtml(goal)}</span>
       </label>`
@@ -702,12 +778,58 @@ const LumenWidget = (() => {
   function setModeSelectValue(select, mode) {
     if (!select) return;
     const normalized = LumenGoals.normalizeMode?.(mode) ?? mode;
-    if (select.value === normalized) return;
-    suppressModeSelectChange = true;
-    select.value = normalized;
-    queueMicrotask(() => {
-      suppressModeSelectChange = false;
+    if (select.value !== normalized) {
+      suppressModeSelectChange = true;
+      select.value = normalized;
+      queueMicrotask(() => {
+        suppressModeSelectChange = false;
+      });
+    }
+    syncModeSegUI(normalized);
+  }
+
+  function syncModeSegUI(mode) {
+    const normalized = LumenGoals.normalizeMode?.(mode) ?? mode ?? "active";
+    const presence = normalized === "guard" ? "active" : normalized;
+    document.querySelectorAll("#lumen-mode-seg .lumen-mode-seg-btn").forEach((btn) => {
+      const on = btn.getAttribute("data-mode") === presence;
+      btn.classList.toggle("on", on);
+      btn.setAttribute("aria-checked", on ? "true" : "false");
     });
+    const guardBtn = document.getElementById("lumen-guard-toggle");
+    if (guardBtn) {
+      const guardOn = normalized === "guard";
+      guardBtn.classList.toggle("lumen-guard-toggle--on", guardOn);
+      guardBtn.setAttribute("aria-pressed", guardOn ? "true" : "false");
+    }
+  }
+
+  function applyPresenceMode(mode) {
+    const next = mode === "ambient" || mode === "ghost" || mode === "active" ? mode : "active";
+    const current = LumenGoals.normalizeMode?.(LumenGoals.get().mode) ?? LumenGoals.get().mode;
+    // Segment picks always turn Guard off (even when Active was already highlighted under Guard).
+    if (next === current) {
+      syncModeSegUI(next);
+      return;
+    }
+    LumenGoals.save({ mode: next });
+    updateModeHint();
+    morphFabMark();
+    setModeSelectValue(document.getElementById("lumen-mode-select"), next);
+  }
+
+  function toggleGuardMode() {
+    const current = LumenGoals.normalizeMode?.(LumenGoals.get().mode) ?? LumenGoals.get().mode;
+    const next = current === "guard" ? "active" : "guard";
+    if (next === "guard" && !(LumenGoals.get().protectedGoals || []).length) {
+      updateModeHint();
+      // Still allow enabling — hint already warns about needing a goal.
+    }
+    LumenGoals.save({ mode: next });
+    updateModeHint();
+    morphFabMark();
+    syncModeSegUI(next);
+    setModeSelectValue(document.getElementById("lumen-mode-select"), next);
   }
 
   function bindGoalsSync() {
@@ -772,6 +894,19 @@ const LumenWidget = (() => {
       LumenGoals.save({ mode: next });
       updateModeHint();
       morphFabMark();
+      syncModeSegUI(next);
+    });
+
+    document.getElementById("lumen-mode-seg")?.addEventListener("click", (event) => {
+      const btn = event.target.closest?.(".lumen-mode-seg-btn[data-mode]");
+      if (!btn) return;
+      event.stopPropagation();
+      applyPresenceMode(btn.getAttribute("data-mode"));
+    });
+
+    document.getElementById("lumen-guard-toggle")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleGuardMode();
     });
 
     document.getElementById("lumen-pause-toggle")?.addEventListener("click", (event) => {
@@ -785,6 +920,7 @@ const LumenWidget = (() => {
 
     document.getElementById("lumen-goal-chips")?.addEventListener("change", () => {
       saveProtectedGoalsFromUI();
+      syncChipOnState("#lumen-goal-chips");
     });
 
     document.getElementById("lumen-custom-goals")?.addEventListener("change", (event) => {
@@ -795,6 +931,7 @@ const LumenWidget = (() => {
         protectedGoals: (LumenGoals.get().protectedGoals || []).filter((item) => item !== goal),
       });
       renderCustomGoalChips();
+      syncChipOnState("#lumen-custom-goals");
       showCustomGoalsStatus("Removed");
       updateModeHint();
     });
@@ -817,6 +954,7 @@ const LumenWidget = (() => {
         document.querySelectorAll("#lumen-usecases input:checked")
       ).map((input) => input.value);
       LumenGoals.setUseCases(useCases);
+      syncChipOnState("#lumen-usecases");
     });
 
     document.getElementById("lumen-setup-cta")?.addEventListener("click", (event) => {
@@ -1352,14 +1490,16 @@ const LumenWidget = (() => {
 
     // Pre-fill the cards from whatever is already saved, so reopening setup to
     // edit answers shows the user's current choices rather than a blank slate.
-    // On a fresh setup (nothing saved yet), every option starts selected — the
-    // user opts out by deselecting or adds their own via the text field.
+    // On a fresh setup, apply DEFAULT_USE_CASES (Coding + Admin start off).
     function prefill() {
       const goals = LumenGoals.get();
       const useCases = new Set(goals.useCases || []);
-      const useCasesDefaultAll = !goals.onboardingComplete && useCases.size === 0;
+      const useCasesDefault =
+        !goals.onboardingComplete && useCases.size === 0
+          ? new Set(LumenGoals.listDefaultUseCases?.() || [])
+          : useCases;
       document.querySelectorAll("#lumen-use-cases input").forEach((input) => {
-        input.checked = useCasesDefaultAll || useCases.has(input.value);
+        input.checked = useCasesDefault.has(input.value);
       });
       const presetValues = new Set(
         Array.from(document.querySelectorAll("#lumen-goal-presets input")).map((i) => i.value)
@@ -1489,7 +1629,7 @@ const LumenWidget = (() => {
       body: "A quiet mirror for how you work with AI. The label shows your engagement today across every AI you use — click the pill any time to open this panel.",
     },
     {
-      target: () => document.getElementById("lumen-mode-select"),
+      target: () => document.getElementById("lumen-mode-seg") || document.getElementById("lumen-mode-select"),
       title: "Modes — how present Nomon is",
       body: tourModesBody,
     },
@@ -1648,6 +1788,14 @@ const LumenWidget = (() => {
     }
   }
 
+  function syncChipOnState(rootSelector) {
+    document.querySelectorAll(`${rootSelector} .lumen-usecase-chip`).forEach((chip) => {
+      const input = chip.querySelector('input[type="checkbox"]');
+      chip.classList.toggle("lumen-usecase-chip--on", Boolean(input?.checked));
+      chip.setAttribute("aria-pressed", input?.checked ? "true" : "false");
+    });
+  }
+
   function syncSettingsUI() {
     const goals = LumenGoals.get();
     const modeSelect = document.getElementById("lumen-mode-select");
@@ -1658,6 +1806,7 @@ const LumenWidget = (() => {
     const backendInput = document.getElementById("lumen-backend-input");
     const base = LumenConfig.webAppUrl(goals.webAppUrl);
     if (modeSelect) setModeSelectValue(modeSelect, goals.mode);
+    else syncModeSegUI(goals.mode);
     if (costSelect) {
       costSelect.value = goals.costEnabled
         ? goals.costLevel === "full"
@@ -1673,17 +1822,24 @@ const LumenWidget = (() => {
 
     const storedGoals = goals.protectedGoals || [];
     // Before setup, empty storage means "all presets on" — same as the guided cards.
+    // Once the user has saved any list (including empty), respect that list.
     const goalsDefaultAll = !goals.onboardingComplete && storedGoals.length === 0;
     document.querySelectorAll("#lumen-goal-chips input").forEach((input) => {
       input.checked = goalsDefaultAll || storedGoals.includes(input.value);
     });
+    syncChipOnState("#lumen-goal-chips");
     renderCustomGoalChips();
 
     const useCases = new Set(goals.useCases || []);
-    const useCasesDefaultAll = !goals.onboardingComplete && useCases.size === 0;
+    const useCasesDefault =
+      !goals.onboardingComplete && useCases.size === 0
+        ? new Set(LumenGoals.listDefaultUseCases?.() || [])
+        : useCases;
     document.querySelectorAll("#lumen-usecases input").forEach((input) => {
-      input.checked = useCasesDefaultAll || useCases.has(input.value);
+      input.checked = useCasesDefault.has(input.value);
     });
+    syncChipOnState("#lumen-usecases");
+    syncChipOnState("#lumen-custom-goals");
 
     const setupCta = document.getElementById("lumen-setup-cta");
     if (setupCta) {
@@ -1730,12 +1886,6 @@ const LumenWidget = (() => {
   }
 
   function syncPillarTags() {
-    const mode = LumenGoals.normalizeMode?.(LumenGoals.get().mode) ?? LumenGoals.get().mode ?? "active";
-    const mirrorTag = document.getElementById("lumen-mirror-tag");
-    if (mirrorTag) {
-      const label = { ambient: "Ambient", active: "Active", ghost: "Ghost", guard: "Guard" }[mode] || "Active";
-      mirrorTag.textContent = `${label} mode`;
-    }
     const badgeTag = document.getElementById("lumen-badge-tag");
     if (badgeTag) {
       const n = (LumenSession.getAttestations?.() || []).length;
@@ -1762,16 +1912,20 @@ const LumenWidget = (() => {
   function updateModeHint() {
     const hint = document.getElementById("lumen-mode-hint");
     if (!hint) return;
+    // Keep Mode compact — only surface warnings; blurbs live on control titles.
     if (LumenGoals.isPaused()) {
       hint.textContent = "Paused — no tracking or signals until you resume.";
+      hint.classList.remove("lumen-hidden");
       return;
     }
     if (LumenGoals.isGuard() && !LumenGoals.get().protectedGoals.length) {
       hint.textContent =
-        "Guard mode needs at least one protected goal below — or switch to another mode.";
+        "Guard needs at least one protected goal below — or switch mode.";
+      hint.classList.remove("lumen-hidden");
       return;
     }
-    hint.textContent = LumenGoals.modeMeta().blurb;
+    hint.textContent = "";
+    hint.classList.add("lumen-hidden");
   }
 
   function ensureAttestationsPopover() {
@@ -2463,6 +2617,13 @@ const LumenWidget = (() => {
       panel.classList.toggle("lumen-hidden", !on);
       panel.hidden = !on;
     });
+
+    const modeStrip = document.getElementById("lumen-mode-strip");
+    if (modeStrip) {
+      const onMirror = pillar === "mirror";
+      modeStrip.classList.toggle("lumen-hidden", !onMirror);
+      modeStrip.hidden = !onMirror;
+    }
   }
 
   function syncFabLabelFromState() {
@@ -2518,12 +2679,6 @@ const LumenWidget = (() => {
     if (normalizeFabPillar(LumenGoals.get().fabPillar) !== next) {
       LumenGoals.save({ fabPillar: next });
     }
-    const targets = {
-      mirror: "lumen-pillar-mirror",
-      badge: "lumen-pillar-badge",
-      cost: "lumen-pillar-cost",
-    };
-    const targetId = targets[next] || "lumen-mode-select";
     if (!popoverOpen) {
       popoverOpen = true;
       renderPopover();
@@ -2539,7 +2694,8 @@ const LumenWidget = (() => {
     syncFabFocusUI();
     positionPopover();
     window.requestAnimationFrame(() => {
-      document.getElementById(targetId)?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+      positionPopover();
+      if (!tourActive) scrollPopoverToActivePillar();
     });
   }
 
@@ -2568,12 +2724,58 @@ const LumenWidget = (() => {
     const fab = document.getElementById("lumen-fab");
     const popover = document.getElementById("lumen-popover");
     if (!fab || !popover) return;
+
     const rect = fab.getBoundingClientRect();
     const gap = 12;
-    popover.style.top = "auto";
-    popover.style.bottom = `${window.innerHeight - rect.top + gap}px`;
-    popover.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
+    const edge = 12;
+    const cssMax = Math.min(560, window.innerHeight - edge * 2);
+    const width = popover.offsetWidth || 360;
+
+    // Measure with CSS max in play so height reflects the real panel.
+    popover.style.maxHeight = `${cssMax}px`;
+    const height = Math.min(popover.scrollHeight || cssMax, cssMax);
+
+    let right = Math.max(edge, window.innerWidth - rect.right);
+    const maxRight = Math.max(edge, window.innerWidth - width - edge);
+    if (right > maxRight) right = maxRight;
     popover.style.left = "auto";
+    popover.style.right = `${right}px`;
+
+    const spaceAbove = rect.top - edge - gap;
+    const spaceBelow = window.innerHeight - rect.bottom - edge - gap;
+
+    // Prefer above the FAB when there's room; otherwise below; else center.
+    if (spaceAbove >= Math.min(height, 220) && spaceAbove >= spaceBelow) {
+      const bottom = window.innerHeight - rect.top + gap;
+      const topEdge = window.innerHeight - bottom - height;
+      if (topEdge >= edge) {
+        popover.style.top = "auto";
+        popover.style.bottom = `${bottom}px`;
+        popover.style.maxHeight = `${Math.min(cssMax, spaceAbove)}px`;
+      } else {
+        // Would clip the top — pin to the viewport top and shrink to fit above FAB.
+        popover.style.top = `${edge}px`;
+        popover.style.bottom = "auto";
+        popover.style.maxHeight = `${Math.max(160, rect.top - gap - edge)}px`;
+      }
+    } else if (spaceBelow >= 160) {
+      popover.style.top = `${rect.bottom + gap}px`;
+      popover.style.bottom = "auto";
+      popover.style.maxHeight = `${Math.min(cssMax, spaceBelow)}px`;
+    } else {
+      const h = Math.min(cssMax, window.innerHeight - edge * 2);
+      popover.style.top = `${Math.max(edge, Math.round((window.innerHeight - h) / 2))}px`;
+      popover.style.bottom = "auto";
+      popover.style.maxHeight = `${h}px`;
+    }
+  }
+
+  function scrollPopoverToActivePillar() {
+    const scroll =
+      document.querySelector("#lumen-popover .lumen-popover-scroll") ||
+      document.getElementById("lumen-popover");
+    if (!scroll) return;
+    scroll.scrollTop = 0;
   }
 
   function renderSparkline(scores, barColors) {
@@ -2582,9 +2784,11 @@ const LumenWidget = (() => {
   }
 
   function signalBarColor(primary) {
-    const colors = signalColors();
+    // Popover charts sit on Ink chrome — always use the dark-host greys,
+    // regardless of whether ChatGPT/Claude behind the panel is light.
+    const colors = SIGNAL_COLORS_DARK;
     if (primary && colors[primary]) return colors[primary];
-    return isHostDark() ? "#8a8898" : "#d8d7e0";
+    return "#9a9aa5";
   }
 
   // Escape user-typed text (e.g. protected goals) before it goes into innerHTML.
@@ -3461,6 +3665,7 @@ const LumenWidget = (() => {
     if (popoverOpen) {
       renderPopover();
       popover.classList.add("lumen-popover--open");
+      positionPopover();
       // The toast has done its job once the pill is open; hide it but keep the
       // dot until the digest is actually scrolled into view.
       if (digestReady) {
@@ -3470,6 +3675,10 @@ const LumenWidget = (() => {
       // First time the pill is opened, run the highlight tour once (in context,
       // never a load-time interrupt).
       maybeAutoStartTour();
+      window.requestAnimationFrame(() => {
+        positionPopover();
+        if (!tourActive) scrollPopoverToActivePillar();
+      });
     } else {
       popover.classList.remove("lumen-popover--open");
       stopObservingDigestView();

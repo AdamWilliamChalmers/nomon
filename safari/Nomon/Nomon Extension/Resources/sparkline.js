@@ -1,10 +1,11 @@
 const LumenSparkline = (() => {
-  // Input is an engagement score (higher = more active evaluation).
+  // Nomon chrome is Ink (dark). Bars must read as light greys on near-black —
+  // the old dark-ink fills were for a light popover and read as empty shadows.
   function scoreColor(score) {
-    if (score == null) return "rgba(20, 20, 40, 0.12)";
+    if (score == null) return "rgba(242, 242, 244, 0.12)";
     const t = Math.max(0, Math.min(1, score / 100));
-    const alpha = 0.14 + t * 0.52;
-    return `rgba(26, 24, 34, ${alpha.toFixed(3)})`;
+    const alpha = 0.28 + t * 0.52;
+    return `rgba(242, 242, 244, ${alpha.toFixed(3)})`;
   }
 
   function render(scores, width = 120, height = 32, barColors = null) {
