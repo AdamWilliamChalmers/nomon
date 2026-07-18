@@ -9,13 +9,14 @@ const LumenCostLedger = (() => {
   const MAX_SPEND = 800;
   const chromeApi = globalThis.chrome;
 
-  /** @type {{ version: number, events: object[], spend: object[], emaOutputTokens: number|null, outputSampleCount: number }} */
+  /** @type {{ version: number, events: object[], spend: object[], emaOutputTokens: number|null, outputSampleCount: number, fitMemory: Record<string, object> }} */
   let cache = {
     version: 2,
     events: [],
     spend: [],
     emaOutputTokens: null,
     outputSampleCount: 0,
+    fitMemory: {},
   };
   let loaded = false;
   const listeners = new Set();
@@ -27,11 +28,16 @@ const LumenCostLedger = (() => {
       spend: [],
       emaOutputTokens: null,
       outputSampleCount: 0,
+      fitMemory: {},
     };
   }
 
   function normalize(data) {
     if (!data || typeof data !== "object") return emptyCache();
+    const fitMemory =
+      data.fitMemory && typeof data.fitMemory === "object" && !Array.isArray(data.fitMemory)
+        ? data.fitMemory
+        : {};
     return {
       version: 2,
       events: Array.isArray(data.events) ? data.events.slice(-MAX_EVENTS) : [],
@@ -41,6 +47,7 @@ const LumenCostLedger = (() => {
           ? Number(data.emaOutputTokens)
           : null,
       outputSampleCount: Math.max(0, Math.round(Number(data.outputSampleCount) || 0)),
+      fitMemory,
     };
   }
 
@@ -279,6 +286,49 @@ const LumenCostLedger = (() => {
     persist();
   }
 
+  /**
+   * On-device fit learning from tip outcomes. No network.
+   * outcome: accepted | dismissed
+   * fit: save | upgrade
+   */
+  function recordFitOutcome({ taskType, fit, outcome }) {
+    const key = String(taskType || "general").slice(0, 40);
+    const f = fit === "upgrade" ? "upgrade" : fit === "save" ? "save" : null;
+    const o = outcome === "accepted" || outcome === "dismissed" ? outcome : null;
+    if (!f || !o) return null;
+    if (!cache.fitMemory || typeof cache.fitMemory !== "object") cache.fitMemory = {};
+    const row = cache.fitMemory[key] || {
+      saveAccept: 0,
+      saveDismiss: 0,
+      upgradeAccept: 0,
+      upgradeDismiss: 0,
+    };
+    if (f === "save" && o === "accepted") row.saveAccept += 1;
+    if (f === "save" && o === "dismissed") row.saveDismiss += 1;
+    if (f === "upgrade" && o === "accepted") row.upgradeAccept += 1;
+    if (f === "upgrade" && o === "dismissed") row.upgradeDismiss += 1;
+    // Cap so old habits can fade if we later add decay; keep memory bounded.
+    for (const k of Object.keys(row)) {
+      row[k] = Math.min(12, row[k]);
+    }
+    cache.fitMemory[key] = row;
+    persist();
+    return row;
+  }
+
+  /** Score delta from local history: negative leans save, positive leans upgrade. */
+  function fitScoreAdjust(taskType) {
+    const key = String(taskType || "general");
+    const row = cache.fitMemory?.[key];
+    if (!row) return 0;
+    let adj = 0;
+    adj -= Math.min(2, (row.saveAccept || 0) * 0.45);
+    adj += Math.min(1.5, (row.saveDismiss || 0) * 0.4);
+    adj += Math.min(2, (row.upgradeAccept || 0) * 0.45);
+    adj -= Math.min(2.5, (row.upgradeDismiss || 0) * 0.7);
+    return adj;
+  }
+
   function startOfIsoWeek(ts = Date.now()) {
     const d = new Date(ts);
     const day = (d.getDay() + 6) % 7; // Mon=0
@@ -352,6 +402,7 @@ const LumenCostLedger = (() => {
         spend.emaOutputTokens && spend.outputSampleCount >= 3
           ? Math.round(spend.emaOutputTokens)
           : null,
+      fitMemory: cache.fitMemory || {},
     };
   }
 
@@ -359,6 +410,8 @@ const LumenCostLedger = (() => {
     load,
     recordApplied,
     recordSpend,
+    recordFitOutcome,
+    fitScoreAdjust,
     clear,
     clearSavings,
     clearSpend,

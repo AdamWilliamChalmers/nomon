@@ -877,6 +877,86 @@ const LumenCostModels = (() => {
     };
   }
 
+  /**
+   * One step up the host's practical ladder (not always the reverse of
+   * downgradeTo — Instant steps to Medium, not straight to High).
+   */
+  function stepUpFrom(modelId, hostname = "") {
+    const h = String(hostname || "").toLowerCase();
+    const id = String(modelId || "");
+    const CHATGPT_STEP = {
+      "gpt-5.5-instant": "gpt-5.6-terra",
+      "gpt-5.6-luna": "gpt-5.6-terra",
+      "gpt-5-nano": "gpt-5.6-terra",
+      "gpt-5-mini": "gpt-5.6-terra",
+      "gpt-5.4-mini": "gpt-5.4",
+      "gpt-4o-mini": "gpt-5.6-terra",
+      "gpt-5.6-terra": "gpt-5.6-sol",
+      "gpt-5.4": "gpt-5.6-sol",
+      "gpt-5.3": "gpt-5.6-sol",
+      "gpt-4o": "gpt-5.6-sol",
+    };
+    const CLAUDE_STEP = {
+      "claude-haiku-4.5": "claude-sonnet-5",
+      "claude-sonnet-5": "claude-opus-4.8",
+    };
+    const GEMINI_STEP = {
+      "gemini-3.1-flash-lite": "gemini-3.5-flash",
+      "gemini-3.5-flash": "gemini-3.1-pro",
+    };
+
+    let nextId = null;
+    if (h.includes("chatgpt") || h.includes("openai") || h.includes("chat.openai")) {
+      nextId = CHATGPT_STEP[id] || null;
+    } else if (h.includes("claude")) {
+      nextId = CLAUDE_STEP[id] || null;
+    } else if (h.includes("gemini") || h.includes("google")) {
+      nextId = GEMINI_STEP[id] || null;
+    }
+
+    if (!nextId) {
+      // Generic: whoever lists this model as downgradeTo
+      for (const m of Object.values(MODELS)) {
+        if (m.downgradeTo === id && m.id !== id) {
+          nextId = m.id;
+          break;
+        }
+      }
+    }
+    return nextId && MODELS[nextId] ? MODELS[nextId] : null;
+  }
+
+  /**
+   * Current ChatGPT Intelligence rung inferred from resolved model / label.
+   */
+  function intelligenceOf(modelId, label = "") {
+    const id = String(modelId || "");
+    const INTEL = {
+      "gpt-5.6-luna": "instant",
+      "gpt-5.5-instant": "instant",
+      "gpt-5-nano": "instant",
+      "gpt-5-mini": "instant",
+      "gpt-5.4-mini": "instant",
+      "gpt-4o-mini": "instant",
+      "gpt-5.6-terra": "medium",
+      "gpt-5.4": "medium",
+      "gpt-5.3": "medium",
+      "gpt-4o": "medium",
+      "gpt-5.6-sol": "high",
+      "gpt-5.5": "high",
+      o3: "high",
+    };
+    if (INTEL[id]) return INTEL[id];
+    const head = String(label || "")
+      .replace(/\s*·.*$/, "")
+      .trim()
+      .toLowerCase();
+    if (head.startsWith("instant")) return "instant";
+    if (head.startsWith("medium")) return "medium";
+    if (head.startsWith("high")) return "high";
+    return null;
+  }
+
   return {
     UPDATED_AT,
     SOURCE,
@@ -889,6 +969,8 @@ const LumenCostModels = (() => {
     resolveForAnalysis,
     modelForHost,
     switchActionFor,
+    stepUpFrom,
+    intelligenceOf,
     CLAUDE_EFFORT_OUTPUT_MULT,
     GEMINI_EXTENDED_OUTPUT_MULT,
   };

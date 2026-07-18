@@ -250,7 +250,168 @@ const LumenCostRules = (() => {
     ];
   }
 
-  function modelDowngrade(ctx) {
+  /**
+   * Mirror-aware model fit: save (cheaper), hold (no tip), or upgrade (step up).
+   * Biased toward HOLD — only tip when the draft clearly fits cheaper or heavier.
+   */
+  function assessCostFit(ctx) {
+    const prompt = String(ctx.prompt || "");
+    const goals = ctx.goals || {};
+    const words = prompt.trim().split(/\s+/).filter(Boolean).length;
+    const lower = prompt.toLowerCase();
+
+    const taskType =
+      globalThis.LumenEngine?.detectTaskType?.(prompt) || "general";
+    const framing = globalThis.LumenRules?.analyzeFraming?.(prompt) || {
+      tier: 0,
+    };
+    const utility = Boolean(globalThis.LumenRules?.isUtilityTaskType?.(taskType));
+    const depthWarm = Boolean(globalThis.LumenNudges?.isHighStakesDepth?.(prompt));
+    const engagement = globalThis.LumenRules?.checkEngagementOverride?.(prompt);
+    const mismatch =
+      Array.isArray(goals.protectedGoals) && goals.protectedGoals.length
+        ? globalThis.LumenRules?.checkMismatchGoals?.(prompt, goals.protectedGoals)
+        : null;
+
+    // True heavies — not routine explain/teach (those are often Instant/Medium).
+    const HEAVY_TASKS = new Set(["essay_writing", "code_generation"]);
+    const SIMPLE_TASKS = new Set([
+      "summarisation",
+      "formatting",
+      "translation",
+      "conversion",
+      "scheduling",
+      "email_drafting",
+      "fact_checking",
+      "code_explanation",
+    ]);
+
+    const reasons = [];
+    let score = 0; // negative → save, positive → upgrade
+
+    // —— Upgrade signals (need a clear case; threshold is high) ——
+    if (depthWarm) {
+      score += 3;
+      reasons.push("high-stakes decision");
+    }
+    if (mismatch) {
+      score += 2;
+      reasons.push("touches a protected goal");
+    }
+    if (
+      /\b(invest|crypto|mortgage|lawsuit|diagnos|medical advice|architect(?:ure|ing)?|system design|migrate (the )?prod)\b/i.test(
+        prompt
+      )
+    ) {
+      score += 2;
+      reasons.push("high-impact domain");
+    }
+    if (taskType === "code_generation" && words >= 60) {
+      score += 2;
+      reasons.push("substantial coding");
+    } else if (HEAVY_TASKS.has(taskType)) {
+      score += 1;
+      reasons.push(taskType.replace(/_/g, " "));
+    }
+    if (engagement?.active && words >= 120) {
+      score += 1;
+      reasons.push("substantial own work");
+    }
+    if (
+      framing.tier === 1 &&
+      /\b(decide|choose|strateg|trade-?off|should i)\b/i.test(prompt)
+    ) {
+      score += 2;
+      reasons.push("needs judgment");
+    }
+
+    // —— Save signals (routine production / extractive / light teaching) ——
+    if (utility || SIMPLE_TASKS.has(taskType)) {
+      score -= 2;
+      reasons.push(taskType.replace(/_/g, " "));
+    }
+    if (taskType === "learning_concept" || taskType === "email_drafting") {
+      score -= 1;
+      reasons.push(taskType.replace(/_/g, " "));
+    }
+    if (
+      /\b(\d+)\s*words?\b/i.test(prompt) ||
+      /\b(short|brief|simple|eli5|plain language)\b/i.test(prompt)
+    ) {
+      score -= 2;
+      reasons.push("bounded / simple ask");
+    }
+    if (
+      /\b(\d+(st|nd|rd|th)\s*grade|for (kids|children|students|class|beginners)|explain .{0,40}(simply|to a))\b/i.test(
+        lower
+      )
+    ) {
+      score -= 3;
+      reasons.push("teaching / beginner");
+    }
+    if (
+      /\b(summari[sz]e|tldr|bullet|translate|reformat|rewrite|rephrase|extract|list|outline)\b/i.test(
+        prompt
+      )
+    ) {
+      score -= 2;
+      reasons.push("extractive / rewrite");
+    }
+    if (
+      /\b(write|draft|compose)\b/i.test(prompt) &&
+      words < 55 &&
+      !depthWarm &&
+      !mismatch
+    ) {
+      score -= 2;
+      reasons.push("short writing ask");
+    }
+    if (words > 0 && words < 40 && !depthWarm && !mismatch) {
+      score -= 1;
+      reasons.push("short draft");
+    }
+    if (/\b(debug|stack trace|typo|format this)\b/i.test(prompt)) {
+      score -= 1;
+      reasons.push("narrow fix");
+    }
+
+    // Structural cues (still local — no API): code fences / JSON lean save;
+    // long multi-question deliberation leans upgrade.
+    if (/```[\s\S]{40,}```/.test(prompt) || /\{[\s\S]{80,}\}/.test(prompt)) {
+      score -= 1;
+      reasons.push("structured paste");
+    }
+    const qMarks = (prompt.match(/\?/g) || []).length;
+    if (qMarks >= 2 && words >= 50) {
+      score += 1;
+      reasons.push("multi-question");
+    }
+
+    // Personal on-device memory from tip accepts / dismisses — $0 to us.
+    const memAdj = Number(globalThis.LumenCostLedger?.fitScoreAdjust?.(taskType)) || 0;
+    if (memAdj) {
+      score += memAdj;
+      if (memAdj <= -0.5) reasons.push("your past tip choices");
+      else if (memAdj >= 0.5) reasons.push("your past tip choices");
+    }
+
+    // Prefer HOLD unless the case is clear either way.
+    let fit = "hold";
+    if (score <= -2) fit = "save";
+    else if (score >= 3) fit = "upgrade";
+
+    return {
+      fit,
+      score,
+      taskType,
+      reasons: reasons.slice(0, 3),
+      depthWarm: Boolean(depthWarm),
+      mismatch: Boolean(mismatch),
+      utility,
+    };
+  }
+
+  function modelFit(ctx) {
     const {
       model,
       inputTokens,
@@ -258,26 +419,74 @@ const LumenCostRules = (() => {
       monthlyVolume,
       estimateCallCost,
       getModel,
+      hostname,
     } = ctx;
-    if (!model.downgradeTo || model.tier === "economy") return [];
-    const cheaper = getModel(model.downgradeTo);
-    if (!cheaper) return [];
+    if (!model) return [];
 
+    const fitInfo = assessCostFit(ctx);
+    const modelsApi = globalThis.LumenCostModels;
     const current = estimateCallCost(model, inputTokens, assumedOutputTokens);
+
+    if (fitInfo.fit === "hold") return [];
+
+    if (fitInfo.fit === "upgrade") {
+      const heavier =
+        modelsApi?.stepUpFrom?.(model.id, hostname) ||
+        null;
+      if (!heavier || heavier.id === model.id) return [];
+      const alt = estimateCallCost(heavier, inputTokens, assumedOutputTokens);
+      const usdPerCall = Math.max(0, alt.totalUsd - current.totalUsd);
+      const reason =
+        fitInfo.reasons[0] || fitInfo.taskType.replace(/_/g, " ") || "this kind of prompt";
+      return [
+        {
+          ruleId: "model-upgrade",
+          fit: "upgrade",
+          taskType: fitInfo.taskType,
+          title: `Try ${heavier.name}`,
+          severity: "high",
+          summary: `This looks like it needs more horsepower (${reason}).`,
+          suggestion: `Step up to ${heavier.name} for this draft. Drop back down for simpler asks.`,
+          targetModelId: heavier.id,
+          fromModelId: model.id,
+          estimate: {
+            tokens: 0,
+            usdPerCall,
+            usdPerMonth: usdPerCall * monthlyVolume,
+          },
+        },
+      ];
+    }
+
+    // fit === save
+    if (!model.downgradeTo) return [];
+    const cheaper = getModel(model.downgradeTo);
+    if (!cheaper || cheaper.id === model.id) return [];
+
     const alt = estimateCallCost(cheaper, inputTokens, assumedOutputTokens);
     const usdPerCall = current.totalUsd - alt.totalUsd;
     if (usdPerCall <= 0) return [];
     if (usdPerCall * monthlyVolume < 0.5 && usdPerCall < 0.001) return [];
 
+    // Avoid Instant → Instant no-ops (economy → nano still maps to Instant).
+    const fromIntel = modelsApi?.intelligenceOf?.(model.id);
+    const toIntel = modelsApi?.intelligenceOf?.(cheaper.id);
+    if (fromIntel && toIntel && fromIntel === toIntel) {
+      return [];
+    }
+
+    const reason = fitInfo.reasons[0] || "simpler draft";
     return [
       {
         ruleId: "model-downgrade",
+        fit: "save",
+        taskType: fitInfo.taskType,
         title: `Try ${cheaper.name}`,
         severity: usdPerCall * monthlyVolume > 20 ? "high" : "medium",
-        summary: `Often enough for extraction / short Q&A. Save ~${Math.round(
-          (usdPerCall / current.totalUsd) * 100
+        summary: `Fits a lighter model (${reason}). Save ~${Math.round(
+          (usdPerCall / Math.max(current.totalUsd, 1e-12)) * 100
         )}% per call — verify quality first.`,
-        suggestion: `Route this job to ${cheaper.name}. Keep ${model.name} for hard reasoning.`,
+        suggestion: `Route this to ${cheaper.name}. Keep ${model.name} when the work needs harder reasoning.`,
         targetModelId: cheaper.id,
         fromModelId: model.id,
         estimate: {
@@ -297,6 +506,10 @@ const LumenCostRules = (() => {
     const { effort, model, assumedOutputTokens, monthlyVolume, estimateCallCost } =
       ctx;
     if (!effort || (effort !== "extra" && effort !== "max")) return [];
+
+    // Don't down-sell effort on drafts that need judgment.
+    const fitInfo = assessCostFit(ctx);
+    if (fitInfo.fit === "upgrade") return [];
 
     const highOut = Math.max(1, Math.round(assumedOutputTokens / (effort === "max" ? 2 : 1.45)));
     const current = estimateCallCost(model, ctx.inputTokens, assumedOutputTokens);
@@ -333,9 +546,15 @@ const LumenCostRules = (() => {
     cachePrefix,
     fewShotBloat,
     verboseJson,
-    modelDowngrade,
+    modelFit,
     effortRightsize,
   ];
+
+  function isExtractiveAsk(prompt) {
+    return /\b(summari[sz]e|tldr|bullet|in\s+\d+\s+bullets?|\d+\s+bullets?|extract|key points|tl;?dr)\b/i.test(
+      String(prompt || "")
+    );
+  }
 
   function runAll(ctx) {
     const matches = [];
@@ -346,11 +565,31 @@ const LumenCostRules = (() => {
         /* never break coaching */
       }
     }
-    matches.sort((a, b) => b.estimate.usdPerMonth - a.estimate.usdPerMonth);
+    const severityRank = { high: 3, medium: 2, low: 1 };
+    const extractive = isExtractiveAsk(ctx.prompt);
+    const isModelTip = (m) =>
+      m?.ruleId === "model-downgrade" || m?.ruleId === "model-upgrade";
+
+    matches.sort((a, b) => {
+      // Clear extractive asks (summarise / N bullets): prefer model fit over
+      // cache/JSON tips so users see Instant/Medium coaching first.
+      if (extractive) {
+        const aM = isModelTip(a);
+        const bM = isModelTip(b);
+        if (aM && !bM) return -1;
+        if (bM && !aM) return 1;
+      }
+      if (a.fit === "upgrade" && b.fit !== "upgrade") return -1;
+      if (b.fit === "upgrade" && a.fit !== "upgrade") return 1;
+      const sr =
+        (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0);
+      if (sr) return sr;
+      return (b.estimate?.usdPerMonth || 0) - (a.estimate?.usdPerMonth || 0);
+    });
     return matches;
   }
 
-  return { runAll };
+  return { runAll, assessCostFit, isExtractiveAsk };
 })();
 
 globalThis.LumenCostRules = LumenCostRules;

@@ -2146,6 +2146,31 @@ const LumenWidget = (() => {
   function logCostSave(match, analysis, source) {
     const ledger = globalThis.LumenCostLedger;
     if (!ledger || !match?.estimate) return null;
+
+    const fit =
+      match.fit ||
+      (match.ruleId === "model-upgrade"
+        ? "upgrade"
+        : match.ruleId === "model-downgrade"
+          ? "save"
+          : null);
+    const taskType =
+      analysis?.fitTaskType ||
+      globalThis.LumenCostRules?.assessCostFit?.({
+        prompt: analysis?._draftText || "",
+        goals: LumenGoals.get(),
+      })?.taskType ||
+      "general";
+
+    if (fit === "save" || fit === "upgrade") {
+      if (source === "switched" || source === "auto-switched" || source === "logged") {
+        ledger.recordFitOutcome?.({ taskType, fit, outcome: "accepted" });
+      }
+    }
+
+    // Tip savings ledger is only for real save tips — not upgrades.
+    if (match.ruleId === "model-upgrade" || fit === "upgrade") return null;
+
     // Per-call estimate is the honest unit when logging a single tip use.
     const usd = Number(match.estimate.usdPerCall) || 0;
     if (usd <= 0) return null;
@@ -2164,6 +2189,31 @@ const LumenWidget = (() => {
       queueCostSaveCoin(usd);
     }
     return event;
+  }
+
+  function noteCostFitDismiss(analysis) {
+    const top = analysis?.top;
+    if (!top) return;
+    const fit =
+      top.fit ||
+      (top.ruleId === "model-upgrade"
+        ? "upgrade"
+        : top.ruleId === "model-downgrade"
+          ? "save"
+          : null);
+    if (fit !== "save" && fit !== "upgrade") return;
+    const taskType =
+      analysis?.fitTaskType ||
+      globalThis.LumenCostRules?.assessCostFit?.({
+        prompt: analysis?._draftText || "",
+        goals: LumenGoals.get(),
+      })?.taskType ||
+      "general";
+    globalThis.LumenCostLedger?.recordFitOutcome?.({
+      taskType,
+      fit,
+      outcome: "dismissed",
+    });
   }
 
   /** Pending “coin into FAB” after a model switch — plays on the next send. */
@@ -2344,21 +2394,43 @@ const LumenWidget = (() => {
       Math.min(92, Math.round(((analysis.inputTokens || 0) / 3200) * 100))
     );
 
+    const isUpgrade = top?.fit === "upgrade" || top?.ruleId === "model-upgrade";
+    const isCacheTip = top?.ruleId === "cache-prefix";
+    const isJsonTip = top?.ruleId === "verbose-json";
+    const isFewShotTip = top?.ruleId === "few-shot-bloat";
     const swapLabel =
       top?.switchAction?.buttonLabel ||
       (top?.switchAction?.uiLabel ? `Use ${top.switchAction.uiLabel}` : null) ||
-      (top ? "Try lighter model" : null);
+      (top ? (isUpgrade ? "Try stronger model" : "Try lighter model") : null);
 
     // Loud: one primary swap on the strip. Quiet: spend only (+ Tips if a tip exists).
     const showSwap = Boolean(!autoOn && top?.switchAction && level === "full");
     const showTipsLink = Boolean(level === "subtle" && top);
 
-    const lineHtml =
-      level === "full" && top && saveUsd
-        ? `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · lighter model saves ~<b>${escapeHtml(
-            saveUsd
-          )}</b>`
-        : `≈ <b>${escapeHtml(tokensLabel)} tokens</b>`;
+    let lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b>`;
+    if (level === "full" && top && saveUsd) {
+      if (isUpgrade) {
+        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · consider <b>${escapeHtml(
+          top.switchAction?.uiLabel || String(top.title || "").replace(/^Try\s+/i, "")
+        )}</b>`;
+      } else if (isCacheTip) {
+        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · caching could save ~<b>${escapeHtml(
+          saveUsd
+        )}</b>/call`;
+      } else if (isJsonTip || isFewShotTip) {
+        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · trim could save ~<b>${escapeHtml(
+          saveUsd
+        )}</b>`;
+      } else if (top.ruleId === "model-downgrade") {
+        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · lighter model saves ~<b>${escapeHtml(
+          saveUsd
+        )}</b>`;
+      } else {
+        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · tip saves ~<b>${escapeHtml(
+          saveUsd
+        )}</b>`;
+      }
+    }
 
     // Loud tip: top match only, one suggestion line — no stacked dark panel.
     let tipHtml = "";
@@ -2376,17 +2448,20 @@ const LumenWidget = (() => {
           )}</button>`
         );
       }
-      tipParts.push(
-        `<button type="button" class="lumen-cost-log" data-tip-idx="0">Log save</button>`
-      );
+      if (!isUpgrade) {
+        tipParts.push(
+          `<button type="button" class="lumen-cost-log" data-tip-idx="0">Log save</button>`
+        );
+      }
+      const saveLabel = isUpgrade
+        ? escapeHtml(formatUsd(top.estimate?.usdPerCall || 0)) + " extra"
+        : escapeHtml(formatUsd(top.estimate?.usdPerMonth || 0)) + "/mo";
       tipHtml = `
         <div class="lumen-cost-coach-panel">
           <div class="lumen-cost-tip" data-tip-idx="0">
             <div class="lumen-cost-tip-head">
               <span class="lumen-cost-tip-title">${escapeHtml(top.title)}</span>
-              <span class="lumen-cost-tip-save">${escapeHtml(
-                formatUsd(top.estimate?.usdPerMonth || 0)
-              )}/mo</span>
+              <span class="lumen-cost-tip-save">${saveLabel}</span>
             </div>
             <p class="lumen-cost-tip-suggestion">${escapeHtml(top.suggestion || top.summary || "")}</p>
             <div class="lumen-cost-tip-actions">${tipParts.join("")}</div>
@@ -2454,6 +2529,7 @@ const LumenWidget = (() => {
     shell.querySelector(".lumen-cost-coach-dismiss")?.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
+      noteCostFitDismiss(analysis);
       clearCostCoach();
     });
 
@@ -2578,8 +2654,14 @@ const LumenWidget = (() => {
       });
     });
 
-    // Auto switch: once per draft+target while enabled; never loops if user reverts.
-    if (autoOn && !autoSwitchInFlight && top?.switchAction) {
+    // Auto switch: only for save tips (never auto-upgrade). Once per draft+target.
+    if (
+      autoOn &&
+      !autoSwitchInFlight &&
+      top?.switchAction &&
+      !isUpgrade &&
+      top.ruleId !== "model-upgrade"
+    ) {
       const key = autoSwitchDraftKey(draftText, top, analysis.model?.id);
       const alreadyOnTarget =
         top.targetModelId && analysis.model?.id === top.targetModelId;

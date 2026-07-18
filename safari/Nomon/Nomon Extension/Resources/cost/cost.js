@@ -101,6 +101,7 @@ const LumenCost = (() => {
       };
     };
 
+    const hostname = opts.hostname || (typeof location !== "undefined" ? location.hostname : "");
     const matches = rules.runAll({
       prompt: trimmed,
       model,
@@ -113,37 +114,72 @@ const LumenCost = (() => {
       getModel: (id) => models.get(id),
       effort,
       outputMult,
+      goals,
+      hostname,
     });
 
-    const hostname = opts.hostname || (typeof location !== "undefined" ? location.hostname : "");
     const h = String(hostname || "").toLowerCase();
     const hClaude = h.includes("claude");
     const hGemini = h.includes("gemini") || h.includes("google");
+    const hChatGPT =
+      h.includes("chatgpt") || h.includes("openai") || h.includes("chat.openai");
+    const fromIntel =
+      models.intelligenceOf?.(model.id, modelLabel) ||
+      (/^(instant|medium|high)\b/i.test(String(modelLabel || "").replace(/\s*·.*$/, "").trim())
+        ? String(modelLabel || "")
+            .replace(/\s*·.*$/, "")
+            .trim()
+        : null);
+
+    const polished = [];
     for (const m of matches) {
-      if (m.ruleId === "model-downgrade" && m.targetModelId && !m.switchAction) {
+      if (
+        (m.ruleId === "model-downgrade" || m.ruleId === "model-upgrade") &&
+        m.targetModelId &&
+        !m.switchAction
+      ) {
         m.switchAction = models.switchActionFor?.(m.targetModelId, hostname) || null;
       }
-      // Host-facing tip copy only — never invent picker labels.
-      if (m.ruleId === "model-downgrade" && m.switchAction?.kind === "intelligence") {
-        const to = m.switchAction.uiLabel || "Instant";
-        const fromIntel = String(modelLabel || "")
-          .replace(/\s*·.*$/, "")
-          .trim();
-        const from =
-          /^(instant|medium|high)\b/i.test(fromIntel) ? fromIntel : null;
-        m.title = `Try ${to}`;
-        m.suggestion = from
-          ? `Switch Intelligence to ${to} in the ChatGPT menu. Keep ${from} (or High) when you need harder reasoning.`
-          : `Switch Intelligence to ${to} in the ChatGPT menu. Use Medium/High only when you need harder reasoning.`;
-        m.summary = `Often enough for extraction / short Q&A. Save ~${Math.round(
-          (m.estimate.usdPerCall / Math.max(callCost.totalUsd, 1e-12)) * 100
-        )}% per call — verify quality first.`;
-      } else if (
-        m.ruleId === "model-downgrade" &&
-        m.switchAction &&
-        (hClaude || hGemini)
+
+      // Drop no-op Intelligence tips (e.g. Instant → Instant).
+      if (
+        m.switchAction?.kind === "intelligence" &&
+        fromIntel &&
+        String(m.switchAction.value || "").toLowerCase() === String(fromIntel).toLowerCase()
       ) {
-        // Claude/Gemini tips use exact picker labels (Haiku 4.5, 3.1 Flash-Lite).
+        continue;
+      }
+
+      if (
+        (m.ruleId === "model-downgrade" || m.ruleId === "model-upgrade") &&
+        m.switchAction?.kind === "intelligence"
+      ) {
+        const to = m.switchAction.uiLabel || "Instant";
+        const fromLabel =
+          fromIntel && /^(instant|medium|high)$/i.test(fromIntel)
+            ? fromIntel[0].toUpperCase() + fromIntel.slice(1).toLowerCase()
+            : null;
+        m.title = `Try ${to}`;
+        if (m.ruleId === "model-upgrade") {
+          m.suggestion = fromLabel
+            ? `Switch Intelligence to ${to} for this draft. Return to ${fromLabel} for lighter work.`
+            : `Switch Intelligence to ${to} for this draft — it looks like it needs more horsepower.`;
+          m.summary =
+            m.summary ||
+            `A step up may be worth it here. Extra cost ~${formatUsd(m.estimate?.usdPerCall || 0)}/call.`;
+        } else {
+          m.suggestion = fromLabel
+            ? `Switch Intelligence to ${to} in the ChatGPT menu. Keep ${fromLabel} when you need harder reasoning.`
+            : `Switch Intelligence to ${to} in the ChatGPT menu. Use Medium/High only when you need harder reasoning.`;
+          m.summary = `Often enough for simpler drafts. Save ~${Math.round(
+            (m.estimate.usdPerCall / Math.max(callCost.totalUsd, 1e-12)) * 100
+          )}% per call — verify quality first.`;
+        }
+      } else if (
+        (m.ruleId === "model-downgrade" || m.ruleId === "model-upgrade") &&
+        m.switchAction &&
+        (hClaude || hGemini || (hChatGPT && m.switchAction.kind === "model"))
+      ) {
         const to = m.switchAction.uiLabel || m.switchAction.value;
         const fromShort = String(modelLabel || "")
           .replace(/^Claude\s+/i, "")
@@ -152,18 +188,26 @@ const LumenCost = (() => {
           .trim();
         if (to) {
           m.title = `Try ${to}`;
-          m.suggestion = fromShort
-            ? `Switch to ${to} in the model menu. Keep ${fromShort} for harder work.`
-            : `Switch to ${to} in the model menu.`;
-          m.summary = `Often enough for extraction / short Q&A. Save ~${Math.round(
-            (m.estimate.usdPerCall / Math.max(callCost.totalUsd, 1e-12)) * 100
-          )}% per call — verify quality first.`;
+          if (m.ruleId === "model-upgrade") {
+            m.suggestion = fromShort
+              ? `Switch to ${to} in the model menu. Drop back to ${fromShort} for simpler asks.`
+              : `Switch to ${to} in the model menu.`;
+          } else {
+            m.suggestion = fromShort
+              ? `Switch to ${to} in the model menu. Keep ${fromShort} for harder work.`
+              : `Switch to ${to} in the model menu.`;
+            m.summary = `Often enough for simpler drafts. Save ~${Math.round(
+              (m.estimate.usdPerCall / Math.max(callCost.totalUsd, 1e-12)) * 100
+            )}% per call — verify quality first.`;
+          }
         }
       }
+      polished.push(m);
     }
 
-    const totalUsdPerMonth = matches.reduce((n, m) => n + m.estimate.usdPerMonth, 0);
-    const top = matches[0] || null;
+    const totalUsdPerMonth = polished.reduce((n, m) => n + (m.estimate?.usdPerMonth || 0), 0);
+    const top = polished[0] || null;
+    const matchesOut = polished;
 
     // Lead with detected picker label so Spend matches what ChatGPT shows
     const stripLine = top
@@ -180,7 +224,7 @@ const LumenCost = (() => {
       effort,
       inputTokens,
       callCost,
-      matches,
+      matches: matchesOut,
       top,
       totalUsdPerMonth,
       stripLine,
@@ -188,6 +232,12 @@ const LumenCost = (() => {
       pricesSource: models.SOURCE,
       approx: true,
       apiRatesNote: true,
+      fit: top?.fit || globalThis.LumenCostRules?.assessCostFit?.({ prompt: trimmed, goals })?.fit || null,
+      fitTaskType:
+        top?.taskType ||
+        globalThis.LumenCostRules?.assessCostFit?.({ prompt: trimmed, goals })?.taskType ||
+        null,
+      _draftText: trimmed,
     };
   }
 
