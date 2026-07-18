@@ -2,21 +2,21 @@ const LumenWidget = (() => {
   // Aurora Grayscale: signals differentiate by label + weight, never hue. The
   // inline strip carries a single NEUTRAL dot; the signal name does the work.
   // Kept as a per-signal map (same keys) so callers stay unchanged.
+  // Logo-mark hues identify each Mirror signal (same four dots as the Badge mark).
+  // Hand-off shares amber with Drift — both are “letting go” signals; Loop stays green.
   const SIGNAL_COLORS_LIGHT = {
-    handoff: "#83838d",
-    loop: "#83838d",
-    drift: "#83838d",
-    mismatch: "#83838d",
-    depth: "#83838d",
+    handoff: "#e5a33d",
+    loop: "#5ba85c",
+    drift: "#e5a33d",
+    mismatch: "#8e6fd8",
+    depth: "#5b9bd5",
   };
-  // Lighter neutral for dark hosts (Gemini dark, Grok, etc.) so the dot stays
-  // legible on near-black page backgrounds — still monochrome.
   const SIGNAL_COLORS_DARK = {
-    handoff: "#9a9aa5",
-    loop: "#9a9aa5",
-    drift: "#9a9aa5",
-    mismatch: "#9a9aa5",
-    depth: "#9a9aa5",
+    handoff: "#e5a33d",
+    loop: "#5ba85c",
+    drift: "#e5a33d",
+    mismatch: "#8e6fd8",
+    depth: "#5b9bd5",
   };
 
   let cachedHostDark = null;
@@ -127,6 +127,9 @@ const LumenWidget = (() => {
   let lastEvaluation = null;
   let fabDisplaySignal = null;
   let fabSignalTimer = null;
+  // Last posture band shown on the FAB — used so we only flash on change
+  // (plus hand-off), not on every quiet message.
+  let lastFabPostureBand = null;
 
   const FAB_SIGNAL_LABELS = {
     loop: "Loop · still with it?",
@@ -135,6 +138,13 @@ const LumenWidget = (() => {
     depth: "Depth · worth thinking first?",
   };
   const FAB_SIGNALS = new Set(Object.keys(FAB_SIGNAL_LABELS));
+  // Option E — transient session posture (3s), separate from signal labels.
+  const FAB_POSTURE_LABELS = {
+    "hands-on": "Hands-on",
+    "in-between": "In between",
+    "ai-led": "AI-led",
+  };
+  const FAB_POSTURE_MIN_MESSAGES = 3;
   // Cached digest + history for the weekly review overlay (so Share doesn't
   // recompute) and the toast teaser.
   let weeklyContext = null;
@@ -247,19 +257,17 @@ const LumenWidget = (() => {
 
   function migrateModeStripCompact() {
     const strip = document.getElementById("lumen-mode-strip");
-    const mini = document.querySelector("#lumen-popover .lumen-popover-mini");
+    const statsBlock = document.querySelector("#lumen-popover .lumen-popover-stats");
     const scroll = document.querySelector("#lumen-popover .lumen-popover-scroll");
     if (
       strip &&
-      mini &&
+      statsBlock &&
       scroll &&
-      mini.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_PRECEDING
+      statsBlock.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_PRECEDING
     ) {
       // Mode was above scores — flip so scores lead.
-      scroll.insertBefore(mini, strip);
-      const statRow = document.querySelector("#lumen-popover .lumen-popover-stat-row");
+      scroll.insertBefore(statsBlock, strip);
       const statsEmpty = document.getElementById("lumen-stats-empty");
-      if (statRow) scroll.insertBefore(statRow, strip);
       if (statsEmpty) scroll.insertBefore(statsEmpty, strip);
     }
     if (strip && !strip.querySelector(".lumen-mode-row")) {
@@ -288,6 +296,15 @@ const LumenWidget = (() => {
       if (nestedTitle && !guard.querySelector(":scope > .lumen-guard-toggle-title")) {
         guard.insertBefore(nestedTitle, guard.firstChild);
         guard.querySelector(".lumen-guard-toggle-text")?.remove();
+      }
+      if (!guard.querySelector(".lumen-guard-toggle-state")) {
+        const state = document.createElement("span");
+        state.className = "lumen-guard-toggle-state";
+        state.setAttribute("aria-hidden", "true");
+        state.textContent = guard.classList.contains("lumen-guard-toggle--on") ? "On" : "Off";
+        const sw = guard.querySelector(".lumen-guard-toggle-switch");
+        if (sw) guard.insertBefore(state, sw);
+        else guard.appendChild(state);
       }
     }
     const hint = document.getElementById("lumen-mode-hint");
@@ -322,8 +339,12 @@ const LumenWidget = (() => {
   function ensureRoot() {
     ensureHideStyles();
     let existing = document.getElementById("lumen-root");
-    // Rebuild if this tab still has a pre–mode-seg popover (extension update without reload).
-    if (existing && !document.getElementById("lumen-mode-seg")) {
+    // Rebuild if this tab still has a pre–mode-seg / pre–badge-toggle popover
+    // (extension update without full page reload).
+    if (
+      existing &&
+      (!document.getElementById("lumen-mode-seg") || !document.getElementById("lumen-badge-seg"))
+    ) {
       existing.remove();
       existing = null;
       reconsiderEventsBound = false;
@@ -381,24 +402,35 @@ const LumenWidget = (() => {
         </div>
 
         <div class="lumen-popover-scroll">
-          <div class="lumen-popover-mini" aria-label="Today's stats">
-            <div class="lumen-popover-mini-stat" title="Your prompts today across ChatGPT, Gemini, Claude, and other connected tools">
-              <div class="lumen-popover-mini-v" id="lumen-stat-messages">0</div>
-              <div class="lumen-popover-mini-l">Messages</div>
+          <div class="lumen-popover-stats" aria-label="Today's stats">
+            <div class="lumen-popover-mini">
+              <div class="lumen-popover-mini-stat" title="Your prompts today across ChatGPT, Gemini, Claude, and other connected tools">
+                <div class="lumen-popover-mini-v" id="lumen-stat-messages">0</div>
+                <div class="lumen-popover-mini-l">Messages</div>
+              </div>
+              <div class="lumen-popover-mini-stat" title="Whole tasks you asked AI to do from scratch">
+                <div class="lumen-popover-mini-v" id="lumen-stat-handoff">0</div>
+                <div class="lumen-popover-mini-l">Hand-offs</div>
+              </div>
+              <div class="lumen-popover-mini-stat" title="Prompts that conflicted with a goal you set">
+                <div class="lumen-popover-mini-v" id="lumen-stat-mismatch">0</div>
+                <div class="lumen-popover-mini-l">Mismatch</div>
+              </div>
             </div>
-            <div class="lumen-popover-mini-stat" title="Whole tasks you asked AI to do from scratch">
-              <div class="lumen-popover-mini-v" id="lumen-stat-handoff">0</div>
-              <div class="lumen-popover-mini-l">Hand-offs</div>
+            <div class="lumen-popover-mini lumen-popover-mini--signals">
+              <div class="lumen-popover-mini-stat" title="Passive back-and-forth loops">
+                <div class="lumen-popover-mini-v" id="lumen-stat-loop">0</div>
+                <div class="lumen-popover-mini-l">Loops</div>
+              </div>
+              <div class="lumen-popover-mini-stat" title="Shorter prompts, fewer questions, or more passive replies than usual">
+                <div class="lumen-popover-mini-v" id="lumen-stat-drift">0</div>
+                <div class="lumen-popover-mini-l">Drift</div>
+              </div>
+              <div class="lumen-popover-mini-stat" title="High-stakes prompts worth sitting with">
+                <div class="lumen-popover-mini-v" id="lumen-stat-depth">0</div>
+                <div class="lumen-popover-mini-l">Depth</div>
+              </div>
             </div>
-            <div class="lumen-popover-mini-stat" title="Prompts that conflicted with a goal you set">
-              <div class="lumen-popover-mini-v" id="lumen-stat-mismatch">0</div>
-              <div class="lumen-popover-mini-l">Mismatch</div>
-            </div>
-          </div>
-          <div class="lumen-popover-stat-row lumen-hidden" aria-hidden="true">
-            <div class="lumen-popover-stat"><span>Loops</span><span class="lumen-popover-stat-value" id="lumen-stat-loop">0</span></div>
-            <div class="lumen-popover-stat"><span>Drift</span><span class="lumen-popover-stat-value" id="lumen-stat-drift">0</span></div>
-            <div class="lumen-popover-stat"><span>Depth</span><span class="lumen-popover-stat-value" id="lumen-stat-depth">0</span></div>
           </div>
           <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Nomon fills this in as you chat.</p>
 
@@ -425,6 +457,7 @@ const LumenWidget = (() => {
               title="Brief hold before send when a prompt clearly conflicts with a protected goal. Always bypassable."
             >
               <span class="lumen-guard-toggle-title">Guard</span>
+              <span class="lumen-guard-toggle-state" aria-hidden="true">Off</span>
               <span class="lumen-guard-toggle-switch" aria-hidden="true"></span>
             </button>
             <p class="lumen-popover-hint lumen-hidden" id="lumen-mode-hint"></p>
@@ -467,6 +500,16 @@ const LumenWidget = (() => {
             <div class="lumen-pillar-block-head">
               <span class="lumen-pillar-block-tag" id="lumen-badge-tag">0 this week</span>
             </div>
+            <label class="lumen-popover-label">Disclosure</label>
+            <div class="lumen-badge-seg" id="lumen-badge-seg" role="group" aria-label="Disclosure badge">
+              <button type="button" class="lumen-badge-seg-btn" data-badge="off">Off</button>
+              <button type="button" class="lumen-badge-seg-btn" data-badge="on">On</button>
+            </div>
+            <select id="lumen-badge-select" class="lumen-popover-select lumen-sr-only" aria-hidden="true" tabindex="-1">
+              <option value="off">Off</option>
+              <option value="on">On</option>
+            </select>
+            <p class="lumen-popover-hint" id="lumen-badge-hint">Off by default. Turn on to show a Disclose strip under long AI replies.</p>
             <p class="lumen-popover-hint">Disclosures you've created — tap “Disclose” under any long reply to add one.</p>
             <p class="lumen-popover-hint lumen-hidden" id="lumen-attestations-empty">No disclosures yet.</p>
             <div class="lumen-attestations" id="lumen-attestations"></div>
@@ -801,6 +844,8 @@ const LumenWidget = (() => {
       const guardOn = normalized === "guard";
       guardBtn.classList.toggle("lumen-guard-toggle--on", guardOn);
       guardBtn.setAttribute("aria-pressed", guardOn ? "true" : "false");
+      const stateEl = guardBtn.querySelector(".lumen-guard-toggle-state");
+      if (stateEl) stateEl.textContent = guardOn ? "On" : "Off";
     }
   }
 
@@ -837,6 +882,7 @@ const LumenWidget = (() => {
     goalsChangeBound = true;
     LumenGoals.onChange?.(() => {
       syncSettingsUI();
+      if (!LumenGoals.isBadgeEnabled?.()) clearAttestUI();
       if (popoverOpen) renderPopover();
     });
   }
@@ -992,6 +1038,25 @@ const LumenWidget = (() => {
       event.stopPropagation();
       const value = btn.getAttribute("data-cost");
       const select = document.getElementById("lumen-cost-select");
+      if (!select || !value) return;
+      select.value = value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    document.getElementById("lumen-badge-select")?.addEventListener("change", (event) => {
+      const on = event.target.value !== "off";
+      LumenGoals.save({ badgeEnabled: on });
+      if (!on) clearAttestUI();
+      syncSettingsUI();
+      updateBadge();
+    });
+
+    document.getElementById("lumen-badge-seg")?.addEventListener("click", (event) => {
+      const btn = event.target.closest?.("[data-badge]");
+      if (!btn) return;
+      event.stopPropagation();
+      const value = btn.getAttribute("data-badge");
+      const select = document.getElementById("lumen-badge-select");
       if (!select || !value) return;
       select.value = value;
       select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -1815,6 +1880,9 @@ const LumenWidget = (() => {
         : "off";
     }
     syncCostSegUI(costSelect?.value || "off");
+    const badgeSelect = document.getElementById("lumen-badge-select");
+    if (badgeSelect) badgeSelect.value = goals.badgeEnabled ? "on" : "off";
+    syncBadgeSegUI(badgeSelect?.value || "off");
     const autoRow = document.getElementById("lumen-cost-auto-row");
     const autoToggle = document.getElementById("lumen-cost-auto");
     if (autoRow) autoRow.classList.toggle("lumen-hidden", !goals.costEnabled);
@@ -1885,11 +1953,28 @@ const LumenWidget = (() => {
     }
   }
 
+  function syncBadgeSegUI(value) {
+    const on = value !== "off";
+    document.querySelectorAll("#lumen-badge-seg .lumen-badge-seg-btn").forEach((btn) => {
+      btn.classList.toggle("on", btn.getAttribute("data-badge") === (on ? "on" : "off"));
+    });
+    const hint = document.getElementById("lumen-badge-hint");
+    if (hint) {
+      hint.textContent = on
+        ? "Disclose strips appear under long AI replies."
+        : "Off by default. Turn on to show a Disclose strip under long AI replies.";
+    }
+  }
+
   function syncPillarTags() {
     const badgeTag = document.getElementById("lumen-badge-tag");
     if (badgeTag) {
-      const n = (LumenSession.getAttestations?.() || []).length;
-      badgeTag.textContent = n === 1 ? "1 this week" : `${n} this week`;
+      if (!LumenGoals.get().badgeEnabled) {
+        badgeTag.textContent = "Off";
+      } else {
+        const n = (LumenSession.getAttestations?.() || []).length;
+        badgeTag.textContent = n === 1 ? "1 this week" : `${n} this week`;
+      }
     }
   }
 
@@ -1961,6 +2046,11 @@ const LumenWidget = (() => {
 
   function clearCostCoach() {
     document.getElementById("lumen-cost-coach")?.remove();
+  }
+
+  function clearAttestUI() {
+    openAttestMsgId = null;
+    document.querySelectorAll(".lumen-attest-row, .lumen-card--attest").forEach((el) => el.remove());
   }
 
   function logCostSave(match, analysis, source) {
@@ -2534,12 +2624,47 @@ const LumenWidget = (() => {
     fabSignalTimer = null;
     fabDisplaySignal = null;
     const fab = document.getElementById("lumen-fab");
-    if (fab) delete fab.dataset.signal;
+    if (fab) {
+      delete fab.dataset.signal;
+      delete fab.dataset.posture;
+    }
+  }
+
+  // 0–100 offload estimate for *this session* (higher = more AI-led).
+  // Lightweight cousin of nudges.postureScore — uses counts already on the session.
+  function sessionOffloadScore() {
+    const session = LumenSession.get();
+    const m = Math.max(session.messageCount || 0, 1);
+    const handoffRate = (session.handoffCount || 0) / m;
+    const mismatchRate = (session.mismatchCount || 0) / m;
+    const depthRate = (session.depthCount || 0) / m;
+    const loopRate = (session.loopCount || 0) / m;
+    const avgLoop = session.loopScores?.length
+      ? session.loopScores.reduce((a, b) => a + b, 0) / session.loopScores.length
+      : 40;
+    const passiveProxy = Math.min(1, avgLoop / 100);
+
+    let offload = 0;
+    offload += Math.min(1, handoffRate * 3) * 38;
+    offload += Math.min(1, mismatchRate * 4) * 7;
+    offload += Math.min(1, loopRate * 3) * 12;
+    offload += passiveProxy * 33;
+    offload -= Math.min(1, depthRate * 5) * 10;
+    return Math.max(0, Math.min(100, Math.round(offload)));
+  }
+
+  /** @returns {"hands-on"|"in-between"|"ai-led"|null} */
+  function sessionPostureBand() {
+    if ((LumenSession.get().messageCount || 0) < FAB_POSTURE_MIN_MESSAGES) return null;
+    const score = sessionOffloadScore();
+    if (score < 40) return "hands-on";
+    if (score < 70) return "in-between";
+    return "ai-led";
   }
 
   // Signal-reactive FAB label (nomon-fab.md): at rest = dots only; on signal =
-  // short copy for 4s. Hand-off still animates the mark but does not expand
-  // the label. Ghost mode is dots-only like other modes (dashed pill styling).
+  // short copy for 4s. Hand-off uses the posture flash instead (AI-led / …).
+  // Ghost mode is dots-only like other modes (dashed pill styling).
   function showFabSignal(signal) {
     if (LumenGoals.isGhost() || LumenGoals.isPaused()) return;
     if (!signal || signal === "handoff") {
@@ -2556,6 +2681,7 @@ const LumenWidget = (() => {
     window.clearTimeout(fabSignalTimer);
     fabDisplaySignal = signal;
     fab.dataset.signal = signal;
+    delete fab.dataset.posture;
     syncFabLabelFromState();
     syncFabAccessibility();
     pulseFabMark();
@@ -2566,6 +2692,62 @@ const LumenWidget = (() => {
       syncFabLabelFromState();
       syncFabAccessibility();
     }, 4000);
+  }
+
+  // Transient session posture — Hands-on / In between / AI-led — ~3s then rest.
+  function showFabPosture(band) {
+    if (LumenGoals.isGhost() || LumenGoals.isPaused()) return;
+    const label = FAB_POSTURE_LABELS[band];
+    if (!label) return;
+    const fab = document.getElementById("lumen-fab");
+    if (!fab) return;
+
+    window.clearTimeout(fabSignalTimer);
+    fabDisplaySignal = `posture:${band}`;
+    fab.dataset.signal = "posture";
+    fab.dataset.posture = band;
+    syncFabLabelFromState();
+    syncFabAccessibility();
+    pulseFabMark();
+
+    fabSignalTimer = window.setTimeout(() => {
+      fabDisplaySignal = null;
+      delete fab.dataset.signal;
+      delete fab.dataset.posture;
+      syncFabLabelFromState();
+      syncFabAccessibility();
+    }, 3000);
+  }
+
+  // Decide FAB flash after a scored message: specific signals win; otherwise
+  // posture on hand-off or when the session band changes.
+  function flashFabForEvaluation(evaluation, options = {}) {
+    if (!options.isNewMessage && !options.fromJudge) return;
+    if (LumenGoals.isGhost() || LumenGoals.isPaused()) return;
+
+    const primary = evaluation?.primary || null;
+    if (primary && FAB_SIGNALS.has(primary)) {
+      showFabSignal(primary);
+      const band = sessionPostureBand();
+      if (band) lastFabPostureBand = band;
+      return;
+    }
+
+    const band = sessionPostureBand();
+    if (!band) {
+      if (primary === "handoff") pulseFabMark();
+      return;
+    }
+
+    const bandChanged = band !== lastFabPostureBand;
+    lastFabPostureBand = band;
+
+    if (primary === "handoff" || bandChanged) {
+      showFabPosture(band);
+      return;
+    }
+
+    pulseFabMark();
   }
 
   function normalizeFabPillar(value) {
@@ -2581,6 +2763,7 @@ const LumenWidget = (() => {
   function fabFocusStatus(pillar) {
     const goals = LumenGoals.get();
     if (pillar === "badge") {
+      if (!goals.badgeEnabled) return "Off";
       const n = (LumenSession.getAttestations?.() || []).length;
       return n === 1 ? "1 this week" : `${n} this week`;
     }
@@ -2636,6 +2819,16 @@ const LumenWidget = (() => {
       return;
     }
 
+    if (typeof fabDisplaySignal === "string" && fabDisplaySignal.startsWith("posture:")) {
+      const band = fabDisplaySignal.slice("posture:".length);
+      const postureLabel = FAB_POSTURE_LABELS[band];
+      if (postureLabel) {
+        labelEl.textContent = postureLabel;
+        labelEl.classList.remove("lumen-fab-label--empty");
+        return;
+      }
+    }
+
     if (LumenGoals.isPaused()) {
       labelEl.textContent = "paused";
       labelEl.classList.remove("lumen-fab-label--empty");
@@ -2659,6 +2852,13 @@ const LumenWidget = (() => {
       return;
     }
     if (fabDisplaySignal) {
+      if (String(fabDisplaySignal).startsWith("posture:")) {
+        const band = fabDisplaySignal.slice("posture:".length);
+        const postureLabel = FAB_POSTURE_LABELS[band] || "posture";
+        fab.title = `Nomon — ${postureLabel}`;
+        fab.setAttribute("aria-label", `Nomon ${mode} mode, ${postureLabel}`);
+        return;
+      }
       fab.title = `Nomon — ${fabDisplaySignal} signal`;
       fab.setAttribute("aria-label", `Nomon ${mode} mode, ${fabDisplaySignal} signal`);
       return;
@@ -2784,9 +2984,8 @@ const LumenWidget = (() => {
   }
 
   function signalBarColor(primary) {
-    // Popover charts sit on Ink chrome — always use the dark-host greys,
-    // regardless of whether ChatGPT/Claude behind the panel is light.
-    const colors = SIGNAL_COLORS_DARK;
+    // Sparkline bars use the same logo-dot hues as the inline strips.
+    const colors = SIGNAL_COLORS_LIGHT;
     if (primary && colors[primary]) return colors[primary];
     return "#9a9aa5";
   }
@@ -4044,6 +4243,11 @@ const LumenWidget = (() => {
   function injectAttestUI(msg, messages, adapter) {
     if (!globalThis.NomonBadge || !adapter?.findAssistantMessageWrapper) return;
     if (LumenGoals.isPaused()) return;
+    if (!LumenGoals.isBadgeEnabled?.()) {
+      document.querySelector(`.lumen-attest-row[data-lumen-msg-id="${msg.id}"]`)?.remove();
+      document.querySelector(`.lumen-card--attest[data-lumen-msg-id="${msg.id}"]`)?.remove();
+      return;
+    }
 
     const attestedIds = new Set(
       (LumenSession.getAttestations?.() || [])
@@ -4119,13 +4323,15 @@ const LumenWidget = (() => {
         evaluation,
         snippet: msg.text.slice(0, 120),
       };
-      if (options.isNewMessage || options.fromJudge) showFabSignal(evaluation.primary);
+      if (options.isNewMessage || options.fromJudge) flashFabForEvaluation(evaluation, options);
     } else if (options.fromJudge && lastEvaluation?.msgId === msg.id) {
       lastEvaluation = {
         msgId: msg.id,
         evaluation,
         snippet: msg.text.slice(0, 120),
       };
+    } else if (options.isNewMessage) {
+      flashFabForEvaluation(evaluation, options);
     }
 
     // Only the loop reconsider overlay reaches here (active/guard mode, sustained
@@ -4260,11 +4466,12 @@ const LumenWidget = (() => {
       return null;
     }
 
-    const { label, signal } = display;
+    const { label, signal, color } = display;
     const theme = isHostDark() ? "dark" : "light";
     const { name, sub } = splitStripLabel(signal, label);
     const tip = stripTipHtml(signal, label, evaluation.explanation);
     const stateText = LumenNudges.truncate(label);
+    const dotColor = color || SIGNAL_COLORS_LIGHT[signal] || "#9a9aa5";
 
     if (existing) {
       existing.setAttribute("data-lumen-signal", signal);
@@ -4273,6 +4480,7 @@ const LumenWidget = (() => {
       const subEl = existing.querySelector(".lumen-strip-sub");
       const stateEl = existing.querySelector(".lumen-strip-state");
       const tipEl = existing.querySelector(".lumen-strip-tip");
+      const dotEl = existing.querySelector(".lumen-strip-dot");
       if (nameEl) nameEl.textContent = name;
       if (subEl) {
         subEl.textContent = sub;
@@ -4280,6 +4488,7 @@ const LumenWidget = (() => {
       }
       if (stateEl) stateEl.textContent = stateText;
       if (tipEl) tipEl.innerHTML = tip;
+      if (dotEl) dotEl.style.background = dotColor;
       return existing;
     }
 
@@ -4289,7 +4498,7 @@ const LumenWidget = (() => {
     strip.setAttribute("data-lumen-signal", signal);
     strip.setAttribute("data-lumen-theme", theme);
     strip.innerHTML = `
-      <span class="lumen-strip-dot" aria-hidden="true"></span>
+      <span class="lumen-strip-dot" style="background:${dotColor}" aria-hidden="true"></span>
       <span class="lumen-strip-name">${escapeHtml(name)}</span>
       <span class="lumen-strip-sub${sub ? "" : " lumen-hidden"}">${escapeHtml(sub)}</span>
       <span class="lumen-strip-state lumen-hidden">${escapeHtml(stateText)}</span>

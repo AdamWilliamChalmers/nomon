@@ -408,7 +408,8 @@
 #lumen-root #lumen-fab[data-signal="drift"],
 #lumen-root #lumen-fab[data-signal="mismatch"],
 #lumen-root #lumen-fab[data-signal="depth"],
-#lumen-root #lumen-fab[data-signal="handoff"] {
+#lumen-root #lumen-fab[data-signal="handoff"],
+#lumen-root #lumen-fab[data-signal="posture"] {
   border-color: var(--lm-border-firm);
   box-shadow: var(--lm-shadow-2);
   padding-right: 4px;
@@ -1855,12 +1856,32 @@
   margin-top: 1px;
 }
 
+#lumen-root .lumen-popover-stats {
+  margin: 12px 18px 6px;
+  max-width: calc(100% - 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+}
 #lumen-root .lumen-popover-mini {
   display: flex;
   gap: 8px;
-  margin: 12px 18px 6px;
-  max-width: calc(100% - 36px);
+  margin: 0;
+  max-width: 100%;
   box-sizing: border-box;
+}
+/* Second row: same cards, quieter type — signals without competing with the hero row */
+#lumen-root .lumen-popover-mini--signals .lumen-popover-mini-stat {
+  padding: 9px 6px 8px;
+}
+#lumen-root .lumen-popover-mini--signals .lumen-popover-mini-v {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--lm-slate);
+}
+#lumen-root .lumen-popover-mini--signals .lumen-popover-mini-l {
+  color: var(--lm-ghost);
 }
 #lumen-root .lumen-popover-mini-stat {
   flex: 1;
@@ -1997,7 +2018,8 @@
   font-weight: 600;
 }
 
-#lumen-root .lumen-cost-seg {
+#lumen-root .lumen-cost-seg,
+#lumen-root .lumen-badge-seg {
   display: inline-flex;
   padding: 3px;
   border-radius: 11px;
@@ -2007,7 +2029,8 @@
   width: 100%;
   box-sizing: border-box;
 }
-#lumen-root .lumen-cost-seg-btn {
+#lumen-root .lumen-cost-seg-btn,
+#lumen-root .lumen-badge-seg-btn {
   flex: 1;
   border: 0;
   background: transparent;
@@ -2019,16 +2042,21 @@
   border-radius: 8px;
   cursor: pointer;
 }
-#lumen-root .lumen-cost-seg-btn.on {
+#lumen-root .lumen-cost-seg-btn.on,
+#lumen-root .lumen-badge-seg-btn.on {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 
-/* Mode: compact single-row segment + slim Guard; scores stay above as hero. */
+/* Mode: compact single-row segment + slim Guard; scores stay above as hero.
+   Hairlines frame Mode + Guard as their own section between stats and goals. */
 #lumen-root .lumen-mode-strip {
-  margin: 4px 18px 8px;
+  margin: 8px 18px 10px;
   max-width: calc(100% - 36px);
   box-sizing: border-box;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 #lumen-root .lumen-mode-strip.lumen-hidden {
   display: none !important;
@@ -2080,33 +2108,51 @@
 #lumen-root .lumen-guard-toggle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   width: 100%;
   margin: 0;
-  padding: 7px 10px;
+  padding: 8px 10px;
   box-sizing: border-box;
   border-radius: 10px;
   border: 1px solid var(--lm-border);
   background: transparent;
-  color: var(--lm-dusk);
+  color: var(--lm-haze);
   font-family: var(--lm-font);
   text-align: left;
   cursor: pointer;
-  transition: border-color var(--lm-transition-fast), background var(--lm-transition-fast);
+  transition: border-color var(--lm-transition-fast), background var(--lm-transition-fast), color var(--lm-transition-fast);
 }
 #lumen-root .lumen-guard-toggle:hover {
-  border-color: var(--lm-border-firm);
+  border-color: var(--lm-border-strong);
   background: var(--lm-mist-lt);
+  color: var(--lm-dusk);
 }
 #lumen-root .lumen-guard-toggle--on {
-  border-color: var(--lm-border-firm);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--lm-win-border);
+  background: var(--lm-win-tint);
+  color: var(--lm-dusk);
+  box-shadow: inset 0 0 0 1px rgba(91, 168, 92, 0.12);
+}
+#lumen-root .lumen-guard-toggle--on:hover {
+  border-color: rgba(91, 168, 92, 0.45);
+  background: rgba(91, 168, 92, 0.2);
 }
 #lumen-root .lumen-guard-toggle-title {
   font-size: 12px;
   font-weight: 650;
   letter-spacing: -0.01em;
+  color: inherit;
+}
+#lumen-root .lumen-guard-toggle-state {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--lm-ghost);
+}
+#lumen-root .lumen-guard-toggle--on .lumen-guard-toggle-state {
+  color: var(--lm-win-text);
 }
 #lumen-root .lumen-guard-toggle-meta {
   display: none;
@@ -2116,31 +2162,32 @@
 }
 #lumen-root .lumen-guard-toggle-switch {
   flex-shrink: 0;
-  width: 32px;
-  height: 18px;
+  width: 34px;
+  height: 20px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   position: relative;
-  transition: background var(--lm-transition-fast);
+  transition: background var(--lm-transition-fast), border-color var(--lm-transition-fast);
 }
 #lumen-root .lumen-guard-toggle-switch::after {
   content: "";
   position: absolute;
-  top: 1px;
-  left: 1px;
+  top: 2px;
+  left: 2px;
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #c8c8d0;
+  background: #9a9aa5;
   transition: transform var(--lm-transition-fast), background var(--lm-transition-fast);
 }
 #lumen-root .lumen-guard-toggle--on .lumen-guard-toggle-switch {
-  background: rgba(255, 255, 255, 0.28);
+  background: var(--lm-win);
+  border-color: rgba(91, 168, 92, 0.55);
 }
 #lumen-root .lumen-guard-toggle--on .lumen-guard-toggle-switch::after {
-  transform: translateX(13px);
-  background: #f2f2f4;
+  transform: translateX(14px);
+  background: #fff;
 }
 #lumen-root .lumen-popover-disc {
   margin-top: 8px;
@@ -2636,9 +2683,14 @@
   color: var(--lm-slate);
 }
 
+#lumen-root .lumen-profile {
+  margin-bottom: 18px;
+}
+
 #lumen-root .lumen-profile-share {
   width: 100%;
   margin-top: 4px;
+  margin-bottom: 4px;
   padding: 8px 10px;
   font-family: var(--lm-font);
   font-size: 11px;
@@ -3380,7 +3432,7 @@
   --lm-border: rgba(255, 255, 255, 0.08);
   --lm-border-strong: rgba(255, 255, 255, 0.18);
   --lm-border-firm: rgba(255, 255, 255, 0.32);
-  --lm-signal-ink: #d0d0d6;
+  --lm-signal-ink: #6e6e78;
   --lm-cost: #5b9bd5;
   --lm-cost-tint: rgba(91, 155, 213, 0.10);
   --lm-cost-border: rgba(91, 155, 213, 0.28);
@@ -3395,30 +3447,49 @@
   display: none !important;
 }
 
+/* Inline strip — soft dashed chip like the Badge disclosure strip.
+   Category identity = logo-dot colour (green/amber/purple/blue). Text stays muted. */
 .lumen-strip {
+  --lm-signal-ink: #3a3a44;
+  --lm-haze: #7b7a8a;
+  --lm-ghost: #9896a8;
   display: inline-flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 8px;
-  margin: 10px 0 4px auto;
-  padding: 5px 12px 5px 10px;
+  gap: 7px;
+  margin: 8px 0 4px auto;
+  padding: 5px 11px 5px 9px;
   height: auto;
   box-sizing: border-box;
-  border-radius: 999px;
-  background: rgba(20, 20, 25, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.015);
+  border: none;
+  box-shadow: none;
   pointer-events: auto;
   user-select: none;
   font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
   font-size: 11px;
   position: relative;
   max-width: 100%;
+  opacity: 1;
+  transition: background 0.15s ease;
+}
+
+.lumen-strip:hover {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .lumen-strip[data-lumen-theme="dark"] {
-  background: rgba(20, 20, 25, 0.92);
-  border-color: rgba(255, 255, 255, 0.12);
+  --lm-signal-ink: #d0d0d6;
+  --lm-haze: #a2a2ad;
+  --lm-ghost: #8a8a95;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  box-shadow: none;
+}
+
+.lumen-strip[data-lumen-theme="dark"]:hover {
+  background: rgba(255, 255, 255, 0.09);
 }
 
 .lumen-strip-label {
@@ -3434,22 +3505,25 @@
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: var(--lm-haze);
-}
-
-.lumen-strip[data-lumen-theme="dark"] .lumen-strip-dot {
   background: var(--lm-ghost);
 }
 
+/* Logo-dot fallbacks when inline style is absent */
+.lumen-strip[data-lumen-signal="loop"] .lumen-strip-dot { background: #5ba85c; }
+.lumen-strip[data-lumen-signal="drift"] .lumen-strip-dot,
+.lumen-strip[data-lumen-signal="handoff"] .lumen-strip-dot { background: #e5a33d; }
+.lumen-strip[data-lumen-signal="mismatch"] .lumen-strip-dot { background: #8e6fd8; }
+.lumen-strip[data-lumen-signal="depth"] .lumen-strip-dot { background: #5b9bd5; }
+
 .lumen-strip-name {
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   color: var(--lm-signal-ink);
   flex-shrink: 0;
 }
 
 .lumen-strip[data-lumen-theme="dark"] .lumen-strip-name {
-  color: #d0d0d6;
+  color: var(--lm-signal-ink);
 }
 
 .lumen-strip-state,
@@ -3461,33 +3535,39 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  opacity: 1;
 }
 
 .lumen-strip[data-lumen-theme="dark"] .lumen-strip-state,
 .lumen-strip[data-lumen-theme="dark"] .lumen-strip-sub {
-  color: #8a8a95;
+  color: var(--lm-haze);
   font-weight: 400;
   text-shadow: none;
 }
 
 .lumen-strip-arrow {
-  color: #6d6d78;
+  color: var(--lm-ghost);
   font-size: 13px;
-  margin-left: 2px;
+  margin-left: 1px;
   flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.lumen-strip:hover .lumen-strip-arrow {
+  opacity: 1;
 }
 
 .lumen-strip-tip {
   position: absolute;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + 8px);
   right: 0;
-  width: 250px;
-  padding: 11px 13px;
-  border-radius: 12px;
+  width: 240px;
+  padding: 10px 12px;
+  border-radius: 10px;
   z-index: 5;
-  background: #17171d;
+  background: rgba(23, 23, 29, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
   font-size: 11.5px;
   line-height: 1.5;
   color: #c2c2cb;

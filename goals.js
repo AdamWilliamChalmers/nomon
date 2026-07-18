@@ -100,6 +100,9 @@ const LumenGoals = (() => {
     // Used for $/month projections in tips.
     costMonthlyVolume: 1000,
     costAssumedOutput: 400,
+    // Disclosure Badge — OPT-IN. When off, no “Disclose how you used AI”
+    // strips under replies; past disclosures stay in the Badge panel.
+    badgeEnabled: false,
   };
 
   const VALID_MODES = new Set(MODES.map((m) => m.value));
@@ -328,6 +331,11 @@ const LumenGoals = (() => {
     return cache.costLevel === "full" ? "full" : "subtle";
   }
 
+  /** Disclosure Badge master switch (respects Pause). Independent of Mirror mode. */
+  function isBadgeEnabled() {
+    return !isPaused() && Boolean(cache.badgeEnabled);
+  }
+
   /** Auto-switch recommended model in the host picker (requires Cost coach on). */
   function isCostAutoSwitch() {
     return isCostEnabled() && Boolean(cache.costAutoSwitch);
@@ -526,6 +534,7 @@ const LumenGoals = (() => {
     isCostEnabled,
     costLevel,
     isCostAutoSwitch,
+    isBadgeEnabled,
     modeMeta,
     normalizeMode,
     listModes,
