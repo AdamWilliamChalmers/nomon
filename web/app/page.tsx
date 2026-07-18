@@ -12,7 +12,7 @@ const CHROME_STORE_URL =
 export const metadata: Metadata = {
   title: "Nomon — AI should sharpen your thinking. Not replace it.",
   description:
-    "Nomon is a free Chrome extension that notices when you've stopped evaluating what AI gives you — and quietly reflects it back. A mirror, not a nanny.",
+    "Nomon is a free browser extension with three modes: Mirror (how you think with AI), Badge (disclose AI use), and Cost (same answer, less spend). A mirror, not a nanny.",
 };
 
 export default function HomePage() {
@@ -30,7 +30,7 @@ export default function HomePage() {
             <span className="nav-tagline">A mirror, not a nanny</span>
           </div>
           <div className="nav-links">
-            <a href="#how">How it works</a>
+            <a href="#modes">Modes</a>
             <a href="#signals">Signals</a>
             <a href="#sceptical">For the sceptical</a>
             <a
@@ -55,18 +55,19 @@ export default function HomePage() {
           </h1>
 
           <p className="lede">
-            Nomon is a free browser extension that notices when you&rsquo;ve stopped evaluating what
-            the AI gives you &amp; quietly says so, in one line under your prompt.{" "}
-            <strong>A mirror, not a nanny.</strong> It never interrupts, never blocks a reply, and
-            never reads what you write.
+            Nomon is a free browser extension with three modes —{" "}
+            <strong>Mirror</strong>, <strong>Badge</strong>, and <strong>Cost</strong> — so you keep
+            judgement in the loop, disclose AI use when it matters, and spend less when the ask is
+            simple. <strong>A mirror, not a nanny.</strong> It never interrupts, never blocks a
+            reply, and never reads what you write.
           </p>
 
           <div className="hero-ctas">
             <a className="btn btn-primary" href={CHROME_STORE_URL} target="_blank" rel="noopener">
               Add to Chrome — free
             </a>
-            <a className="btn btn-ghost" href="#how">
-              See how it works
+            <a className="btn btn-ghost" href="#modes">
+              See the three modes
             </a>
           </div>
 
@@ -141,75 +142,88 @@ export default function HomePage() {
       {/* ═══════════ How it works ═══════════ */}
       <section id="how">
         <div className="wrap">
-          <h2>How it works</h2>
+          <h2>Three modes. One quiet instrument.</h2>
           <p className="section-intro">
-            Three quiet mechanisms. No score chasing, no streaks, no guilt.
+            Turn each on independently. No score chasing, no streaks, no guilt.
           </p>
 
           <div className="steps">
             <div className="step">
               <div className="step-visual" aria-hidden="true">
-                <div className="shape-viz">
-                  <i className="q" style={{ height: 34 }} />
-                  <i style={{ height: 12 }} />
-                  <i style={{ height: 14 }} />
-                  <i className="q" style={{ height: 28 }} />
-                  <i style={{ height: 10 }} />
-                  <i style={{ height: 11 }} />
-                  <i style={{ height: 9 }} />
-                  <i className="q" style={{ height: 22 }} />
-                  <i style={{ height: 12 }} />
-                </div>
-              </div>
-              <h3>It reads the shape of the conversation</h3>
-              <p>
-                A lightweight extension watches how you and the AI are talking — questions versus
-                commands, pace, pushback. Never the content itself, and nothing leaves your browser.
-              </p>
-            </div>
-
-            <div className="step">
-              <div className="step-visual">
                 <div className="strip left" style={{ padding: 0 }}>
                   <span className="who">Nomon</span>
-                  <span className="dot-i bg-green" />
-                  <span className="sig sig-green">loop · still with it?</span>
+                  <span className="dot-i bg-signal" />
+                  <span className="sig">depth · worth thinking first?</span>
                 </div>
               </div>
-              <h3>It reflects, inline</h3>
+              <p className="step-kicker">Mirror</p>
+              <h3>Your thinking, reflected</h3>
               <p>
-                When you stop evaluating, a one-line strip appears under your message. One of five
-                signals, each with its own name and meaning. Never a banner, never a block.
+                Notices when you&rsquo;ve stopped evaluating what the AI gives you — and says so in
+                one line under your prompt. Signals stay monochrome; the name carries the meaning.
               </p>
             </div>
 
             <div className="step">
               <div className="step-visual">
-                <div className="mini-card">
-                  <StaticMark size={20} />
-                  <div>
-                    <b>This week</b>Explorer · steady
+                <div className="badge-chip badge-chip--step">
+                  <StaticMark size={14} />
+                  Claude · AI-assisted
+                </div>
+              </div>
+              <p className="step-kicker">Badge</p>
+              <h3>Disclose how you used AI</h3>
+              <p>
+                Opt-in labels next to the reply — inferred from clarifying questions, edits, and
+                pushback — ready to copy when you need to be transparent.
+              </p>
+            </div>
+
+            <div className="step">
+              <div className="step-visual">
+                <div className="cost-coach cost-coach--step" data-level="full">
+                  <div className="cost-coach-card">
+                    <span className="cost-coach-dot" aria-hidden="true" />
+                    <div className="cost-coach-bd">
+                      <div className="cost-coach-ln">
+                        ≈ <b>1.2k</b> · Instant saves ~<b>$0.04</b>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-              <h3>It adds up over the week</h3>
+              <p className="step-kicker">Cost</p>
+              <h3>Same answer, less spend</h3>
               <p>
-                Patterns roll into one card — your shape and your trends, in plain words. No raw
-                scores, no leaderboard, nothing to grind.
+                On-device token estimates and fit tips beside the composer — lighter when the ask is
+                extractive, stronger when the stakes are high. Off until you turn it on.
               </p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* ═══════════ Modes ═══════════ */}
+      <section id="modes">
+        <div className="wrap">
+          <h2>Mirror · Badge · Cost</h2>
+          <p className="section-intro">
+            Click a mode to see what it looks like in chat. Each one is optional after Mirror —
+            switch any time from the Nomon pill.
+          </p>
+
+          <LandingModes />
+        </div>
+      </section>
+
       {/* ═══════════ Across your AIs ═══════════ */}
       <section id="everywhere">
         <div className="wrap">
-          <h2>One mirror, every chat</h2>
+          <h2>One extension, every chat</h2>
           <p className="section-intro" style={{ marginBottom: 36 }}>
-            Your habits with AI aren&rsquo;t per-tool, so the mirror isn&rsquo;t either. Nomon works
-            inside the chat interfaces you already use, and your weekly card reflects all of them
-            together. Switching tools never resets the picture.
+            Your habits with AI aren&rsquo;t per-tool, so Nomon isn&rsquo;t either. Mirror, Badge,
+            and Cost work inside the chat interfaces you already use. Switching tools never resets
+            the picture.
           </p>
           <ul className="ai-list" aria-label="Supported AI tools">
             <li>ChatGPT</li>
@@ -233,9 +247,9 @@ export default function HomePage() {
       {/* ═══════════ Signals ═══════════ */}
       <section id="signals">
         <div className="wrap">
-          <h2>Five signals, five meanings</h2>
+          <h2>Inside Mirror: five signals</h2>
           <p className="section-intro">
-            One warning light can&rsquo;t mean five different things — so Nomon doesn&rsquo;t use
+            One warning light can&rsquo;t mean five different things — so Mirror doesn&rsquo;t use
             one. Each signal has its own name and voice, and reads as quiet monochrome data under
             your message. No colour-coded alarms, no red anywhere.
           </p>
@@ -306,28 +320,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══════════ Modes ═══════════ */}
-      <section id="modes">
-        <div className="wrap">
-          <h2>You choose how present it is</h2>
-          <p className="section-intro">
-            One dial, four settings — one for each dot in the mark. Switch any time; the panel on the
-            right shows exactly what you&rsquo;d see.
-          </p>
-
-          <LandingModes />
-        </div>
-      </section>
-
       {/* ═══════════ Weekly card ═══════════ */}
       <section id="week">
         <div className="wrap week-grid">
           <div>
             <h2>Your week, in one card</h2>
             <p className="section-intro" style={{ marginBottom: 0 }}>
-              Every signal rolls up into a single, shareable card — your shape, your trends, and one
-              question worth sitting with. Shapes, not rankings: there are no raw scores and no
-              leaderboard, because the point is comparison with your own last week, not with
+              Every Mirror signal rolls up into a single, shareable card — your shape, your trends,
+              and one question worth sitting with. Shapes, not rankings: there are no raw scores and
+              no leaderboard, because the point is comparison with your own last week, not with
               strangers.
             </p>
           </div>
@@ -433,16 +434,17 @@ export default function HomePage() {
             <div className="qa-item">
               <h3>Can it ever stop me sending a message?</h3>
               <p>
-                <b>Only if you ask it to.</b> Guard mode — off by default — briefly holds a message
-                that clearly conflicts with a goal you wrote, and even then one click sends it
-                anyway. The other four modes never touch your messages.
+                <b>Only if you ask it to.</b> Inside Mirror, Guard — off by default — briefly holds a
+                message that clearly conflicts with a goal you wrote, and even then one click sends
+                it anyway. Badge and Cost never touch your messages.
               </p>
             </div>
             <div className="qa-item">
-              <h3>What if I just want it gone for a while?</h3>
+              <h3>What if I just want Mirror gone for a while?</h3>
               <p>
-                <b>Ghost mode.</b> One click and nothing appears in-session at all — you only get the
-                weekly digest. It&rsquo;s a first-class mode, not a buried setting.
+                <b>Ghost mode.</b> One click and Mirror signals disappear in-session — you only get
+                the weekly digest. Badge and Cost keep their own toggles. Or Pause everything from
+                the pill.
               </p>
             </div>
             <div className="qa-item">
@@ -460,8 +462,8 @@ export default function HomePage() {
       <section className="closing">
         <div className="wrap">
           <AnimMark size={88} />
-          <h2>Keep your judgement in the loop.</h2>
-          <p>Free, private, and quiet by design.</p>
+          <h2>Keep judgement in the loop.</h2>
+          <p>Mirror · Badge · Cost — free, private, and quiet by design.</p>
           <a className="btn btn-primary" href={CHROME_STORE_URL} target="_blank" rel="noopener">
             Add to Chrome — free
           </a>

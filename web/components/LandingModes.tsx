@@ -2,62 +2,25 @@
 
 import { useState, type ReactNode } from "react";
 
-type ModeKey = "ghost" | "ambient" | "active" | "guard";
+type ModeKey = "mirror" | "badge" | "cost";
 
 type Mode = {
   key: ModeKey;
   label: string;
-  dotClass: string;
-  optIn?: boolean;
+  tag: string;
   desc: ReactNode;
   body: ReactNode;
 };
 
 const MODES: Mode[] = [
   {
-    key: "ghost",
-    label: "Ghost",
-    dotClass: "bg-blue",
+    key: "mirror",
+    label: "Mirror",
+    tag: "On by default",
     desc: (
       <>
-        <b>Fully invisible.</b> Nothing appears in-session — you only get the weekly digest.
-      </>
-    ),
-    body: (
-      <>
-        <div className="bubble">Draft a reply to the landlord about the deposit.</div>
-        <p className="nothing">nothing appears — digest on Monday</p>
-      </>
-    ),
-  },
-  {
-    key: "ambient",
-    label: "Ambient",
-    dotClass: "bg-green",
-    desc: (
-      <>
-        <b>The default.</b> Subtle inline strips for Loop and Drift beside your messages — never a
-        pop-up, never a card.
-      </>
-    ),
-    body: (
-      <>
-        <div className="bubble">ok use that version</div>
-        <div className="strip">
-          <span className="who">Nomon</span>
-          <span className="dot-i bg-green" />
-          <span className="sig sig-green">loop · still with it?</span>
-        </div>
-      </>
-    ),
-  },
-  {
-    key: "active",
-    label: "Active",
-    dotClass: "bg-amber",
-    desc: (
-      <>
-        <b>Everything on.</b> All five signals, plus reflection cards when it matters.
+        <b>Your thinking, reflected.</b> When you stop evaluating what the AI gives you, a one-line
+        strip appears under your prompt — never a pop-up, never a block.
       </>
     ),
     body: (
@@ -67,8 +30,8 @@ const MODES: Mode[] = [
         </div>
         <div className="strip">
           <span className="who">Nomon</span>
-          <span className="dot-i bg-blue" />
-          <span className="sig sig-blue">depth · worth thinking first?</span>
+          <span className="dot-i bg-signal" />
+          <span className="sig">depth · worth thinking first?</span>
         </div>
         <div className="reflect">
           <h4>Worth a beat first</h4>
@@ -89,52 +52,86 @@ const MODES: Mode[] = [
     ),
   },
   {
-    key: "guard",
-    label: "Guard",
-    dotClass: "bg-rose",
-    optIn: true,
+    key: "badge",
+    label: "Badge",
+    tag: "Opt-in",
     desc: (
       <>
-        <b>The opt-in fourth mode.</b> Active, plus a brief hold before send when a prompt clearly
-        conflicts with a protected goal you wrote. Always bypassable.
+        <b>Disclose how you used AI.</b> Behaviour-inferred labels — AI-assisted, AI-led, and so on —
+        sit next to the reply, ready to copy when you need to be transparent.
       </>
     ),
     body: (
       <>
-        <div className="bubble">Write the introduction chapter for me.</div>
-        <div className="strip">
-          <span className="who">Nomon</span>
-          <span className="dot-i bg-rose" />
-          <span className="sig sig-rose">mismatch · held before send</span>
+        <div className="bubble bubble-assistant">
+          Both paths have real trade-offs. Before I weigh in — what matters most to you right now:
+          growth, stability, or the people?
         </div>
-        <div className="hold-card">
-          <h4>Quoting you back</h4>
-          <p>
-            On 12 June you wrote: <q>I draft every chapter introduction myself.</q> Send anyway, or
-            edit first?
-          </p>
-          <div className="reflect-actions">
-            <button type="button" className="chip">
-              Send anyway
-            </button>
+        <div className="badge-row">
+          <span className="badge-chip">
+            <span className="mark" style={{ width: 14, height: 14 }} aria-hidden="true">
+              <div className="d d-green" />
+              <div className="d d-amber" />
+              <div className="d d-rose" />
+              <div className="d d-blue" />
+            </span>
+            Claude · AI-assisted
+          </span>
+          <span className="badge-meta">Copy disclosure</span>
+        </div>
+        <p className="mode-preview-note">
+          Inferred from how you worked the thread — clarifying questions, edits, pushback — not from
+          reading the words.
+        </p>
+      </>
+    ),
+  },
+  {
+    key: "cost",
+    label: "Cost",
+    tag: "Off by default",
+    desc: (
+      <>
+        <b>Same answer, less spend.</b> On-device estimates beside the composer, plus fit tips —
+        lighter model when the ask is extractive, stronger when the stakes are high.
+      </>
+    ),
+    body: (
+      <>
+        <div className="bubble">Summarise this email in 3 bullets.</div>
+        <div className="cost-coach" data-level="full">
+          <div className="cost-coach-card">
+            <span className="cost-coach-dot" aria-hidden="true" />
+            <div className="cost-coach-bd">
+              <div className="cost-coach-ln">
+                ≈ <b>1.2k tokens</b> · lighter model saves ~<b>$0.04</b>
+              </div>
+              <div className="cost-coach-meter" aria-hidden="true">
+                <i style={{ width: "42%" }} />
+              </div>
+            </div>
+          </div>
+          <div className="cost-coach-tip">
+            <p>Extractive ask — Instant is enough for summarise / bullets.</p>
             <button type="button" className="chip chip-solid">
-              Edit first
+              Use Instant
             </button>
           </div>
         </div>
+        <p className="mode-preview-note">Estimates stay on this device — never uploaded for cost analysis.</p>
       </>
     ),
   },
 ];
 
 export default function LandingModes() {
-  const [active, setActive] = useState<ModeKey>("ambient");
-  const current = MODES.find((m) => m.key === active) ?? MODES[1];
+  const [active, setActive] = useState<ModeKey>("mirror");
+  const current = MODES.find((m) => m.key === active) ?? MODES[0];
 
   return (
     <div className="modes-grid">
       <div>
-        <div className="dial" role="group" aria-label="Visibility modes">
+        <div className="dial" role="group" aria-label="Nomon modes">
           {MODES.map((m) => (
             <button
               key={m.key}
@@ -143,9 +140,7 @@ export default function LandingModes() {
               aria-pressed={m.key === active}
               onClick={() => setActive(m.key)}
             >
-              <span className={`dot-i ${m.dotClass}`} />
               {m.label}
-              {m.optIn ? <span className="optin">opt-in</span> : null}
             </button>
           ))}
         </div>
@@ -153,8 +148,8 @@ export default function LandingModes() {
           {current.desc}
         </p>
         <p className="mode-fine">
-          The first three modes never hold you up. Guard is the only one that can pause before send —
-          you switch it on yourself, it only acts on goals you wrote, and it is always bypassable.
+          Each mode turns on independently. Mirror runs by default; Badge and Cost are opt-in. Pause
+          stops everything until you resume.
         </p>
       </div>
 
@@ -170,8 +165,8 @@ export default function LandingModes() {
             <span>your AI chat</span>
           </div>
           <span className="pill" id="mode-pill">
-            <span className={`dot-i ${current.dotClass}`} />
             {current.label}
+            <span className="pill-tag">{current.tag}</span>
           </span>
         </div>
         <div className="chat-body" id="mode-body" aria-live="polite">
