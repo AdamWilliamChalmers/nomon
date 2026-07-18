@@ -33,6 +33,7 @@ export default function HomePage() {
             <a href="#modes">Modes</a>
             <a href="#signals">Signals</a>
             <a href="#sceptical">For the sceptical</a>
+            <a href="/organisations">Organisations</a>
             <a
               className="btn btn-primary btn-small"
               href={CHROME_STORE_URL}
@@ -458,6 +459,28 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ═══════════ Organisations ═══════════ */}
+      <section id="organisations">
+        <div className="wrap org-landing-teaser">
+          <div>
+            <p className="step-kicker">For organisations</p>
+            <h2>AI literacy for teams — without the surveillance.</h2>
+            <p className="section-intro" style={{ marginBottom: 0 }}>
+              A cohort mirror for L&amp;D and responsible-AI programmes: aggregate how people think
+              with AI, never a feed of what they wrote. Same ethos as the free extension.
+            </p>
+          </div>
+          <div className="org-landing-cta">
+            <a className="btn btn-primary" href="/organisations">
+              Explore organisations
+            </a>
+            <p className="hero-fine" style={{ marginTop: 14 }}>
+              Early access · lightweight sign-in · sample cohort preview
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ═══════════ Closing ═══════════ */}
       <section className="closing">
         <div className="wrap">
@@ -479,7 +502,8 @@ export default function HomePage() {
           </a>
           <p className="fine">
             Free extension · Ages 13+ · <a href="/privacy">Privacy</a> ·{" "}
-            <a href="#signals">How scoring works</a>
+            <a href="#signals">How scoring works</a> ·{" "}
+            <a href="/organisations">Organisations</a>
           </p>
         </div>
       </footer>

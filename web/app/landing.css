@@ -1185,6 +1185,273 @@ html:has(.lumen-landing) {
   }
 }
 
+/* ————————————————————————————————————————
+   Organisations (landing teaser + /organisations)
+———————————————————————————————————————— */
+.lumen-landing .org-landing-teaser {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr;
+  gap: 48px;
+  align-items: end;
+  padding: 8px 0 0;
+}
+.lumen-landing .org-landing-cta {
+  text-align: right;
+}
+.lumen-landing .org-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ll-faint);
+  margin: 18px 0 12px;
+}
+.lumen-landing .org-hero {
+  align-items: start;
+  gap: 48px;
+}
+.lumen-landing .org-sign-card {
+  background: var(--ll-card-grad);
+  border: 1px solid var(--ll-hairline);
+  border-radius: 18px;
+  padding: 28px 26px;
+}
+.lumen-landing .org-sign-card h2 {
+  font-family: var(--ll-serif);
+  font-size: 1.45rem;
+  font-weight: 500;
+  color: var(--ll-ink);
+  margin-bottom: 8px;
+}
+.lumen-landing .org-sign-card > p {
+  color: var(--ll-muted);
+  font-size: 14px;
+  margin-bottom: 22px;
+}
+.lumen-landing .org-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lumen-landing .org-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ll-faint);
+}
+.lumen-landing .org-form input {
+  font-family: var(--ll-sans);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ll-ink);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--ll-hairline);
+  border-radius: 10px;
+  padding: 11px 12px;
+}
+.lumen-landing .org-form input::placeholder {
+  color: var(--ll-faint);
+}
+.lumen-landing .org-form input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.lumen-landing .org-form .btn {
+  margin-top: 4px;
+  width: 100%;
+  text-align: center;
+}
+.lumen-landing .org-form-error {
+  color: #d0d0d6;
+  font-size: 13px;
+  border-left: 2px solid rgba(255, 255, 255, 0.35);
+  padding-left: 10px;
+}
+.lumen-landing .org-form-fine {
+  font-size: 12px;
+  color: var(--ll-faint);
+  line-height: 1.45;
+}
+.lumen-landing .org-signed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lumen-landing .org-muted {
+  color: var(--ll-muted);
+  font-size: 14px;
+}
+.lumen-landing .org-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin-top: 40px;
+}
+.lumen-landing .org-pillars h3 {
+  font-family: var(--ll-serif);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--ll-ink);
+  margin: 6px 0 10px;
+}
+.lumen-landing .org-pillars p:last-child {
+  color: var(--ll-muted);
+  font-size: 15px;
+}
+.lumen-landing .org-terms {
+  margin-top: 28px;
+}
+.lumen-landing .org-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+.lumen-landing .org-mock-card {
+  background: var(--ll-card-grad);
+  border: 1px solid var(--ll-hairline);
+  border-radius: 18px;
+  padding: 26px 24px;
+}
+.lumen-landing .org-mock-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ll-faint);
+  margin-bottom: 10px;
+}
+.lumen-landing .org-mock-card h3 {
+  font-family: var(--ll-serif);
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--ll-ink);
+  margin-bottom: 20px;
+}
+.lumen-landing .org-mock-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.lumen-landing .org-mock-stats span {
+  display: block;
+  font-family: var(--ll-serif);
+  font-size: 1.6rem;
+  color: var(--ll-ink);
+  line-height: 1.1;
+}
+.lumen-landing .org-mock-stats em {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ll-faint);
+}
+.lumen-landing .org-mock-insight {
+  font-size: 14px;
+  color: var(--ll-muted);
+  line-height: 1.55;
+  border-top: 1px solid var(--ll-hairline-soft);
+  padding-top: 14px;
+}
+.lumen-landing .org-dash {
+  padding: 72px 28px 100px;
+}
+.lumen-landing .org-dash h1 {
+  font-family: var(--ll-serif);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 500;
+  color: var(--ll-ink);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+.lumen-landing .org-dash-lede {
+  max-width: 640px;
+  margin-bottom: 40px;
+}
+.lumen-landing .org-dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.lumen-landing .org-dash-wide {
+  grid-column: 1 / -1;
+}
+.lumen-landing .org-shape-list,
+.lumen-landing .org-prompt-list {
+  list-style: none;
+  margin: 0 0 16px;
+}
+.lumen-landing .org-shape-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ll-hairline-soft);
+  font-size: 14px;
+  color: var(--ll-body);
+}
+.lumen-landing .org-shape-list b {
+  font-weight: 600;
+  color: var(--ll-ink);
+}
+.lumen-landing .org-prompt-list li {
+  position: relative;
+  padding: 12px 0 12px 18px;
+  border-bottom: 1px solid var(--ll-hairline-soft);
+  font-size: 15px;
+  color: var(--ll-body);
+}
+.lumen-landing .org-prompt-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1.15em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ll-signal-dot);
+}
+.lumen-landing .org-dash-note {
+  margin-top: 36px;
+  font-size: 14px;
+  color: var(--ll-muted);
+}
+.lumen-landing .org-dash-note a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lumen-landing .nav-links .btn-ghost {
+  background: transparent;
+  border: 1px solid var(--ll-hairline);
+  color: var(--ll-body);
+}
+.lumen-landing .nav-links button.btn {
+  appearance: none;
+}
+
+@media (max-width: 840px) {
+  .lumen-landing .org-landing-teaser,
+  .lumen-landing .org-hero,
+  .lumen-landing .org-pillars,
+  .lumen-landing .org-preview-grid,
+  .lumen-landing .org-dash-grid {
+    grid-template-columns: 1fr;
+  }
+  .lumen-landing .org-landing-cta {
+    text-align: left;
+  }
+  .lumen-landing .org-mock-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html:has(.lumen-landing) {
     scroll-behavior: auto;
