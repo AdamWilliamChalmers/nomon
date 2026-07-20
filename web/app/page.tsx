@@ -32,6 +32,7 @@ export default function HomePage() {
           <div className="nav-links">
             <a href="#modes">Modes</a>
             <a href="#signals">Signals</a>
+            <a href="#evidence">Evidence</a>
             <a href="#sceptical">For the sceptical</a>
             <a href="/organisations">Organisations</a>
             <a
@@ -387,6 +388,90 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ═══════════ Evidence ═══════════ */}
+      <section id="evidence">
+        <div className="wrap">
+          <h2>How you use AI matters</h2>
+          <p className="section-intro">
+            Cognitive science is clear that offloading thinking to AI can blunt skill and knowledge
+            — and that staying in the loop changes the outcome. Nomon is built around that
+            distinction. A few findings that shaped the product:
+          </p>
+
+          <div className="evidence-list">
+            <article className="evidence-row">
+              <p className="evidence-cite">
+                <a
+                  href="https://doi.org/10.1073/pnas.2422633122"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Bastani et al. · PNAS · 2025
+                </a>
+              </p>
+              <div>
+                <p className="evidence-finding">
+                  High-school students with an AI that handed them answers did better in practice —
+                  then worse on a test with no AI. Full offloading blocked the practice needed to
+                  learn.
+                </p>
+                <p className="evidence-nomon">
+                  In Nomon: Hand-off and Loop notice when the work is leaving your hands.
+                </p>
+              </div>
+            </article>
+
+            <article className="evidence-row">
+              <p className="evidence-cite">
+                <a
+                  href="https://doi.org/10.1093/pnasnexus/pgaf316"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Melumad &amp; Yun · PNAS Nexus · 2025
+                </a>
+              </p>
+              <div>
+                <p className="evidence-finding">
+                  People who learned via AI summaries spent less time, learned less, and felt less
+                  ownership of what they knew than people who searched and synthesised themselves.
+                </p>
+                <p className="evidence-nomon">
+                  In Nomon: Depth invites a beat before high-stakes answers land.
+                </p>
+              </div>
+            </article>
+
+            <article className="evidence-row">
+              <p className="evidence-cite">
+                <a
+                  href="https://doi.org/10.1016/j.tics.2026.06.004"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Cash et al. · Trends in Cognitive Sciences · 2026
+                </a>
+              </p>
+              <div>
+                <p className="evidence-finding">
+                  Complete offloading can hinder skill acquisition and foster decay — but outcomes
+                  depend on how AI is used. Stay in the cognitive loop, and the costs are not
+                  inevitable.
+                </p>
+                <p className="evidence-nomon">
+                  In Nomon: Mirror is that loop — a quiet reflection, not a block.
+                </p>
+              </div>
+            </article>
+          </div>
+
+          <p className="evidence-fine">
+            These studies support the mechanism Nomon is designed around — not a claim that the
+            extension itself has been clinically validated.
+          </p>
+        </div>
+      </section>
+
       {/* ═══════════ For the sceptical ═══════════ */}
       <section id="sceptical">
         <div className="wrap">
@@ -502,7 +587,7 @@ export default function HomePage() {
           </a>
           <p className="fine">
             Free extension · Ages 13+ · <a href="/privacy">Privacy</a> ·{" "}
-            <a href="#signals">How scoring works</a> ·{" "}
+            <a href="#evidence">Evidence</a> · <a href="#signals">How scoring works</a> ·{" "}
             <a href="/organisations">Organisations</a>
           </p>
         </div>
