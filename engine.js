@@ -276,6 +276,7 @@ const LumenEngine = (() => {
   }
 
   function scoreTaskFraming(text, messages, userIndex) {
+    if (LumenRules.isScaffoldAsk?.(text) || LumenRules.isAttemptFirst?.(text)) return 10;
     let score = 30;
     if (LOW_FRAMING.some((pattern) => pattern.test(text))) score = 10;
     else if (HIGH_FRAMING.some((pattern) => pattern.test(text))) score = 90;
@@ -569,8 +570,18 @@ const LumenEngine = (() => {
     const tier = getTaskFramingTier(msg.text);
     const framing = LumenRules.analyzeFraming(msg.text);
     const engagementOverride = LumenRules.checkEngagementOverride(msg.text);
+    const stanceInfo = LumenRules.checkStance?.(msg.text) || {
+      stance: engagementOverride.stance || "neutral",
+      reasons: engagementOverride.reasons || [],
+      framing,
+    };
+    const stance = stanceInfo.stance || engagementOverride.stance || "neutral";
     const exempt = isTaskTypeExempt(taskType, engineContext);
     let loopScore = loopScoreRaw;
+
+    // Scaffold / attempt-first are practice-preserving — pull loop score down.
+    if (stance === "scaffold") loopScore = Math.max(0, loopScore - 18);
+    if (stance === "attempt-first") loopScore = Math.max(0, loopScore - 14);
 
     if (!exempt && !engagementOverride.active && messageIndex <= 2 && framing.tier >= 1) {
       loopScore = Math.max(loopScoreRaw, framing.tier === 1 ? 52 : 42);
@@ -594,24 +605,29 @@ const LumenEngine = (() => {
 
     // Hand-off is the core "you stopped thinking for yourself" signal, so it
     // must fire wherever delegation happens — not only in the opening two
-    // messages. Asking the AI to ideate / produce / decide for you mid-chat
-    // ("give me an idea for an app") is exactly the moment a "think for myself"
-    // user wants flagged. Engagement markers, user-provided context, and
-    // task-type exemptions still suppress genuine collaboration.
+    // messages. Scaffold and attempt-first suppress it (practice stays with you).
     const handoffActive =
-      !exempt && !engagementOverride.active && handoffTier1Exact;
+      !exempt && !engagementOverride.active && stance !== "scaffold" && handoffTier1Exact;
     const handoffStripOnly =
-      !exempt && !engagementOverride.active && handoffSemanticOrTier2;
+      !exempt &&
+      !engagementOverride.active &&
+      stance !== "scaffold" &&
+      handoffSemanticOrTier2;
     const loopActive = messageIndex > 2 && loopScore >= loopThreshold;
 
-    // Affirmative Mirror strip: only when engagement override fires and no
-    // problem signal claims primary. Sparse by nature — override is uncommon.
+    // Affirmative Mirror: attempt-first, scaffold, or other engagement override.
     const engagedActive =
-      engagementOverride.active && goals.mode !== "ghost" && !exempt;
+      (engagementOverride.active || stance === "scaffold" || stance === "attempt-first") &&
+      goals.mode !== "ghost" &&
+      !exempt;
 
     const handoffLabel = globalThis.LumenNudges.getHandOffLabel();
     const loopLabel = globalThis.LumenNudges.getLoopLabel(signals, loopScore, passiveCount);
-    const engagedLabel = globalThis.LumenNudges.getEngagedLabel?.(engagementOverride);
+    const engagedLabel = globalThis.LumenNudges.getEngagedLabel?.({
+      ...engagementOverride,
+      stance,
+      reasons: engagementOverride.reasons?.length ? engagementOverride.reasons : stanceInfo.reasons,
+    });
     const depthWarm = depth.active && globalThis.LumenNudges.isHighStakesDepth(msg.text);
     const mismatchHighFrequency =
       mismatchMatch && context.sessionMismatchCount >= 2;
@@ -621,6 +637,7 @@ const LumenEngine = (() => {
       text: msg.text,
       tier,
       framing,
+      stance,
       engagementOverride: engagementOverride.active,
       dwellRatio,
       pasted: Boolean(msg.dynamics?.pasted),
@@ -649,7 +666,11 @@ const LumenEngine = (() => {
           }
         : { active: false },
       engaged: engagedActive
-        ? { active: true, label: engagedLabel || "hands-on · you put real thought in" }
+        ? {
+            active: true,
+            stance,
+            label: engagedLabel || "hands-on · you put real thought in",
+          }
         : { active: false },
       overlayType: null,
       primary: null,
@@ -676,7 +697,14 @@ const LumenEngine = (() => {
       primary: result.primary,
     });
     result.confidence = confidence.level;
-    result.reasons = confidence.reasons;
+    result.reasons = result.engaged.active
+      ? [
+          ...(engagementOverride.reasons || stanceInfo.reasons || []),
+          ...confidence.reasons.filter(
+            (r) => !(engagementOverride.reasons || []).includes(r)
+          ),
+        ]
+      : confidence.reasons;
     result.overlayType = shouldShowOverlay(
       messageIndex,
       framing,

@@ -115,6 +115,7 @@ const LumenWidget = (() => {
   }
 
   let popoverOpen = false;
+  let glanceOpen = false;
   let suppressModeSelectChange = false;
   let dismissedReconsider = new Set();
   // Message ids whose Mismatch card the user has resolved this session (either
@@ -253,9 +254,44 @@ const LumenWidget = (() => {
     document.querySelectorAll("#lumen-popover .lumen-fab-pin").forEach((el) => el.remove());
     // Drop legacy Mirror / Badge pillar tabs — everything is one scroll now.
     document.getElementById("lumen-pillar-tabs")?.remove();
+    ensureFabGlanceMarkup(fab);
     migrateModeStripCompact();
     fab.classList.remove("lumen-fab--open");
-    fab.title = "Nomon — drag to move, click to open";
+    fab.title = "Nomon — drag to move, click for today's metrics";
+  }
+
+  function ensureFabGlanceMarkup(fab) {
+    if (!fab) return;
+    let core = fab.querySelector(".lumen-fab-core");
+    if (!core) {
+      core = document.createElement("div");
+      core.className = "lumen-fab-core";
+      const move = ["lumen-fab-digest", "lumen-fab-mark", "lumen-fab-lead", "lumen-fab-engagement"]
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+      fab.insertBefore(core, fab.firstChild);
+      move.forEach((el) => core.appendChild(el));
+    }
+    if (!document.getElementById("lumen-fab-glance")) {
+      const glance = document.createElement("div");
+      glance.id = "lumen-fab-glance";
+      glance.className = "lumen-fab-glance";
+      glance.hidden = true;
+      glance.innerHTML = `
+          <div class="lumen-fab-glance-metrics" aria-label="Today's metrics">
+            <span class="lumen-fab-glance-metric" title="Messages today"><b id="lumen-glance-msg">0</b> msg</span>
+            <span class="lumen-fab-glance-metric" title="Hand-offs"><b id="lumen-glance-handoff">0</b> hand-off</span>
+            <span class="lumen-fab-glance-metric" title="Loops"><b id="lumen-glance-loop">0</b> loop</span>
+            <span class="lumen-fab-glance-metric" title="Hands-on moments"><b id="lumen-glance-engaged">0</b> hands-on</span>
+          </div>
+          <button type="button" id="lumen-fab-glance-open" class="lumen-fab-glance-open" aria-label="Open Nomon panel" title="Open panel">⌃</button>`;
+      fab.appendChild(glance);
+      bindGlanceOpenButton();
+    } else {
+      const openBtn = document.getElementById("lumen-fab-glance-open");
+      if (openBtn && openBtn.textContent.trim() !== "⌃") openBtn.textContent = "⌃";
+      bindGlanceOpenButton();
+    }
   }
 
   function migrateModeStripCompact() {
@@ -317,13 +353,14 @@ const LumenWidget = (() => {
   function ensureRoot() {
     ensureHideStyles();
     let existing = document.getElementById("lumen-root");
-    // Rebuild if this tab still has a pre–mode-seg / pre–badge-strip popover,
+    // Rebuild if this tab still has a pre–mode-seg / pre–badge-strip / pre–glance popover,
     // legacy Mirror/Badge tabs, or a pre–inline-savings layout.
     if (
       existing &&
       (!document.getElementById("lumen-mode-seg") ||
         !document.getElementById("lumen-badge-seg") ||
         !document.getElementById("lumen-badge-strip") ||
+        !document.getElementById("lumen-fab-glance") ||
         document.getElementById("lumen-pillar-tabs") ||
         document.getElementById("lumen-pillar-cost") ||
         document.getElementById("lumen-analyse-cta"))
@@ -346,20 +383,31 @@ const LumenWidget = (() => {
     root.id = "lumen-root";
     root.innerHTML = `
       <div id="lumen-fab" data-side="right" title="Nomon — drag to move, click to open">
-        <span id="lumen-fab-digest" aria-hidden="true"></span>
-        <span id="lumen-fab-mark" aria-hidden="true">
-          <span class="lumen-dot-spin">
-            <span class="lumen-dot lumen-dot-green" style="--rx:-9px;--ry:-5px;--ex:0px;--ey:-8px;"></span>
-            <span class="lumen-dot lumen-dot-amber" style="--rx:0px;--ry:-5px;--ex:8px;--ey:0px;"></span>
-            <span class="lumen-dot lumen-dot-purple" style="--rx:9px;--ry:-5px;--ex:0px;--ey:8px;"></span>
-            <span class="lumen-dot lumen-dot-blue" style="--rx:0px;--ry:4px;--ex:-8px;--ey:0px;"></span>
+        <div class="lumen-fab-core">
+          <span id="lumen-fab-digest" aria-hidden="true"></span>
+          <span id="lumen-fab-mark" aria-hidden="true">
+            <span class="lumen-dot-spin">
+              <span class="lumen-dot lumen-dot-green" style="--rx:-9px;--ry:-5px;--ex:0px;--ey:-8px;"></span>
+              <span class="lumen-dot lumen-dot-amber" style="--rx:0px;--ry:-5px;--ex:8px;--ey:0px;"></span>
+              <span class="lumen-dot lumen-dot-purple" style="--rx:9px;--ry:-5px;--ex:0px;--ey:8px;"></span>
+              <span class="lumen-dot lumen-dot-blue" style="--rx:0px;--ry:4px;--ex:-8px;--ey:0px;"></span>
+            </span>
           </span>
-        </span>
-        <span id="lumen-fab-lead" aria-hidden="true"></span>
-        <span id="lumen-fab-engagement" class="lumen-fab-engagement" aria-live="polite">
-          <span id="lumen-fab-label" class="lumen-fab-label lumen-fab-label--empty"></span>
-          <span id="lumen-fab-trend" class="lumen-fab-trend lumen-hidden" aria-hidden="true"></span>
-        </span>
+          <span id="lumen-fab-lead" aria-hidden="true"></span>
+          <span id="lumen-fab-engagement" class="lumen-fab-engagement" aria-live="polite">
+            <span id="lumen-fab-label" class="lumen-fab-label lumen-fab-label--empty"></span>
+            <span id="lumen-fab-trend" class="lumen-fab-trend lumen-hidden" aria-hidden="true"></span>
+          </span>
+        </div>
+        <div id="lumen-fab-glance" class="lumen-fab-glance" hidden>
+          <div class="lumen-fab-glance-metrics" aria-label="Today's metrics">
+            <span class="lumen-fab-glance-metric" title="Messages today"><b id="lumen-glance-msg">0</b> msg</span>
+            <span class="lumen-fab-glance-metric" title="Hand-offs"><b id="lumen-glance-handoff">0</b> hand-off</span>
+            <span class="lumen-fab-glance-metric" title="Loops"><b id="lumen-glance-loop">0</b> loop</span>
+            <span class="lumen-fab-glance-metric" title="Hands-on moments"><b id="lumen-glance-engaged">0</b> hands-on</span>
+          </div>
+          <button type="button" id="lumen-fab-glance-open" class="lumen-fab-glance-open" aria-label="Open Nomon panel" title="Open panel">⌃</button>
+        </div>
       </div>
       <div id="lumen-popover">
         <div class="lumen-popover-chrome">
@@ -836,9 +884,34 @@ const LumenWidget = (() => {
         return;
       }
       event.stopPropagation();
-      if (popoverOpen) closePopover();
-      else openPopover();
+
+      // Glance › → full panel. Use composedPath so pointer-capture retargeting
+      // can't hide the real button from event.target.
+      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+      const hitOpen =
+        event.target.closest?.("#lumen-fab-glance-open, .lumen-fab-glance-open") ||
+        path.some(
+          (node) =>
+            node?.id === "lumen-fab-glance-open" ||
+            (node?.classList && node.classList.contains("lumen-fab-glance-open"))
+        );
+      if (hitOpen) {
+        closeGlance();
+        openPopover();
+        return;
+      }
+
+      if (popoverOpen) {
+        closePopover();
+        return;
+      }
+
+      // Rest → Glance; Glance (click mark/metrics) → close Glance.
+      if (glanceOpen) closeGlance();
+      else openGlance();
     });
+
+    bindGlanceOpenButton();
 
     document.getElementById("lumen-reset-session")?.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -1010,9 +1083,10 @@ const LumenWidget = (() => {
     });
 
     document.addEventListener("mousedown", (event) => {
-      if (!popoverOpen) return;
       const root = document.getElementById("lumen-root");
-      if (root && !root.contains(event.target)) closePopover();
+      if (root && root.contains(event.target)) return;
+      if (popoverOpen) closePopover();
+      else if (glanceOpen) closeGlance();
     });
 
     document.addEventListener("keydown", (event) => {
@@ -1023,6 +1097,8 @@ const LumenWidget = (() => {
         closeWeeklyReview();
       } else if (popoverOpen) {
         closePopover();
+      } else if (glanceOpen) {
+        closeGlance();
       }
     });
 
@@ -1108,6 +1184,8 @@ const LumenWidget = (() => {
 
     fab.addEventListener("pointerdown", (event) => {
       if (event.button !== 0) return;
+      // Don't start a drag from the Glance › control — capture would steal its click.
+      if (event.target.closest?.("#lumen-fab-glance-open, .lumen-fab-glance-open")) return;
       // Rail buttons open a pillar — don't start a drag from them.
       if (event.target.closest?.("[data-pillar]")) return;
       const rect = fab.getBoundingClientRect();
@@ -1137,6 +1215,8 @@ const LumenWidget = (() => {
       if (!fabDrag.moved) {
         if (moved <= 4) return;
         fabDrag.moved = true;
+        // Drag started: collapse glance so the pill doesn't fight the drag.
+        if (glanceOpen) closeGlance();
         // Drag started: lock to left/top coordinates.
         const rect = fab.getBoundingClientRect();
         fab.style.left = `${rect.left}px`;
@@ -1553,7 +1633,7 @@ const LumenWidget = (() => {
     {
       target: () => document.getElementById("lumen-fab"),
       title: "This is Nomon",
-      body: "A quiet mirror for how you work with AI. The label shows your engagement today across every AI you use — click the pill any time to open this panel.",
+      body: "A quiet mirror for how you work with AI. Click the pill for today's metrics; click ⌃ to open the full panel.",
     },
     {
       target: () => document.getElementById("lumen-mode-seg") || document.getElementById("lumen-mode-select"),
@@ -2081,6 +2161,11 @@ const LumenWidget = (() => {
       fab.setAttribute("aria-label", "Nomon paused");
       return;
     }
+    if (glanceOpen) {
+      fab.title = "Nomon — today's metrics. Click ⌃ for the full panel.";
+      fab.setAttribute("aria-label", `Nomon ${modeLabel}, today's metrics`);
+      return;
+    }
     if (fabDisplaySignal) {
       if (String(fabDisplaySignal).startsWith("posture:")) {
         const band = fabDisplaySignal.slice("posture:".length);
@@ -2093,7 +2178,7 @@ const LumenWidget = (() => {
       fab.setAttribute("aria-label", `Nomon ${mode} mode, ${fabDisplaySignal} signal`);
       return;
     }
-    fab.title = `Nomon — ${modeLabel}. Drag to move, click to open.`;
+    fab.title = `Nomon — ${modeLabel}. Drag to move, click for today's metrics.`;
     fab.setAttribute("aria-label", `Nomon ${modeLabel}`);
   }
 
@@ -2104,7 +2189,61 @@ const LumenWidget = (() => {
     pulseFabMark();
   }
 
+  function bindGlanceOpenButton() {
+    const btn = document.getElementById("lumen-fab-glance-open");
+    if (!btn || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeGlance();
+        openPopover();
+      },
+      true
+    );
+  }
+
+  function renderGlanceStats() {
+    const session = LumenSession.get();
+    const set = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(value ?? 0);
+    };
+    set("lumen-glance-msg", session.messageCount || 0);
+    set("lumen-glance-handoff", session.handoffCount || 0);
+    set("lumen-glance-loop", session.loopCount || 0);
+    set("lumen-glance-engaged", session.engagedCount || 0);
+  }
+
+  function openGlance() {
+    if (popoverOpen) closePopover();
+    const fab = document.getElementById("lumen-fab");
+    const glance = document.getElementById("lumen-fab-glance");
+    if (!fab || !glance) return;
+    renderGlanceStats();
+    glanceOpen = true;
+    glance.hidden = false;
+    fab.classList.add("lumen-fab--glance");
+    fab.setAttribute("aria-expanded", "true");
+    fab.title = "Nomon — today's metrics. Click ⌃ for the full panel.";
+    syncFabAccessibility();
+  }
+
+  function closeGlance() {
+    glanceOpen = false;
+    const fab = document.getElementById("lumen-fab");
+    const glance = document.getElementById("lumen-fab-glance");
+    if (glance) glance.hidden = true;
+    fab?.classList.remove("lumen-fab--glance");
+    fab?.setAttribute("aria-expanded", "false");
+    if (fab) fab.title = "Nomon — drag to move, click for today's metrics";
+    syncFabAccessibility();
+  }
+
   function openPopover() {
+    closeGlance();
     if (!popoverOpen) {
       popoverOpen = true;
       renderPopover();
@@ -3080,30 +3219,25 @@ const LumenWidget = (() => {
   }
 
   function togglePopover() {
-    popoverOpen = !popoverOpen;
-    const popover = document.getElementById("lumen-popover");
     if (popoverOpen) {
-      renderPopover();
-      popover.classList.add("lumen-popover--open");
-      positionPopover();
-      // The toast has done its job once the pill is open; hide it but keep the
-      // dot until the digest is actually scrolled into view.
-      if (digestReady) {
-        hideDigestToast();
-        observeDigestView();
-      }
-      // First time the pill is opened, run the highlight tour once (in context,
-      // never a load-time interrupt).
-      maybeAutoStartTour();
-      window.requestAnimationFrame(() => {
-        positionPopover();
-        if (!tourActive) scrollPopoverToActivePillar();
-      });
-    } else {
-      popover.classList.remove("lumen-popover--open");
-      stopObservingDigestView();
-      if (tourActive) endTour();
+      closePopover();
+      return;
     }
+    closeGlance();
+    popoverOpen = true;
+    const popover = document.getElementById("lumen-popover");
+    renderPopover();
+    popover?.classList.add("lumen-popover--open");
+    positionPopover();
+    if (digestReady) {
+      hideDigestToast();
+      observeDigestView();
+    }
+    maybeAutoStartTour();
+    window.requestAnimationFrame(() => {
+      positionPopover();
+      if (!tourActive) scrollPopoverToActivePillar();
+    });
   }
 
   function closePopover() {
@@ -3118,6 +3252,7 @@ const LumenWidget = (() => {
   // reflects activity from other AI tabs without being reopened.
   function refreshPopover() {
     if (popoverOpen) renderPopover();
+    else if (glanceOpen) renderGlanceStats();
   }
 
   function shouldShowSignal(signal, evaluation) {

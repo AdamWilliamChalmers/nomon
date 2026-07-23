@@ -78,14 +78,17 @@ const LumenJudge = (() => {
         merged.handoff = { active: false };
         merged.overlayType = null;
         // Affirmative Mirror: keep or promote a hands-on strip when engagement
-        // override already fired; otherwise "engaged" still means no problem flag.
+        // override / scaffold / attempt-first already fired.
         if (evaluation.engagementOverride || evaluation.engaged?.active) {
           merged.primary = "engaged";
+          merged.stance = evaluation.stance || evaluation.engaged?.stance || "steering";
           merged.engaged = {
             active: true,
+            stance: merged.stance,
             label:
               evaluation.engaged?.label ||
               globalThis.LumenNudges.getEngagedLabel?.({
+                stance: merged.stance,
                 reasons: evaluation.reasons || [],
               }) ||
               "hands-on · you put real thought in",

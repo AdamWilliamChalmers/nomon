@@ -336,12 +336,109 @@
   }
 }
 
-/* Rest = four-dot mark only. Click opens the control panel for the active
-   pillar (Mirror / Badge / Cost). No hover expand rail — that shook the pill. */
+/* Rest = four-dot mark only. Click opens Glance (horizontal metrics);
+   › opens the full panel. No hover expand — that shook the pill. */
 #lumen-root .lumen-fab-rail,
 #lumen-root .lumen-fab-pillar,
 #lumen-root .lumen-fab-hint,
 #lumen-root .lumen-fab-focus {
+  display: none !important;
+}
+
+#lumen-root .lumen-fab-core {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+#lumen-root .lumen-fab-glance {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+  transition:
+    max-width 180ms ease,
+    opacity 140ms ease,
+    padding 180ms ease,
+    margin 180ms ease;
+}
+
+#lumen-root #lumen-fab.lumen-fab--glance .lumen-fab-glance {
+  display: inline-flex;
+  max-width: 320px;
+  opacity: 1;
+  padding: 0 4px 0 2px;
+  pointer-events: auto;
+}
+
+/* Grow toward page centre when Glance is open: mark stays on the outer edge. */
+#lumen-root #lumen-fab[data-side="right"].lumen-fab--glance {
+  flex-direction: row-reverse;
+}
+#lumen-root #lumen-fab[data-side="left"].lumen-fab--glance {
+  flex-direction: row;
+}
+
+#lumen-root .lumen-fab-glance-metrics {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+  font-family: var(--lm-font);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--lm-haze);
+  line-height: 1.2;
+}
+
+#lumen-root .lumen-fab-glance-metric b {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--lm-dusk);
+  letter-spacing: -0.02em;
+  margin-right: 2px;
+}
+
+#lumen-root .lumen-fab-glance-open {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0 0 2px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--lm-dusk);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+#lumen-root .lumen-fab-glance-open:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+/* When Glance is open, keep signal/pause label from fighting the metrics. */
+#lumen-root #lumen-fab.lumen-fab--glance #lumen-fab-engagement {
+  max-width: 0 !important;
+  opacity: 0 !important;
+  padding: 0 !important;
+}
+#lumen-root #lumen-fab.lumen-fab--glance #lumen-fab-lead {
   display: none !important;
 }
 

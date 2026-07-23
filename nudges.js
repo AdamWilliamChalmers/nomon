@@ -52,9 +52,13 @@ const LumenNudges = (() => {
   }
 
   function getEngagedLabel(override) {
+    const stance = override?.stance || null;
     const reasons = override?.reasons || [];
-    if (reasons.some((r) => /draft|notes/i.test(r))) {
-      return truncate("hands-on · you brought your own draft");
+    if (stance === "attempt-first" || reasons.some((r) => /tried first|draft|notes/i.test(r))) {
+      return truncate("hands-on · you tried first");
+    }
+    if (stance === "scaffold" || reasons.some((r) => /scaffold|keeping the work/i.test(r))) {
+      return truncate("hands-on · you're keeping the work");
     }
     if (reasons.some((r) => /steering/i.test(r))) {
       return truncate("hands-on · you're steering this");
@@ -539,6 +543,18 @@ const LumenNudges = (() => {
 
   function buildBiggestWin({ week, prior, digestLog, responses }) {
     const wins = [];
+    const weekScaffold = week.reduce((s, e) => s + (e.signalCounts?.scaffold || 0), 0);
+    const weekAttempt = week.reduce((s, e) => s + (e.signalCounts?.["attempt-first"] || 0), 0);
+    if (weekAttempt >= 2) {
+      wins.push(
+        `You tried first ${weekAttempt} time${weekAttempt === 1 ? "" : "s"} — practice before the hand-off.`
+      );
+    }
+    if (weekScaffold >= 2) {
+      wins.push(
+        `You kept the work ${weekScaffold} time${weekScaffold === 1 ? "" : "s"} — scaffolds, not dumps.`
+      );
+    }
     if (week.length && prior.length) {
       const avgQ = week.reduce((s, e) => s + e.questionRatio, 0) / week.length;
       const priorQ = prior.reduce((s, e) => s + e.questionRatio, 0) / prior.length;
@@ -666,6 +682,7 @@ const LumenNudges = (() => {
     canonicalPlatformHost,
     prettyPlatform,
     buildDigest,
+    buildBiggestWin,
   };
 })();
 

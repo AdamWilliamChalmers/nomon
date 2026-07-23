@@ -23,6 +23,8 @@ const LumenSession = (() => {
     mismatchCount: 0,
     depthCount: 0,
     engagedCount: 0,
+    scaffoldCount: 0,
+    attemptFirstCount: 0,
     scoredMessageIds: [],
     // Frozen strip snapshot per message — survives re-evaluation / judge downgrades.
     messageSignals: {},
@@ -429,7 +431,7 @@ const LumenSession = (() => {
       ? Math.round(merged.loopScores.reduce((a, b) => a + b, 0) / merged.loopScores.length)
       : 0;
 
-    ["loopCount", "handoffCount", "driftCount", "mismatchCount", "depthCount"].forEach((k) => {
+    ["loopCount", "handoffCount", "driftCount", "mismatchCount", "depthCount", "engagedCount", "scaffoldCount", "attemptFirstCount"].forEach((k) => {
       const delta = (session[k] || 0) - (persisted[k] || 0);
       merged[k] = Math.max(0, (stored[k] || 0) + delta);
     });
@@ -517,6 +519,7 @@ const LumenSession = (() => {
     return {
       primary: evaluation.primary,
       loopScore: evaluation.loopScore,
+      stance: evaluation.stance || evaluation.engaged?.stance || null,
       handoff: evaluation.handoff,
       loop: evaluation.loop,
       drift: evaluation.drift,
@@ -576,7 +579,16 @@ const LumenSession = (() => {
   function emptyPlatformStat() {
     return {
       messageCount: 0,
-      signalCounts: { handoff: 0, loop: 0, mismatch: 0, depth: 0, drift: 0, engaged: 0 },
+      signalCounts: {
+        handoff: 0,
+        loop: 0,
+        mismatch: 0,
+        depth: 0,
+        drift: 0,
+        engaged: 0,
+        scaffold: 0,
+        "attempt-first": 0,
+      },
       taskTypeCounts: {},
     };
   }
@@ -650,6 +662,27 @@ const LumenSession = (() => {
     if (signal === "mismatch") session.mismatchCount = Math.max(0, session.mismatchCount + delta);
     if (signal === "depth") session.depthCount = Math.max(0, session.depthCount + delta);
     if (signal === "engaged") session.engagedCount = Math.max(0, (session.engagedCount || 0) + delta);
+    if (signal === "scaffold") session.scaffoldCount = Math.max(0, (session.scaffoldCount || 0) + delta);
+    if (signal === "attempt-first") {
+      session.attemptFirstCount = Math.max(0, (session.attemptFirstCount || 0) + delta);
+    }
+  }
+
+  function bumpStanceTallies(evaluation, delta) {
+    const stance = evaluation?.stance || evaluation?.engaged?.stance;
+    if (stance === "scaffold") bumpSignalCount("scaffold", delta);
+    if (stance === "attempt-first") bumpSignalCount("attempt-first", delta);
+  }
+
+  function addStanceToPlatform(evaluation) {
+    const stance = evaluation?.stance || evaluation?.engaged?.stance;
+    if (stance !== "scaffold" && stance !== "attempt-first") return;
+    const key = sessionPlatformKey();
+    session.platformStats = session.platformStats || {};
+    const ps = session.platformStats[key] || emptyPlatformStat();
+    ps.signalCounts = ps.signalCounts || {};
+    ps.signalCounts[stance] = (ps.signalCounts[stance] || 0) + 1;
+    session.platformStats[key] = ps;
   }
 
   function recordPlatformPresence(messageId) {
@@ -674,6 +707,10 @@ const LumenSession = (() => {
     );
 
     bumpSignalCount(signal, 1);
+    if (signal === "engaged") {
+      bumpStanceTallies(evaluation, 1);
+      addStanceToPlatform(evaluation);
+    }
     if (session.platformPresenceIds?.includes(messageId)) {
       addPlatformSignal(signal, taskType);
     } else {

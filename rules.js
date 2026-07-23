@@ -39,6 +39,20 @@ const LumenRules = (() => {
     { id: "critique", re: /what would you change|does this make sense|what am i missing|push back on|challenge this/i, label: "critique request" },
   ];
 
+  // Scaffold stance: AI as coach/hint, user keeps the practice (Cash / Bastani).
+  // Checked before Tier-1 dump patterns so "give me hints" never reads as hand-off.
+  const SCAFFOLD_PATTERNS = [
+    { id: "hint_only", re: /\b(hint|hints) only\b|\bonly (a |the )?hints?\b|\bjust (a )?hints?\b/i, label: "hints only" },
+    { id: "dont_answer", re: /\bdon'?t (give|write|tell|reveal|spoil) (me )?(the |a |an )?(answer|solution|full|whole|essay|code)\b/i, label: "don't give the answer" },
+    { id: "no_write", re: /\bdon'?t write (it|this|the|my|an?)\b|\bwithout writing (it|the answer|for me)\b/i, label: "don't write it" },
+    { id: "quiz_me", re: /\bquiz me\b|\bsocratic\b|\bask me (questions|three questions|a question)\b|\binterview me\b/i, label: "quiz me" },
+    { id: "coach", re: /\bcoach me\b|\bguide me (through|without)\b|\bwalk me through\b(?![^.]{0,40}\b(write|draft|generate)\b)/i, label: "coach me" },
+    { id: "critique_mine", re: /\b(critique|criticise|criticize|review|poke holes in|stress[- ]test) (this|my)\b/i, label: "critique my work" },
+    { id: "what_missing", re: /\bwhat am i missing\b|\bwhat would you challenge\b|\bpush back on (this|my)\b/i, label: "challenge my thinking" },
+    { id: "rubric", re: /\b(rubric|success criteria|checklist) (for|on) (my|this)\b|\bgrade my\b|\bscore my\b/i, label: "rubric on my work" },
+    { id: "keep_thinking", re: /\bkeep me thinking\b|\bforce me to (think|choose|decide)\b|\bdon'?t (solve|do) it for me\b/i, label: "keep me thinking" },
+  ];
+
   const MISMATCH_DELEGATION = [
     /write me\b/i,
     /write my\b/i,
@@ -66,8 +80,9 @@ const LumenRules = (() => {
   const USER_CONTEXT_MARKERS = [
     /\bhere('s| is) (my|the) (draft|attempt|version|notes|outline|thinking)\b/i,
     /\bhere('s| is) what i (tried|did|have|wrote|attempted|came up with)\b/i,
+    /\bbelow is (my|the) (draft|attempt|version|notes|outline|thinking)\b/i,
     /\bi wrote\b/i,
-    /\bmy current (draft|version|thinking)\b/i,
+    /\bmy current (draft|version|thinking|outline)\b/i,
     /\bwhat i have so far\b/i,
   ];
 
@@ -126,6 +141,11 @@ const LumenRules = (() => {
   }
 
   function analyzeFraming(text) {
+    // Scaffold asks keep the practice with the user — never classify as dump,
+    // even if the prompt also contains "give me" / "write" language.
+    const scaffold = matchPatterns(text, SCAFFOLD_PATTERNS);
+    if (scaffold.length) return { tier: 0, matches: scaffold, source: "scaffold" };
+
     const tier0 = matchPatterns(text, TIER0_PATTERNS);
     if (tier0.length) return { tier: 0, matches: tier0, source: "tier0" };
 
@@ -150,19 +170,80 @@ const LumenRules = (() => {
     return USER_CONTEXT_MARKERS.some((re) => re.test(text));
   }
 
+  function isScaffoldAsk(text) {
+    if (!text?.trim()) return false;
+    return SCAFFOLD_PATTERNS.some((p) => p.re.test(text));
+  }
+
+  function isAttemptFirst(text) {
+    return hasUserProvidedContext(text);
+  }
+
+  /**
+   * Stance for Mirror reflection (Cash / Bastani):
+   * - attempt-first: user brought their own try/draft
+   * - scaffold: asking AI to coach, not produce the whole artifact
+   * - dump: full-task hand-off
+   * - steering: engagement markers without full attempt/scaffold
+   * - neutral: none of the above
+   */
+  function checkStance(text) {
+    const framing = analyzeFraming(text);
+    const reasons = [];
+
+    if (isAttemptFirst(text)) {
+      reasons.push("You tried first — your own draft or notes are in the prompt");
+      return { stance: "attempt-first", reasons, framing };
+    }
+    if (framing.source === "scaffold" || isScaffoldAsk(text)) {
+      reasons.push("You're keeping the work — asking for a scaffold, not a dump");
+      return { stance: "scaffold", reasons, framing };
+    }
+    if (framing.tier >= 1) {
+      reasons.push("Full-task ask — the work is leaving your hands");
+      return { stance: "dump", reasons, framing };
+    }
+    if (hasEngagementMarkers(text)) {
+      reasons.push("You're steering with your own framing");
+      return { stance: "steering", reasons, framing };
+    }
+    return { stance: "neutral", reasons, framing };
+  }
+
   function checkEngagementOverride(text) {
     const words = wordCount(text);
+    const stance = checkStance(text);
     const reasons = [];
-    if (hasUserProvidedContext(text)) reasons.push("You shared your own draft or notes");
-    if (hasEngagementMarkers(text)) reasons.push("You're steering with your own framing");
-    if (words >= ENGAGEMENT_WORD_THRESHOLD) reasons.push("You put real substance into this prompt");
+    if (stance.stance === "attempt-first") {
+      reasons.push("You tried first — your own draft or notes are in the prompt");
+    } else if (hasUserProvidedContext(text)) {
+      reasons.push("You shared your own draft or notes");
+    }
+    if (stance.stance === "scaffold") {
+      reasons.push("You're keeping the work — asking for a scaffold, not a dump");
+    }
+    if (
+      hasEngagementMarkers(text) &&
+      stance.stance !== "attempt-first" &&
+      stance.stance !== "scaffold"
+    ) {
+      reasons.push("You're steering with your own framing");
+    }
+    if (
+      words >= ENGAGEMENT_WORD_THRESHOLD &&
+      !reasons.some((r) => /substance|tried first|scaffold|steering/i.test(r))
+    ) {
+      reasons.push("You put real substance into this prompt");
+    }
 
     const active =
+      stance.stance === "attempt-first" ||
+      stance.stance === "scaffold" ||
       hasUserProvidedContext(text) ||
       (words >= ENGAGEMENT_WORD_THRESHOLD && hasEngagementMarkers(text)) ||
       words >= ENGAGEMENT_WORD_THRESHOLD + 30;
 
-    return { active, reasons };
+    return { active, reasons: active ? reasons : [], stance: stance.stance };
   }
 
   function looksLikeInstruction(text) {
@@ -186,6 +267,7 @@ const LumenRules = (() => {
     if (evaluation?.confidence === "gray") return true;
     if (evaluation?.confidence === "high") return false;
     if (checkEngagementOverride(text).active) return false;
+    if (isScaffoldAsk(text) || isAttemptFirst(text)) return false;
     // The user showed their own work (draft / attempt / notes) — that's
     // engagement, not offloading. Don't spend an LLM call second-guessing it.
     if (hasUserProvidedContext(text)) return false;
@@ -196,6 +278,7 @@ const LumenRules = (() => {
 
   function isStrongDelegation(text, framing) {
     const f = framing || analyzeFraming(text);
+    if (f.source === "scaffold") return false;
     return f.tier === 1 && f.source !== "semantic";
   }
 
@@ -273,6 +356,7 @@ const LumenRules = (() => {
   function isGuardBlockable(text, protectedGoals, options = {}) {
     if (!protectedGoals?.length || !text?.trim()) return null;
     if (checkEngagementOverride(text).active) return null;
+    if (isScaffoldAsk(text) || isAttemptFirst(text)) return null;
     if (options.taskTypeExempt?.includes(options.taskType)) return null;
 
     const mismatch = checkMismatchGoals(text, protectedGoals);
@@ -290,6 +374,8 @@ const LumenRules = (() => {
 
   function checkMismatchGoals(text, protectedGoals) {
     if (!protectedGoals?.length) return null;
+    // Practice-preserving stances are the opposite of a goal conflict.
+    if (isScaffoldAsk(text) || isAttemptFirst(text)) return null;
     for (const goal of protectedGoals) {
       const goalLower = goal.toLowerCase();
       if (
@@ -335,12 +421,22 @@ const LumenRules = (() => {
     if (trimmed.startsWith("You shared your own")) return true;
     if (trimmed.startsWith("You're steering")) return true;
     if (trimmed.startsWith("You put real substance")) return true;
+    if (trimmed.startsWith("You tried first")) return true;
+    if (trimmed.startsWith("You're keeping the work")) return true;
     return false;
   }
 
   function explainEvaluation(evaluation) {
     const human = (evaluation.reasons || []).find(isHumanReason);
     if (human) return human;
+    if (evaluation.primary === "engaged") {
+      if (evaluation.stance === "attempt-first") {
+        return "You tried first — your own draft or notes are in the prompt.";
+      }
+      if (evaluation.stance === "scaffold") {
+        return "You're keeping the work — asking for a scaffold, not a dump.";
+      }
+    }
     if (evaluation.primary && PRIMARY_EXPLANATIONS[evaluation.primary]) {
       return PRIMARY_EXPLANATIONS[evaluation.primary];
     }
@@ -351,6 +447,7 @@ const LumenRules = (() => {
     TIER1_PATTERNS,
     TIER2_PATTERNS,
     TIER0_PATTERNS,
+    SCAFFOLD_PATTERNS,
     MISMATCH_DELEGATION,
     ENGAGEMENT_MARKERS,
     USER_CONTEXT_MARKERS,
@@ -358,6 +455,9 @@ const LumenRules = (() => {
     analyzeFraming,
     semanticDelegation,
     checkEngagementOverride,
+    checkStance,
+    isScaffoldAsk,
+    isAttemptFirst,
     hasEngagementMarkers,
     hasUserProvidedContext,
     looksLikeInstruction,
