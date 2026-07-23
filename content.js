@@ -36,6 +36,7 @@
     return adapterRegistry().find((a) => a?.matches?.()) || null;
   }
 
+
   function logMissingModules() {
     const d = deps();
     const missing = Object.entries(d)
@@ -56,6 +57,93 @@
   let debounceTimer = null;
   let lastSendAt = 0;
 
+  // Coarse composer dynamics — local aggregates only (no keystroke streams).
+  // firstKeyDwellRatio: time from AI reply appearing → first composer input,
+  //   divided by expected read time (~250ms/word). pasted: boolean for this turn.
+  const composerDynamics = {
+    lastAssistantId: null,
+    responseAppearedAt: null,
+    responseWordCount: 0,
+    firstKeyAt: null,
+    firstKeyDwellRatio: null,
+    pasted: false,
+    pendingForSend: null,
+    boundInput: null,
+  };
+
+  function wordCountLocal(text) {
+    return (text || "").trim().split(/\s+/).filter(Boolean).length;
+  }
+
+  function noteAssistantAppear(list) {
+    let lastAssistant = null;
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      if (list[i].role === "assistant") {
+        lastAssistant = list[i];
+        break;
+      }
+    }
+    if (!lastAssistant?.id || lastAssistant.id === composerDynamics.lastAssistantId) return;
+
+    composerDynamics.lastAssistantId = lastAssistant.id;
+    composerDynamics.responseAppearedAt = Date.now();
+    composerDynamics.responseWordCount = wordCountLocal(lastAssistant.text);
+    composerDynamics.firstKeyAt = null;
+    composerDynamics.firstKeyDwellRatio = null;
+    composerDynamics.pasted = false;
+  }
+
+  function captureFirstComposerInput() {
+    if (!composerDynamics.responseAppearedAt || composerDynamics.firstKeyAt) return;
+    composerDynamics.firstKeyAt = Date.now();
+    const elapsed = composerDynamics.firstKeyAt - composerDynamics.responseAppearedAt;
+    const expected = composerDynamics.responseWordCount * 250;
+    composerDynamics.firstKeyDwellRatio =
+      expected > 0 ? Math.max(0, elapsed / expected) : 1;
+  }
+
+  function stashDynamicsForSend() {
+    composerDynamics.pendingForSend = {
+      firstKeyDwellRatio: composerDynamics.firstKeyDwellRatio,
+      pasted: composerDynamics.pasted,
+    };
+  }
+
+  function consumePendingDynamics() {
+    const pending = composerDynamics.pendingForSend;
+    composerDynamics.pendingForSend = null;
+    composerDynamics.firstKeyAt = null;
+    composerDynamics.firstKeyDwellRatio = null;
+    composerDynamics.pasted = false;
+    return pending || null;
+  }
+
+  function bindComposerDynamics() {
+    const onInput = () => captureFirstComposerInput();
+    const onPaste = () => {
+      composerDynamics.pasted = true;
+      captureFirstComposerInput();
+    };
+
+    const attach = () => {
+      const input = adapter?.findChatInput?.();
+      if (!input || input === composerDynamics.boundInput) return;
+      if (composerDynamics.boundInput) {
+        composerDynamics.boundInput.removeEventListener("input", onInput, true);
+        composerDynamics.boundInput.removeEventListener("keydown", onInput, true);
+        composerDynamics.boundInput.removeEventListener("paste", onPaste, true);
+      }
+      composerDynamics.boundInput = input;
+      input.addEventListener("input", onInput, true);
+      input.addEventListener("keydown", onInput, true);
+      input.addEventListener("paste", onPaste, true);
+    };
+
+    attach();
+    // AI hosts remount the composer; re-bind periodically without logging keys.
+    setInterval(attach, 2000);
+  }
+
   // Capture the real moment the user sends a prompt so live messages get an
   // accurate timestamp (the MutationObserver fires slightly later). Historical
   // messages have no real send time and are left as null — the engine skips
@@ -63,12 +151,7 @@
   function bindSendCapture() {
     const stamp = () => {
       lastSendAt = Date.now();
-      // Piggy-bank: if Cost coach logged a switch for this draft, animate into FAB.
-      try {
-        deps().widget?.playPendingCostSaveCoin?.();
-      } catch (_) {
-        /* ignore */
-      }
+      stashDynamicsForSend();
     };
     document.addEventListener(
       "keydown",
@@ -96,154 +179,6 @@
   }
 
   let guardBypassUntil = 0;
-  let costCoachTimer = null;
-  let costSpendBootstrapped = false;
-  /** Assistant message ids present on first scan — never backfill as spend. */
-  const costSpendBootstrapIds = new Set();
-  /** Assistant ids we are actively refining (post-bootstrap replies). */
-  const costSpendTracked = new Set();
-
-  /**
-   * After an assistant reply lands (and as it streams), quietly upsert an
-   * on-device spend estimate. Tip savings stay separate.
-   */
-  function maybeRecordCostSpend(messageList) {
-    const { goals: LumenGoals } = deps();
-    const LumenCost = g.LumenCost;
-    const ledger = g.LumenCostLedger;
-    if (!LumenGoals?.isCostEnabled?.() || LumenGoals.isPaused?.()) return;
-    if (!LumenCost?.estimateCompletedCall || !ledger?.recordSpend) return;
-    if (!Array.isArray(messageList) || !messageList.length) return;
-
-    if (!costSpendBootstrapped) {
-      messageList.forEach((m) => {
-        if (m?.role === "assistant" && m.id) costSpendBootstrapIds.add(m.id);
-      });
-      costSpendBootstrapped = true;
-      return;
-    }
-
-    const selectedModel = adapter?.getSelectedModel?.() || null;
-    const goals = LumenGoals.get();
-
-    for (let i = 0; i < messageList.length; i++) {
-      const msg = messageList[i];
-      if (msg?.role !== "assistant" || !msg.id || !msg.text) continue;
-      if (costSpendBootstrapIds.has(msg.id)) continue;
-
-      let user = null;
-      for (let j = i - 1; j >= 0; j--) {
-        if (messageList[j]?.role === "user") {
-          user = messageList[j];
-          break;
-        }
-      }
-      if (!user?.text) continue;
-      if (String(msg.text).trim().length < 24) continue;
-
-      const estimate = LumenCost.estimateCompletedCall(user.text, msg.text, goals, {
-        hostname: location.hostname,
-        selectedModel,
-      });
-      if (!estimate) continue;
-
-      costSpendTracked.add(msg.id);
-      ledger.recordSpend({
-        messageId: msg.id,
-        userMessageId: user.id || null,
-        inputTokens: estimate.inputTokens,
-        outputTokens: estimate.outputTokens,
-        usd: estimate.usd,
-        modelId: estimate.model?.id || null,
-        modelLabel: estimate.modelLabel || null,
-        host: location.hostname,
-      });
-    }
-  }
-
-  function bindCostCoach() {
-    const { goals: LumenGoals, widget: LumenWidget } = deps();
-    const LumenCost = g.LumenCost;
-
-    const run = () => {
-      if (!adapter || !LumenGoals || !LumenWidget || !LumenCost) return;
-      if (!LumenGoals.isCostEnabled?.()) {
-        LumenWidget.clearCostCoach?.();
-        return;
-      }
-      // Don't compete with an open Guard hold.
-      if (document.getElementById("lumen-guard-hold")?.classList.contains("lumen-guard-hold--open")) {
-        return;
-      }
-      const text = adapter.getChatInputText?.() || "";
-      const selectedModel = adapter.getSelectedModel?.() || null;
-      const analysis = LumenCost.analyze(text, LumenGoals.get(), {
-        hostname: location.hostname,
-        selectedModel,
-      });
-      LumenWidget.renderCostCoach?.(analysis, adapter);
-    };
-
-    const schedule = () => {
-      clearTimeout(costCoachTimer);
-      costCoachTimer = setTimeout(run, 220);
-    };
-
-    const isComposerEvent = (target) => {
-      const input = adapter?.findChatInput?.();
-      if (!input || !target) return false;
-      return target === input || input.contains?.(target);
-    };
-
-    document.addEventListener(
-      "input",
-      (event) => {
-        if (isComposerEvent(event.target)) schedule();
-      },
-      true
-    );
-    document.addEventListener(
-      "keyup",
-      (event) => {
-        if (isComposerEvent(event.target)) schedule();
-      },
-      true
-    );
-
-    // Contenteditable hosts remount; refresh when the composer regains focus.
-    document.addEventListener(
-      "focusin",
-      (event) => {
-        if (isComposerEvent(event.target)) schedule();
-      },
-      true
-    );
-
-    // Model / intelligence picker changes (ChatGPT Medium → Instant, etc.)
-    document.addEventListener(
-      "click",
-      (event) => {
-        if (!LumenGoals?.isCostEnabled?.()) return;
-        const t = event.target;
-        if (!t?.closest) return;
-        if (
-          t.closest(
-            '[data-testid*="model" i], [role="menuitemradio"], [role="menuitem"], [role="option"]'
-          )
-        ) {
-          // Menu selection applies after the click; re-read shortly after.
-          clearTimeout(costCoachTimer);
-          costCoachTimer = setTimeout(run, 280);
-        }
-      },
-      true
-    );
-
-    LumenGoals?.onChange?.(() => schedule());
-    // Expose for FAB Cost coach toggle (refresh without waiting on storage).
-    g.LumenCostCoach = { refresh: schedule, run };
-    schedule();
-  }
 
   function bindPreSendGuard() {
     const { goals: LumenGoals, engine: LumenEngine, widget: LumenWidget } = deps();
@@ -281,6 +216,8 @@
       if (!text) return;
 
       guardBypassUntil = Date.now() + 4000;
+      lastSendAt = Date.now();
+      stashDynamicsForSend();
       adapter.setChatInputText?.(text);
       requestAnimationFrame(() => fireSendWhenReady(0));
     };
@@ -355,12 +292,29 @@
       const existing =
         existingById.get(msg.id) ||
         (prevByIndex?.role === msg.role && prevByIndex?.text === msg.text ? prevByIndex : null);
-      if (existing) return { ...msg, id: existing.id, timestamp: existing.timestamp };
+      if (existing) {
+        return {
+          ...msg,
+          id: existing.id,
+          timestamp: existing.timestamp,
+          dynamics: existing.dynamics || null,
+        };
+      }
       // Historical bulk load: real send time is unknown → null (no fake timing).
-      // Live new message: use the captured send moment.
-      return { ...msg, timestamp: isInitialBulk ? null : freshSend };
+      // Live new message: use the captured send moment + composer dynamics.
+      const isLive = !isInitialBulk;
+      const dynamics =
+        isLive && msg.role === "user" && lastSendAt && now - lastSendAt < 10000
+          ? consumePendingDynamics()
+          : null;
+      return {
+        ...msg,
+        timestamp: isLive ? freshSend : null,
+        dynamics,
+      };
     });
 
+    noteAssistantAppear(messages);
     return messages;
   }
 
@@ -378,10 +332,6 @@
 
     syncMessagesFromDom();
     const session = LumenSession.get();
-
-    // Cost spend: refine quietly after replies (independent of Ghost — but still
-    // respects Cost off + Pause inside maybeRecordCostSpend).
-    maybeRecordCostSpend(messages);
 
     // Transparency badges are user-requested disclosure — available in Ghost mode.
     for (const msg of messages) {
@@ -504,7 +454,7 @@
     // app is offline and a best-effort fetch rejects).
     bindSendCapture();
     bindPreSendGuard();
-    bindCostCoach();
+    bindComposerDynamics();
     adapter.onNewMessage(debouncedProcess);
     debouncedProcess();
 
@@ -517,7 +467,6 @@
       await LumenGoals.loadStudyParticipant();
       await LumenSession.load();
       history = await LumenSession.loadHistory();
-      await g.LumenCostLedger?.load?.();
       LumenWidget.refreshPopover?.();
     } catch (err) {
       console.warn("[Lumen] init load step failed — continuing with defaults:", err?.message);

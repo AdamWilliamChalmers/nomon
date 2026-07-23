@@ -588,6 +588,10 @@ html:has(.lumen-landing) {
   grid-template-columns: repeat(3, 1fr);
   gap: 44px;
 }
+.lumen-landing .steps--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 820px;
+}
 .lumen-landing .step h3 {
   font-size: 17px;
   font-weight: 700;
@@ -832,71 +836,6 @@ html:has(.lumen-landing) {
   font-weight: 600;
 }
 
-.lumen-landing .cost-coach {
-  margin-top: 14px;
-}
-.lumen-landing .cost-coach--step {
-  margin-top: 0;
-  width: 100%;
-  max-width: 280px;
-}
-.lumen-landing .cost-coach-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  border: 1px solid var(--ll-hairline);
-  border-radius: 12px;
-  background: var(--ll-glass);
-  padding: 12px 14px;
-}
-.lumen-landing .cost-coach-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ll-dot-blue);
-  margin-top: 5px;
-  flex-shrink: 0;
-}
-.lumen-landing .cost-coach-bd {
-  flex: 1;
-  min-width: 0;
-}
-.lumen-landing .cost-coach-ln {
-  font-size: 13px;
-  color: var(--ll-muted);
-  line-height: 1.4;
-}
-.lumen-landing .cost-coach-ln b {
-  color: var(--ll-ink);
-  font-weight: 600;
-}
-.lumen-landing .cost-coach-meter {
-  margin-top: 8px;
-  height: 3px;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-.lumen-landing .cost-coach-meter i {
-  display: block;
-  height: 100%;
-  border-radius: 99px;
-  background: var(--ll-dot-blue);
-}
-.lumen-landing .cost-coach-tip {
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.lumen-landing .cost-coach-tip p {
-  font-size: 13px;
-  color: var(--ll-muted);
-  flex: 1;
-  min-width: 12ch;
-}
 .lumen-landing .mode-preview-note {
   margin-top: 14px;
   font-size: 12.5px;

@@ -154,8 +154,8 @@ const LumenRules = (() => {
     const words = wordCount(text);
     const reasons = [];
     if (hasUserProvidedContext(text)) reasons.push("You shared your own draft or notes");
-    if (hasEngagementMarkers(text)) reasons.push("Engagement markers in your prompt");
-    if (words >= ENGAGEMENT_WORD_THRESHOLD) reasons.push(`${words} words — substantial input`);
+    if (hasEngagementMarkers(text)) reasons.push("You're steering with your own framing");
+    if (words >= ENGAGEMENT_WORD_THRESHOLD) reasons.push("You put real substance into this prompt");
 
     const active =
       hasUserProvidedContext(text) ||
@@ -320,6 +320,7 @@ const LumenRules = (() => {
     drift: "This reply may have drifted from what you asked.",
     mismatch: "This conflicts with a goal you set.",
     depth: "Worth thinking through yourself before asking AI to decide.",
+    engaged: "You're staying hands-on — bringing your own thinking into the chat.",
   };
 
   // Classifier / judge diagnostics — never shown in the default UI copy path.
@@ -332,6 +333,8 @@ const LumenRules = (() => {
     if (!trimmed || INTERNAL_REASON.test(trimmed)) return false;
     if (trimmed === "This conflicts with a goal you set") return true;
     if (trimmed.startsWith("You shared your own")) return true;
+    if (trimmed.startsWith("You're steering")) return true;
+    if (trimmed.startsWith("You put real substance")) return true;
     return false;
   }
 

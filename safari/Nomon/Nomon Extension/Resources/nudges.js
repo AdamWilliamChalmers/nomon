@@ -526,7 +526,7 @@ const LumenNudges = (() => {
     return "Balanced";
   }
 
-  function buildBiggestWin({ week, prior, digestLog, responses, costUsdWeek = 0 }) {
+  function buildBiggestWin({ week, prior, digestLog, responses }) {
     const wins = [];
     if (week.length && prior.length) {
       const avgQ = week.reduce((s, e) => s + e.questionRatio, 0) / week.length;
@@ -545,9 +545,6 @@ const LumenNudges = (() => {
       wins.push(
         `You paused to reflect ${responses.reflected} time${responses.reflected === 1 ? "" : "s"} on high-stakes prompts.`
       );
-    }
-    if (costUsdWeek >= 0.01) {
-      wins.push(`Cost coach saved you about $${costUsdWeek.toFixed(2)} this week.`);
     }
     const since = weekStartMs(7);
     const draftedOnGuard = eventsSince(digestLog.guardEvents, since).filter(
@@ -589,7 +586,7 @@ const LumenNudges = (() => {
     ];
   }
 
-  function buildDigest({ history, session, digestLog, costUsdWeek = 0 }) {
+  function buildDigest({ history, session, digestLog }) {
     const week = history.slice(-7);
     const avgQuestion =
       week.length ? week.reduce((s, e) => s + e.questionRatio, 0) / week.length : 0;
@@ -620,7 +617,7 @@ const LumenNudges = (() => {
       headline,
       shape,
       shapeHeadline: editorial.headline,
-      biggestWin: buildBiggestWin({ week, prior, digestLog, responses, costUsdWeek }),
+      biggestWin: buildBiggestWin({ week, prior, digestLog, responses }),
       statPills: buildStatPills({ week, avgQuestion, digestLog, responses }),
       profileContrast: buildProfileContrast(history),
       loopTrend,

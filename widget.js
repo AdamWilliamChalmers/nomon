@@ -10,6 +10,7 @@ const LumenWidget = (() => {
     drift: "#e5a33d",
     mismatch: "#8e6fd8",
     depth: "#5b9bd5",
+    engaged: "#5ba89a",
   };
   const SIGNAL_COLORS_DARK = {
     handoff: "#e5a33d",
@@ -17,6 +18,7 @@ const LumenWidget = (() => {
     drift: "#e5a33d",
     mismatch: "#8e6fd8",
     depth: "#5b9bd5",
+    engaged: "#5ba89a",
   };
 
   let cachedHostDark = null;
@@ -87,9 +89,6 @@ const LumenWidget = (() => {
     });
     document.querySelectorAll(".lumen-attest-row").forEach((row) => {
       row.setAttribute("data-lumen-theme", theme);
-    });
-    document.querySelectorAll("#lumen-cost-coach").forEach((el) => {
-      el.setAttribute("data-lumen-theme", theme);
     });
   }
 
@@ -252,7 +251,8 @@ const LumenWidget = (() => {
     document.querySelector("#lumen-fab .lumen-fab-hint")?.remove();
     document.getElementById("lumen-fab-rail")?.remove();
     document.querySelectorAll("#lumen-popover .lumen-fab-pin").forEach((el) => el.remove());
-    ensurePillarTabs();
+    // Drop legacy Mirror / Badge pillar tabs — everything is one scroll now.
+    document.getElementById("lumen-pillar-tabs")?.remove();
     migrateModeStripCompact();
     fab.classList.remove("lumen-fab--open");
     fab.title = "Nomon — drag to move, click to open";
@@ -266,12 +266,10 @@ const LumenWidget = (() => {
       strip &&
       statsBlock &&
       scroll &&
-      statsBlock.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_PRECEDING
+      statsBlock.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING
     ) {
-      // Mode was above scores — flip so scores lead.
-      scroll.insertBefore(statsBlock, strip);
-      const statsEmpty = document.getElementById("lumen-stats-empty");
-      if (statsEmpty) scroll.insertBefore(statsEmpty, strip);
+      // Mode was below scores — flip so Mode leads above the result boxes.
+      scroll.insertBefore(strip, statsBlock);
     }
     if (strip && !strip.querySelector(".lumen-mode-row")) {
       const seg = document.getElementById("lumen-mode-seg");
@@ -316,40 +314,19 @@ const LumenWidget = (() => {
     }
   }
 
-  function ensurePillarTabs() {
-    const chrome = document.querySelector("#lumen-popover .lumen-popover-chrome");
-    const head = chrome?.querySelector(".lumen-popover-head") || document.querySelector("#lumen-popover .lumen-popover-head");
-    if (!head) return;
-    let tabs = document.getElementById("lumen-pillar-tabs");
-    if (!tabs) {
-      tabs = document.createElement("div");
-      tabs.id = "lumen-pillar-tabs";
-      tabs.className = "lumen-pillar-tabs";
-      tabs.setAttribute("role", "tablist");
-      tabs.setAttribute("aria-label", "Nomon pillars");
-      tabs.innerHTML = `
-      <button type="button" class="lumen-pillar-tab" data-pillar="mirror" role="tab" aria-selected="true">Mirror</button>
-      <button type="button" class="lumen-pillar-tab" data-pillar="badge" role="tab" aria-selected="false">Badge</button>
-      <button type="button" class="lumen-pillar-tab" data-pillar="cost" role="tab" aria-selected="false">Cost</button>
-    `;
-    }
-    // Keep tabs in the sticky chrome, directly under the header.
-    if (tabs.previousElementSibling !== head) {
-      head.insertAdjacentElement("afterend", tabs);
-    }
-  }
-
   function ensureRoot() {
     ensureHideStyles();
     let existing = document.getElementById("lumen-root");
-    // Rebuild if this tab still has a pre–mode-seg / pre–badge-toggle popover,
-    // or a pre–inline-savings / pre–pillar-scope layout (extension update without reload).
+    // Rebuild if this tab still has a pre–mode-seg / pre–badge-strip popover,
+    // legacy Mirror/Badge tabs, or a pre–inline-savings layout.
     if (
       existing &&
       (!document.getElementById("lumen-mode-seg") ||
         !document.getElementById("lumen-badge-seg") ||
-        !document.getElementById("lumen-cost-inline") ||
-        !document.querySelector("#lumen-popover [data-pillar-scope]"))
+        !document.getElementById("lumen-badge-strip") ||
+        document.getElementById("lumen-pillar-tabs") ||
+        document.getElementById("lumen-pillar-cost") ||
+        document.getElementById("lumen-analyse-cta"))
     ) {
       existing.remove();
       existing = null;
@@ -368,7 +345,7 @@ const LumenWidget = (() => {
     const root = document.createElement("div");
     root.id = "lumen-root";
     root.innerHTML = `
-      <div id="lumen-fab" data-side="right" data-focus="mirror" title="Nomon — drag to move, click to open">
+      <div id="lumen-fab" data-side="right" title="Nomon — drag to move, click to open">
         <span id="lumen-fab-digest" aria-hidden="true"></span>
         <span id="lumen-fab-mark" aria-hidden="true">
           <span class="lumen-dot-spin">
@@ -399,16 +376,39 @@ const LumenWidget = (() => {
             </div>
             <button id="lumen-pause-toggle" class="lumen-popover-pause" type="button">Pause</button>
           </div>
-
-          <div id="lumen-pillar-tabs" class="lumen-pillar-tabs" role="tablist" aria-label="Nomon pillars">
-            <button type="button" class="lumen-pillar-tab" data-pillar="mirror" role="tab" aria-selected="true">Mirror</button>
-            <button type="button" class="lumen-pillar-tab" data-pillar="badge" role="tab" aria-selected="false">Badge</button>
-            <button type="button" class="lumen-pillar-tab" data-pillar="cost" role="tab" aria-selected="false">Cost</button>
-          </div>
         </div>
 
         <div class="lumen-popover-scroll">
-          <div class="lumen-popover-stats" data-pillar-scope="mirror" aria-label="Today's stats">
+          <div class="lumen-mode-strip" id="lumen-mode-strip">
+            <div class="lumen-mode-row">
+              <label class="lumen-popover-label lumen-mode-label">Mode</label>
+              <div class="lumen-mode-seg" id="lumen-mode-seg" role="radiogroup" aria-label="Nomon mode">
+                <button type="button" class="lumen-mode-seg-btn" data-mode="ambient" role="radio" aria-checked="false" title="Subtle inline cues only">Ambient</button>
+                <button type="button" class="lumen-mode-seg-btn" data-mode="ghost" role="radio" aria-checked="false" title="Weekly digest only — nothing in-session">Ghost</button>
+                <button type="button" class="lumen-mode-seg-btn" data-mode="active" role="radio" aria-checked="true" title="Inline cues plus reflection cards when it matters">Active</button>
+              </div>
+            </div>
+            <select id="lumen-mode-select" class="lumen-popover-select lumen-sr-only" aria-hidden="true" tabindex="-1">
+              <option value="ambient">Ambient</option>
+              <option value="ghost">Ghost</option>
+              <option value="active">Active</option>
+              <option value="guard">Guard</option>
+            </select>
+            <button
+              type="button"
+              class="lumen-guard-toggle"
+              id="lumen-guard-toggle"
+              aria-pressed="false"
+              title="Brief hold before send when a prompt clearly conflicts with a protected goal. Always bypassable."
+            >
+              <span class="lumen-guard-toggle-title">Guard</span>
+              <span class="lumen-guard-toggle-state" aria-hidden="true">Off</span>
+              <span class="lumen-guard-toggle-switch" aria-hidden="true"></span>
+            </button>
+            <p class="lumen-popover-hint lumen-hidden" id="lumen-mode-hint"></p>
+          </div>
+
+          <div class="lumen-popover-stats" aria-label="Today's stats">
             <div class="lumen-popover-mini">
               <div class="lumen-popover-mini-stat" title="Your prompts today across ChatGPT, Gemini, Claude, and other connected tools">
                 <div class="lumen-popover-mini-v" id="lumen-stat-messages">0</div>
@@ -438,39 +438,9 @@ const LumenWidget = (() => {
               </div>
             </div>
           </div>
-          <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty" data-pillar-scope="mirror">Nomon fills this in as you chat.</p>
+          <p class="lumen-popover-hint lumen-hidden" id="lumen-stats-empty">Nomon fills this in as you chat.</p>
 
-          <div class="lumen-mode-strip" id="lumen-mode-strip" data-pillar-scope="mirror">
-            <div class="lumen-mode-row">
-              <label class="lumen-popover-label lumen-mode-label">Mode</label>
-              <div class="lumen-mode-seg" id="lumen-mode-seg" role="radiogroup" aria-label="Nomon mode">
-                <button type="button" class="lumen-mode-seg-btn" data-mode="ambient" role="radio" aria-checked="false" title="Subtle inline cues only">Ambient</button>
-                <button type="button" class="lumen-mode-seg-btn" data-mode="ghost" role="radio" aria-checked="false" title="Weekly digest only — nothing in-session">Ghost</button>
-                <button type="button" class="lumen-mode-seg-btn" data-mode="active" role="radio" aria-checked="true" title="Inline cues plus reflection cards when it matters">Active</button>
-              </div>
-            </div>
-            <select id="lumen-mode-select" class="lumen-popover-select lumen-sr-only" aria-hidden="true" tabindex="-1">
-              <option value="ambient">Ambient</option>
-              <option value="ghost">Ghost</option>
-              <option value="active">Active</option>
-              <option value="guard">Guard</option>
-            </select>
-            <button
-              type="button"
-              class="lumen-guard-toggle"
-              id="lumen-guard-toggle"
-              aria-pressed="false"
-              title="Brief hold before send when a prompt clearly conflicts with a protected goal. Always bypassable."
-            >
-              <span class="lumen-guard-toggle-title">Guard</span>
-              <span class="lumen-guard-toggle-state" aria-hidden="true">Off</span>
-              <span class="lumen-guard-toggle-switch" aria-hidden="true"></span>
-            </button>
-            <p class="lumen-popover-hint lumen-hidden" id="lumen-mode-hint"></p>
-          </div>
-
-          <!-- MIRROR -->
-          <div class="lumen-pillar-block" id="lumen-pillar-mirror" data-pillar-panel="mirror" role="tabpanel">
+          <div class="lumen-goals-block" id="lumen-pillar-mirror">
             <label class="lumen-popover-label">Protected goals · <span class="lumen-popover-label-accent">on by default</span></label>
             <p class="lumen-popover-hint" id="lumen-goals-hint">Tap to turn off what doesn't apply.</p>
             <div class="lumen-popover-usecases" id="lumen-goal-chips">
@@ -501,69 +471,25 @@ const LumenWidget = (() => {
             </div>
           </div>
 
-          <!-- BADGE -->
-          <div class="lumen-pillar-block" id="lumen-pillar-badge" data-pillar-panel="badge" role="tabpanel">
-            <div class="lumen-pillar-block-head">
-              <span class="lumen-pillar-block-tag" id="lumen-badge-tag">0 this week</span>
-            </div>
-            <label class="lumen-popover-label">Disclosure</label>
-            <div class="lumen-badge-seg" id="lumen-badge-seg" role="group" aria-label="Disclosure badge">
-              <button type="button" class="lumen-badge-seg-btn" data-badge="off">Off</button>
-              <button type="button" class="lumen-badge-seg-btn" data-badge="on">On</button>
+          <div class="lumen-badge-strip" id="lumen-badge-strip">
+            <div class="lumen-mode-row">
+              <label class="lumen-popover-label lumen-mode-label">Badge</label>
+              <div class="lumen-badge-seg" id="lumen-badge-seg" role="group" aria-label="Disclosure badge">
+                <button type="button" class="lumen-badge-seg-btn" data-badge="off">Off</button>
+                <button type="button" class="lumen-badge-seg-btn" data-badge="on">On</button>
+              </div>
             </div>
             <select id="lumen-badge-select" class="lumen-popover-select lumen-sr-only" aria-hidden="true" tabindex="-1">
               <option value="off">Off</option>
               <option value="on">On</option>
             </select>
-            <p class="lumen-popover-hint" id="lumen-badge-hint">Off by default. Turn on to show a Disclose strip under long AI replies.</p>
-            <label class="lumen-popover-label">Your disclosures</label>
-            <p class="lumen-popover-hint">Tap “Disclose” under any long reply to add one.</p>
+            <p class="lumen-popover-hint" id="lumen-badge-hint">Add a disclosure under long AI replies when you want to say how you used AI.</p>
             <p class="lumen-popover-hint lumen-hidden" id="lumen-attestations-empty">No disclosures yet.</p>
             <div class="lumen-attestations" id="lumen-attestations"></div>
             <button type="button" class="lumen-attest-recopy lumen-hidden" id="lumen-attest-recopy">Re-copy latest</button>
           </div>
 
-          <!-- COST -->
-          <div class="lumen-pillar-block" id="lumen-pillar-cost" data-pillar-panel="cost" role="tabpanel">
-            <div class="lumen-pillar-block-head">
-              <span class="lumen-pillar-block-tag lumen-pillar-block-tag--cost" id="lumen-cost-tag">Off</span>
-            </div>
-            <label class="lumen-popover-label">Coach</label>
-            <div class="lumen-cost-seg" id="lumen-cost-seg" role="group" aria-label="Cost coach level">
-              <button type="button" class="lumen-cost-seg-btn" data-cost="off">Off</button>
-              <button type="button" class="lumen-cost-seg-btn" data-cost="subtle">Quiet</button>
-              <button type="button" class="lumen-cost-seg-btn" data-cost="full">Loud</button>
-            </div>
-            <select id="lumen-cost-select" class="lumen-popover-select lumen-sr-only" aria-hidden="true" tabindex="-1">
-              <option value="off">Off</option>
-              <option value="subtle">On · quiet tip</option>
-              <option value="full">On · tips + details</option>
-            </select>
-            <p class="lumen-popover-hint" id="lumen-cost-hint">Off by default. Quiet = spend only. Loud = tips + savings.</p>
-            <div id="lumen-cost-auto-row" class="lumen-cost-auto-row lumen-hidden">
-              <label class="lumen-popover-check">
-                <input type="checkbox" id="lumen-cost-auto" />
-                Auto switch · apply recommended model
-              </label>
-              <p class="lumen-popover-hint" id="lumen-cost-auto-hint">When Cost coach suggests Instant / Haiku / Flash-Lite / etc., switch the host picker automatically and log the save.</p>
-            </div>
-            <div class="lumen-cost-inline" id="lumen-cost-inline">
-              <label class="lumen-popover-label">Estimated spend</label>
-              <p class="lumen-popover-hint">Refined after each reply from prompt + answer length. Estimates only.</p>
-              <div class="lumen-cost-savings-stats" id="lumen-cost-spend-stats"></div>
-              <p class="lumen-popover-hint lumen-hidden" id="lumen-cost-spend-meta"></p>
-
-              <label class="lumen-popover-label" style="margin-top:12px;">Tip savings</label>
-              <p class="lumen-popover-hint">Logged when you Switch, Auto-switch, or tap Log on a tip.</p>
-              <div class="lumen-cost-savings-stats" id="lumen-cost-savings-stats"></div>
-              <div class="lumen-cost-savings-list" id="lumen-cost-savings-list"></div>
-              <p class="lumen-popover-hint" id="lumen-cost-savings-footnote">Not a receipt · API-equivalent rates.</p>
-              <button type="button" class="lumen-popover-reset" id="lumen-cost-savings-clear">Clear Cost history</button>
-            </div>
-            <p class="lumen-popover-hint" id="lumen-cost-privacy-hint">Estimates stay on this device — never uploaded for cost analysis.</p>
-          </div>
-
-          <details class="lumen-popover-more" data-pillar-scope="mirror">
+          <details class="lumen-popover-more">
             <summary>Charts &amp; this week</summary>
             <label class="lumen-popover-label" id="lumen-session-chart-label" title="Each bar is one message today">Today's messages</label>
             <div class="lumen-popover-sparkline" id="lumen-sparkline"></div>
@@ -580,21 +506,20 @@ const LumenWidget = (() => {
             <button class="lumen-popover-reset" id="lumen-reset-session">Reset session</button>
           </details>
 
-          <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta" data-pillar-scope="mirror">Set up Nomon →</button>
-          <button type="button" class="lumen-popover-howto" id="lumen-tutorial-cta" data-pillar-scope="mirror">How it works</button>
+          <button type="button" class="lumen-popover-setup-cta" id="lumen-setup-cta">Set up Nomon →</button>
+          <button type="button" class="lumen-popover-howto" id="lumen-tutorial-cta">How it works</button>
 
           <button
             type="button"
             id="lumen-privacy-toggle"
             class="lumen-privacy-toggle"
-            data-pillar-scope="mirror"
             aria-expanded="false"
             aria-controls="lumen-privacy-panel"
           >
             <span>Privacy &amp; data</span>
             <span class="lumen-privacy-toggle-chevron" aria-hidden="true">›</span>
           </button>
-          <div id="lumen-privacy-panel" class="lumen-privacy-panel lumen-hidden" data-pillar-scope="mirror">
+          <div id="lumen-privacy-panel" class="lumen-privacy-panel lumen-hidden">
             <p class="lumen-popover-hint">Scoring runs locally. Turn off anything below you don't want sent to Nomon's servers.</p>
             <label class="lumen-popover-check">
               <input type="checkbox" id="lumen-llm-judge" />
@@ -911,17 +836,8 @@ const LumenWidget = (() => {
         return;
       }
       event.stopPropagation();
-      const pillar = normalizeFabPillar(LumenGoals.get().fabPillar);
       if (popoverOpen) closePopover();
-      else openPopoverToPillar(pillar);
-    });
-
-    document.getElementById("lumen-popover")?.addEventListener("click", (event) => {
-      const tab = event.target.closest?.(".lumen-pillar-tab[data-pillar]");
-      if (!tab) return;
-      event.stopPropagation();
-      setFabPillar(tab.getAttribute("data-pillar"));
-      if (popoverOpen) positionPopover();
+      else openPopover();
     });
 
     document.getElementById("lumen-reset-session")?.addEventListener("click", (event) => {
@@ -1022,31 +938,6 @@ const LumenWidget = (() => {
       togglePrivacyPanel();
     });
 
-    document.getElementById("lumen-cost-select")?.addEventListener("change", (event) => {
-      const value = event.target.value;
-      if (value === "off") {
-        LumenGoals.save({ costEnabled: false });
-        clearCostCoach();
-      } else {
-        LumenGoals.save({ costEnabled: true, costLevel: value === "full" ? "full" : "subtle" });
-        // Don't wait on chrome.storage round-trip — refresh immediately.
-        globalThis.LumenCostCoach?.refresh?.();
-      }
-      syncSettingsUI();
-      updateBadge();
-    });
-
-    document.getElementById("lumen-cost-seg")?.addEventListener("click", (event) => {
-      const btn = event.target.closest?.("[data-cost]");
-      if (!btn) return;
-      event.stopPropagation();
-      const value = btn.getAttribute("data-cost");
-      const select = document.getElementById("lumen-cost-select");
-      if (!select || !value) return;
-      select.value = value;
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-
     document.getElementById("lumen-badge-select")?.addEventListener("change", (event) => {
       const on = event.target.value !== "off";
       LumenGoals.save({ badgeEnabled: on });
@@ -1064,24 +955,6 @@ const LumenWidget = (() => {
       if (!select || !value) return;
       select.value = value;
       select.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-
-    document.getElementById("lumen-cost-auto")?.addEventListener("change", (event) => {
-      setCostAutoSwitch(Boolean(event.target.checked));
-    });
-
-    document.getElementById("lumen-cost-savings-clear")?.addEventListener("click", (event) => {
-      event.stopPropagation();
-      if (!globalThis.LumenCostLedger) return;
-      if (
-        !confirm(
-          "Clear estimated spend and tip savings on this device? This cannot be undone."
-        )
-      ) {
-        return;
-      }
-      globalThis.LumenCostLedger.clear();
-      renderCostSavingsPanel();
     });
 
     document.getElementById("lumen-llm-judge")?.addEventListener("change", (event) => {
@@ -1853,7 +1726,6 @@ const LumenWidget = (() => {
   function syncSettingsUI() {
     const goals = LumenGoals.get();
     const modeSelect = document.getElementById("lumen-mode-select");
-    const costSelect = document.getElementById("lumen-cost-select");
     const judgeToggle = document.getElementById("lumen-llm-judge");
     const studyToggle = document.getElementById("lumen-study-participant");
     const shareToggle = document.getElementById("lumen-share-data");
@@ -1861,21 +1733,9 @@ const LumenWidget = (() => {
     const base = LumenConfig.webAppUrl(goals.webAppUrl);
     if (modeSelect) setModeSelectValue(modeSelect, goals.mode);
     else syncModeSegUI(goals.mode);
-    if (costSelect) {
-      costSelect.value = goals.costEnabled
-        ? goals.costLevel === "full"
-          ? "full"
-          : "subtle"
-        : "off";
-    }
-    syncCostSegUI(costSelect?.value || "off");
     const badgeSelect = document.getElementById("lumen-badge-select");
     if (badgeSelect) badgeSelect.value = goals.badgeEnabled ? "on" : "off";
     syncBadgeSegUI(badgeSelect?.value || "off");
-    const autoRow = document.getElementById("lumen-cost-auto-row");
-    const autoToggle = document.getElementById("lumen-cost-auto");
-    if (autoRow) autoRow.classList.toggle("lumen-hidden", !goals.costEnabled);
-    if (autoToggle) autoToggle.checked = Boolean(goals.costEnabled && goals.costAutoSwitch);
 
     const storedGoals = goals.protectedGoals || [];
     // Before setup, empty storage means "all presets on" — same as the guided cards.
@@ -1927,19 +1787,6 @@ const LumenWidget = (() => {
     syncFabFocusUI();
     updateModeHint();
     renderLastWhyPopover();
-    syncCostSavingsBlurb();
-  }
-
-  function syncCostSegUI(value) {
-    const level = value === "full" || value === "subtle" || value === "off" ? value : "off";
-    document.querySelectorAll("#lumen-cost-seg .lumen-cost-seg-btn").forEach((btn) => {
-      btn.classList.toggle("on", btn.getAttribute("data-cost") === level);
-    });
-    const tag = document.getElementById("lumen-cost-tag");
-    if (tag) {
-      tag.textContent =
-        level === "full" ? "Loud" : level === "subtle" ? "Quiet" : "Off";
-    }
   }
 
   function syncBadgeSegUI(value) {
@@ -1950,141 +1797,17 @@ const LumenWidget = (() => {
     const hint = document.getElementById("lumen-badge-hint");
     if (hint) {
       hint.textContent = on
-        ? "Disclose strips appear under long AI replies."
-        : "Off by default. Turn on to show a Disclose strip under long AI replies.";
+        ? "Disclose strips appear under long AI replies — tap one to say how you used AI."
+        : "Add a disclosure under long AI replies when you want to say how you used AI.";
     }
   }
 
   function syncPillarTags() {
-    const badgeTag = document.getElementById("lumen-badge-tag");
-    if (badgeTag) {
-      if (!LumenGoals.get().badgeEnabled) {
-        badgeTag.textContent = "Off";
-      } else {
-        const n = (LumenSession.getAttestations?.() || []).length;
-        badgeTag.textContent = n === 1 ? "1 this week" : `${n} this week`;
-      }
-    }
+    // Kept for callers; Badge tag was removed with the pillar tabs.
   }
 
-  function syncCostSavingsBlurb() {
-    renderCostSavingsPanel();
-  }
 
-  function renderCostSavingsPanel() {
-    const spendStats = document.getElementById("lumen-cost-spend-stats");
-    const spendMeta = document.getElementById("lumen-cost-spend-meta");
-    const stats = document.getElementById("lumen-cost-savings-stats");
-    const list = document.getElementById("lumen-cost-savings-list");
-    if (!stats || !list) return;
-
-    const formatUsd = globalThis.LumenCost?.formatUsd || ((n) => `$${n}`);
-    const formatTokens = globalThis.LumenCost?.formatTokens || String;
-    const summary = globalThis.LumenCostLedger?.summarize?.() || {
-      eventCount: 0,
-      usdAllTime: 0,
-      usdThisWeek: 0,
-      recent: [],
-      spend: {
-        callCount: 0,
-        callsThisWeek: 0,
-        usdAllTime: 0,
-        usdThisWeek: 0,
-        emaOutputTokens: null,
-        outputSampleCount: 0,
-      },
-    };
-    const spend = summary.spend || {
-      callCount: 0,
-      callsThisWeek: 0,
-      usdAllTime: 0,
-      usdThisWeek: 0,
-      emaOutputTokens: null,
-      outputSampleCount: 0,
-    };
-
-    if (spendStats) {
-      spendStats.innerHTML = `
-        <div class="lumen-cost-savings-stat">
-          <span class="lumen-cost-savings-stat-label">This week</span>
-          <span class="lumen-cost-savings-stat-value">${escapeHtml(
-            formatUsd(spend.usdThisWeek || 0)
-          )}</span>
-        </div>
-        <div class="lumen-cost-savings-stat">
-          <span class="lumen-cost-savings-stat-label">All time</span>
-          <span class="lumen-cost-savings-stat-value">${escapeHtml(
-            formatUsd(spend.usdAllTime || 0)
-          )}</span>
-        </div>
-      `;
-    }
-    if (spendMeta) {
-      const calls = spend.callsThisWeek || 0;
-      const ema = spend.emaOutputTokens;
-      const samples = spend.outputSampleCount || 0;
-      if (!spend.callCount) {
-        spendMeta.textContent = "Send a prompt with Cost on — spend fills in after the reply.";
-        spendMeta.classList.remove("lumen-hidden");
-      } else {
-        const parts = [
-          `${calls} call${calls === 1 ? "" : "s"} this week`,
-          `${spend.callCount} logged`,
-        ];
-        if (ema && samples >= 3) {
-          parts.push(`avg reply ~${formatTokens(Math.round(ema))} tok`);
-        }
-        spendMeta.textContent = parts.join(" · ");
-        spendMeta.classList.remove("lumen-hidden");
-      }
-    }
-
-    stats.innerHTML = `
-      <div class="lumen-cost-savings-stat">
-        <span class="lumen-cost-savings-stat-label">This week</span>
-        <span class="lumen-cost-savings-stat-value">${escapeHtml(formatUsd(summary.usdThisWeek))}</span>
-      </div>
-      <div class="lumen-cost-savings-stat">
-        <span class="lumen-cost-savings-stat-label">All time</span>
-        <span class="lumen-cost-savings-stat-value">${escapeHtml(formatUsd(summary.usdAllTime))}</span>
-      </div>
-    `;
-
-    if (!summary.recent.length) {
-      list.innerHTML = `<p class="lumen-cost-savings-empty">No tip saves yet. Tap <strong>Switch</strong> on a tip — or Log after you use one.</p>`;
-      return;
-    }
-
-    list.innerHTML = summary.recent
-      .slice(0, 8)
-      .map((e) => {
-        const when = new Date(e.at).toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-        });
-        const host = (e.host || "").replace(/^www\./, "");
-        const via =
-          e.source === "auto-switched"
-            ? " · auto"
-            : e.source === "switched"
-              ? " · switched"
-              : e.source === "applied"
-                ? " · applied"
-                : "";
-        return `<div class="lumen-cost-savings-row">
-          <div>
-            <div class="lumen-cost-savings-row-title">${escapeHtml(e.title)}</div>
-            <div class="lumen-cost-savings-row-meta">${escapeHtml(when)}${
-          host ? ` · ${escapeHtml(host)}` : ""
-        }${via}${e.tokens ? ` · ~${escapeHtml(formatTokens(e.tokens))} tok` : ""}</div>
-          </div>
-          <div class="lumen-cost-savings-row-usd">${escapeHtml(formatUsd(e.usd))}</div>
-        </div>`;
-      })
-      .join("");
-  }
-
-  function updateModeHint() {
+    function updateModeHint() {
     const hint = document.getElementById("lumen-mode-hint");
     if (!hint) return;
     // Keep Mode compact — only surface warnings; blurbs live on control titles.
@@ -2131,548 +1854,11 @@ const LumenWidget = (() => {
     document
       .querySelectorAll(".lumen-ai-hidden")
       .forEach((el) => el.classList.remove("lumen-ai-hidden"));
-    clearCostCoach();
-  }
-
-  function clearCostCoach() {
-    document.getElementById("lumen-cost-coach")?.remove();
   }
 
   function clearAttestUI() {
     openAttestMsgId = null;
     document.querySelectorAll(".lumen-attest-row, .lumen-card--attest").forEach((el) => el.remove());
-  }
-
-  function logCostSave(match, analysis, source) {
-    const ledger = globalThis.LumenCostLedger;
-    if (!ledger || !match?.estimate) return null;
-
-    const fit =
-      match.fit ||
-      (match.ruleId === "model-upgrade"
-        ? "upgrade"
-        : match.ruleId === "model-downgrade"
-          ? "save"
-          : null);
-    const taskType =
-      analysis?.fitTaskType ||
-      globalThis.LumenCostRules?.assessCostFit?.({
-        prompt: analysis?._draftText || "",
-        goals: LumenGoals.get(),
-      })?.taskType ||
-      "general";
-
-    if (fit === "save" || fit === "upgrade") {
-      if (source === "switched" || source === "auto-switched" || source === "logged") {
-        ledger.recordFitOutcome?.({ taskType, fit, outcome: "accepted" });
-      }
-    }
-
-    // Tip savings ledger is only for real save tips — not upgrades.
-    if (match.ruleId === "model-upgrade" || fit === "upgrade") return null;
-
-    // Per-call estimate is the honest unit when logging a single tip use.
-    const usd = Number(match.estimate.usdPerCall) || 0;
-    if (usd <= 0) return null;
-    const event = ledger.recordApplied({
-      ruleId: match.ruleId,
-      title: match.title,
-      usd,
-      tokens: match.estimate.tokens || 0,
-      modelId: analysis?.model?.id || null,
-      fromModelId: match.fromModelId || analysis?.model?.id || null,
-      toModelId: match.targetModelId || match.switchAction?.targetModelId || null,
-      host: location.hostname,
-      source,
-    });
-    if (source === "switched" || source === "auto-switched") {
-      queueCostSaveCoin(usd);
-    }
-    return event;
-  }
-
-  function noteCostFitDismiss(analysis) {
-    const top = analysis?.top;
-    if (!top) return;
-    const fit =
-      top.fit ||
-      (top.ruleId === "model-upgrade"
-        ? "upgrade"
-        : top.ruleId === "model-downgrade"
-          ? "save"
-          : null);
-    if (fit !== "save" && fit !== "upgrade") return;
-    const taskType =
-      analysis?.fitTaskType ||
-      globalThis.LumenCostRules?.assessCostFit?.({
-        prompt: analysis?._draftText || "",
-        goals: LumenGoals.get(),
-      })?.taskType ||
-      "general";
-    globalThis.LumenCostLedger?.recordFitOutcome?.({
-      taskType,
-      fit,
-      outcome: "dismissed",
-    });
-  }
-
-  /** Pending “coin into FAB” after a model switch — plays on the next send. */
-  let pendingCostSaveCoin = null;
-
-  function queueCostSaveCoin(usd) {
-    const n = Number(usd);
-    if (!Number.isFinite(n) || n <= 0) return;
-    pendingCostSaveCoin = { usd: n, at: Date.now() };
-  }
-
-  function playPendingCostSaveCoin() {
-    if (!LumenGoals.isCostEnabled?.()) {
-      pendingCostSaveCoin = null;
-      return;
-    }
-    const pending = pendingCostSaveCoin;
-    if (!pending) return;
-    if (Date.now() - pending.at > 10 * 60 * 1000) {
-      pendingCostSaveCoin = null;
-      return;
-    }
-    pendingCostSaveCoin = null;
-    playCostSaveCoin(pending.usd);
-  }
-
-  function playCostSaveCoin(usd) {
-    ensureRoot();
-    const fab = document.getElementById("lumen-fab");
-    if (!fab) return;
-
-    const formatUsd = globalThis.LumenCost?.formatUsd || ((n) => `$${n.toFixed(4)}`);
-    const label = `+${formatUsd(usd)}`;
-    const coin = document.createElement("div");
-    coin.className = "lumen-cost-coin";
-    coin.setAttribute("aria-hidden", "true");
-    coin.textContent = label;
-    // Append to body so host transforms / overflow on #lumen-root can't clip it.
-    document.body.appendChild(coin);
-
-    const fabRect = fab.getBoundingClientRect();
-    const startX = window.innerWidth / 2;
-    const startY = Math.max(120, window.innerHeight * 0.55);
-    const endX = fabRect.left + fabRect.width / 2;
-    const endY = fabRect.top + fabRect.height / 2;
-
-    coin.style.left = `${startX}px`;
-    coin.style.top = `${startY}px`;
-
-    // Force layout, then animate toward the FAB.
-    void coin.offsetWidth;
-    coin.style.setProperty("--lumen-coin-dx", `${endX - startX}px`);
-    coin.style.setProperty("--lumen-coin-dy", `${endY - startY}px`);
-    coin.classList.add("lumen-cost-coin--fly");
-
-    window.setTimeout(() => {
-      coin.remove();
-      pulseFabMark();
-      syncCostSavingsBlurb();
-    }, 1900);
-  }
-
-  // Page-console friendly test (content scripts are isolated from `LumenWidget`):
-  //   document.dispatchEvent(new CustomEvent("lumen-debug-cost-coin", { detail: { usd: 0.0061 } }))
-  document.addEventListener("lumen-debug-cost-coin", (event) => {
-    const usd = Number(event?.detail?.usd);
-    playCostSaveCoin(Number.isFinite(usd) && usd > 0 ? usd : 0.0061);
-  });
-
-  /** Armed when user starts a Nomon-advised model switch; confirms on picker change. */
-  let pendingCostSwitch = null;
-  /** Per-draft keys already auto-switched (avoid loops / fighting a manual revert). */
-  const autoSwitchDone = new Set();
-  let autoSwitchInFlight = false;
-
-  function clearAutoSwitchMemory() {
-    autoSwitchDone.clear();
-    autoSwitchInFlight = false;
-  }
-
-  function autoSwitchDraftKey(text, match, fromModelId) {
-    const t = String(text || "");
-    const target =
-      match?.targetModelId ||
-      match?.switchAction?.targetModelId ||
-      match?.switchAction?.value ||
-      "";
-    return `${t.length}:${t.slice(0, 40)}:${t.slice(-40)}|${target}|${fromModelId || ""}`;
-  }
-
-  function armPendingCostSwitch(match, analysis, auto = false) {
-    if (!match?.switchAction && !match?.targetModelId) return;
-    pendingCostSwitch = {
-      match,
-      analysis,
-      fromModelId: analysis?.model?.id || match.fromModelId || null,
-      targetModelId: match.targetModelId || match.switchAction?.targetModelId || null,
-      armedAt: Date.now(),
-      auto: Boolean(auto),
-    };
-  }
-
-  function clearPendingCostSwitch() {
-    pendingCostSwitch = null;
-  }
-
-  /**
-   * If the user finishes a Nomon-advised switch in the host picker, log the save.
-   * @returns {boolean} true if a switch was confirmed and logged
-   */
-  function confirmPendingCostSwitch(analysis) {
-    if (!pendingCostSwitch) return false;
-    if (Date.now() - pendingCostSwitch.armedAt > 90_000) {
-      clearPendingCostSwitch();
-      return false;
-    }
-    const targetId = pendingCostSwitch.targetModelId;
-    const currentId = analysis?.model?.id;
-    if (!targetId || !currentId || currentId === pendingCostSwitch.fromModelId) {
-      return false;
-    }
-    // Accept exact target, or a cheaper tier in the same family (Instant→Luna).
-    const hit =
-      currentId === targetId ||
-      (pendingCostSwitch.match?.switchAction?.kind === "intelligence" &&
-        currentId !== pendingCostSwitch.fromModelId);
-    if (!hit) return false;
-
-    const src = pendingCostSwitch.auto ? "auto-switched" : "switched";
-    logCostSave(pendingCostSwitch.match, analysis, src);
-    clearPendingCostSwitch();
-    syncCostSavingsBlurb();
-    return true;
-  }
-
-  function setCostAutoSwitch(on) {
-    clearAutoSwitchMemory();
-    LumenGoals.save({ costAutoSwitch: Boolean(on) });
-    syncSettingsUI();
-    if (on) globalThis.LumenCostCoach?.refresh?.();
-  }
-
-  /**
-   * Compose-time Cost coach strip (+ optional tip). Same family as Mirror
-   * signal strips — compact, theme-aware, one surface. Never blocks send.
-   */
-  function renderCostCoach(analysis, adapter) {
-    clearCostCoach();
-    if (!analysis?.show || !LumenGoals.isCostEnabled?.()) return;
-    if (LumenGoals.isPaused()) return;
-
-    const input = adapter?.findChatInput?.();
-    if (!input?.isConnected) return;
-
-    // User may have finished a Switch in the host picker after we armed it.
-    confirmPendingCostSwitch(analysis);
-
-    const LumenCost = globalThis.LumenCost;
-    const formatUsd = LumenCost?.formatUsd || ((n) => `$${n}`);
-    const formatTokens = LumenCost?.formatTokens || ((n) => String(n));
-    const level = analysis.level || "subtle";
-    const top = analysis.top;
-    const autoOn = Boolean(LumenGoals.isCostAutoSwitch?.() || LumenGoals.get().costAutoSwitch);
-    const draftText = adapter.getChatInputText?.() || "";
-    const theme = isHostDark() ? "dark" : "light";
-
-    const shell = document.createElement("div");
-    shell.id = "lumen-cost-coach";
-    shell.className = "lumen-cost-coach";
-    shell.setAttribute("data-lumen-cost-level", level);
-    shell.setAttribute("data-lumen-theme", theme);
-    shell.setAttribute("role", "status");
-
-    const tokensLabel = formatTokens(analysis.inputTokens || 0);
-    const saveUsd = top ? formatUsd(top.estimate?.usdPerCall || 0) : null;
-    const meterPct = Math.max(
-      8,
-      Math.min(92, Math.round(((analysis.inputTokens || 0) / 3200) * 100))
-    );
-
-    const isUpgrade = top?.fit === "upgrade" || top?.ruleId === "model-upgrade";
-    const isCacheTip = top?.ruleId === "cache-prefix";
-    const isJsonTip = top?.ruleId === "verbose-json";
-    const isFewShotTip = top?.ruleId === "few-shot-bloat";
-    const swapLabel =
-      top?.switchAction?.buttonLabel ||
-      (top?.switchAction?.uiLabel ? `Use ${top.switchAction.uiLabel}` : null) ||
-      (top ? (isUpgrade ? "Try stronger model" : "Try lighter model") : null);
-
-    // Loud: one primary swap on the strip. Quiet: spend only (+ Tips if a tip exists).
-    const showSwap = Boolean(!autoOn && top?.switchAction && level === "full");
-    const showTipsLink = Boolean(level === "subtle" && top);
-
-    let lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b>`;
-    if (level === "full" && top && saveUsd) {
-      if (isUpgrade) {
-        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · consider <b>${escapeHtml(
-          top.switchAction?.uiLabel || String(top.title || "").replace(/^Try\s+/i, "")
-        )}</b>`;
-      } else if (isCacheTip) {
-        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · caching could save ~<b>${escapeHtml(
-          saveUsd
-        )}</b>/call`;
-      } else if (isJsonTip || isFewShotTip) {
-        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · trim could save ~<b>${escapeHtml(
-          saveUsd
-        )}</b>`;
-      } else if (top.ruleId === "model-downgrade") {
-        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · lighter model saves ~<b>${escapeHtml(
-          saveUsd
-        )}</b>`;
-      } else {
-        lineHtml = `≈ <b>${escapeHtml(tokensLabel)} tokens</b> · tip saves ~<b>${escapeHtml(
-          saveUsd
-        )}</b>`;
-      }
-    }
-
-    // Loud tip: top match only, one suggestion line — no stacked dark panel.
-    let tipHtml = "";
-    if (level === "full" && top) {
-      const tipParts = [];
-      if (top.rewrittenPrompt) {
-        tipParts.push(
-          `<button type="button" class="lumen-cost-apply" data-tip-idx="0">Apply rewrite</button>`
-        );
-      }
-      if (!showSwap && top.switchAction && !autoOn) {
-        tipParts.push(
-          `<button type="button" class="lumen-cost-switch" data-tip-idx="0">${escapeHtml(
-            top.switchAction.buttonLabel || "Switch"
-          )}</button>`
-        );
-      }
-      if (!isUpgrade) {
-        tipParts.push(
-          `<button type="button" class="lumen-cost-log" data-tip-idx="0">Log save</button>`
-        );
-      }
-      const saveLabel = isUpgrade
-        ? escapeHtml(formatUsd(top.estimate?.usdPerCall || 0)) + " extra"
-        : escapeHtml(formatUsd(top.estimate?.usdPerMonth || 0)) + "/mo";
-      tipHtml = `
-        <div class="lumen-cost-coach-panel">
-          <div class="lumen-cost-tip" data-tip-idx="0">
-            <div class="lumen-cost-tip-head">
-              <span class="lumen-cost-tip-title">${escapeHtml(top.title)}</span>
-              <span class="lumen-cost-tip-save">${saveLabel}</span>
-            </div>
-            <p class="lumen-cost-tip-suggestion">${escapeHtml(top.suggestion || top.summary || "")}</p>
-            <div class="lumen-cost-tip-actions">${tipParts.join("")}</div>
-          </div>
-        </div>`;
-    }
-
-    const actionsHtml = `
-      <div class="lumen-cost-coach-actions">
-        ${
-          showSwap
-            ? `<button type="button" class="lumen-cost-coach-swap" title="${escapeHtml(
-                top.switchAction.buttonLabel || "Switch model"
-              )}">${escapeHtml(swapLabel)}</button>`
-            : ""
-        }
-        ${
-          level === "full"
-            ? `<button type="button" class="lumen-cost-coach-auto${
-                autoOn ? " lumen-cost-coach-auto--on" : ""
-              }" aria-pressed="${autoOn ? "true" : "false"}" title="${
-                autoOn
-                  ? "Auto switch on — tap to turn off"
-                  : "Auto switch off — tap to apply recommended models automatically"
-              }">Auto</button>`
-            : ""
-        }
-        ${
-          showTipsLink
-            ? `<button type="button" class="lumen-cost-coach-more" title="Show cost tip">Tips</button>`
-            : ""
-        }
-        <button type="button" class="lumen-cost-coach-dismiss" title="Hide for this draft" aria-label="Hide cost tip">×</button>
-      </div>`;
-
-    shell.innerHTML = `
-      <div class="lumen-cost-coach-card">
-        <div class="lumen-cost-coach-strip">
-          <span class="lumen-cost-coach-dot" aria-hidden="true"></span>
-          <div class="lumen-cost-coach-bd">
-            <div class="lumen-cost-coach-ln">${lineHtml}</div>
-            ${
-              level === "full"
-                ? `<div class="lumen-cost-coach-meter" aria-hidden="true"><i style="width:${meterPct}%"></i></div>`
-                : `<div class="lumen-cost-coach-sb">On-device estimate</div>`
-            }
-          </div>
-          ${actionsHtml}
-        </div>
-        ${tipHtml}
-      </div>
-    `;
-
-    const host =
-      input.closest("form") ||
-      input.closest("[class*='composer']") ||
-      input.closest("[class*='input']") ||
-      input.parentElement;
-    if (host?.parentElement) {
-      host.insertAdjacentElement("afterend", shell);
-    } else {
-      input.insertAdjacentElement("afterend", shell);
-    }
-
-    shell.querySelector(".lumen-cost-coach-dismiss")?.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      noteCostFitDismiss(analysis);
-      clearCostCoach();
-    });
-
-    shell.querySelector(".lumen-cost-coach-auto")?.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      setCostAutoSwitch(!autoOn);
-    });
-
-    shell.querySelector(".lumen-cost-coach-more")?.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      LumenGoals.save({ costLevel: "full" });
-      syncSettingsUI();
-      const next = globalThis.LumenCost?.analyze?.(
-        adapter.getChatInputText?.() || "",
-        LumenGoals.get(),
-        {
-          hostname: location.hostname,
-          selectedModel: adapter.getSelectedModel?.() || null,
-        }
-      );
-      if (next) renderCostCoach(next, adapter);
-    });
-
-    const flashLog = (btn, label = "Logged ✓") => {
-      if (!btn) return;
-      btn.textContent = label;
-      btn.disabled = true;
-      syncCostSavingsBlurb();
-    };
-
-    const runSwitch = async (match, btn, opts = {}) => {
-      if (!match?.switchAction) return { ok: false };
-      const label = match.switchAction.buttonLabel || "Switch";
-      const auto = Boolean(opts.auto);
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = auto ? "Auto…" : "Switching…";
-      }
-      armPendingCostSwitch(match, analysis, auto);
-
-      let result = { ok: false };
-      try {
-        if (typeof adapter?.switchModel === "function") {
-          result = (await adapter.switchModel(match.switchAction)) || { ok: false };
-        }
-      } catch (_) {
-        result = { ok: false };
-      }
-
-      if (result.ok) {
-        logCostSave(match, analysis, auto ? "auto-switched" : "switched");
-        clearPendingCostSwitch();
-        flashLog(btn, auto ? "Auto · saved ✓" : "Switched · saved ✓");
-        setTimeout(() => globalThis.LumenCostCoach?.refresh?.(), 280);
-        return result;
-      }
-
-      // Menu may be open — keep pending armed so a manual pick still logs.
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = label;
-        btn.title =
-          result.message ||
-          match.switchAction.hint ||
-          "Pick the suggested option in the menu — Nomon will log the save";
-      }
-      return result;
-    };
-
-    shell.querySelector(".lumen-cost-coach-switch")?.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      runSwitch(top, event.currentTarget);
-    });
-    shell.querySelector(".lumen-cost-coach-swap")?.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      runSwitch(top, event.currentTarget);
-    });
-
-    shell.querySelectorAll(".lumen-cost-switch").forEach((btn) => {
-      btn.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const idx = Number(btn.getAttribute("data-tip-idx"));
-        runSwitch(analysis.matches?.[idx], btn);
-      });
-    });
-
-    shell.querySelectorAll(".lumen-cost-log").forEach((btn) => {
-      btn.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const idx = Number(btn.getAttribute("data-tip-idx"));
-        const match = analysis.matches?.[idx];
-        if (!match) return;
-        logCostSave(match, analysis, "logged");
-        flashLog(btn);
-      });
-    });
-
-    shell.querySelectorAll(".lumen-cost-apply").forEach((btn) => {
-      btn.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const idx = Number(btn.getAttribute("data-tip-idx"));
-        const match = analysis.matches?.[idx];
-        const rewrite = match?.rewrittenPrompt;
-        if (rewrite && adapter?.setChatInputText) {
-          adapter.setChatInputText(rewrite);
-          logCostSave(match, analysis, "applied");
-          flashLog(btn, "Applied ✓");
-          const next = globalThis.LumenCost?.analyze?.(rewrite, LumenGoals.get(), {
-            hostname: location.hostname,
-            selectedModel: adapter.getSelectedModel?.() || null,
-          });
-          if (next) renderCostCoach(next, adapter);
-          else syncCostSavingsBlurb();
-        }
-      });
-    });
-
-    // Auto switch: only for save tips (never auto-upgrade). Once per draft+target.
-    if (
-      autoOn &&
-      !autoSwitchInFlight &&
-      top?.switchAction &&
-      !isUpgrade &&
-      top.ruleId !== "model-upgrade"
-    ) {
-      const key = autoSwitchDraftKey(draftText, top, analysis.model?.id);
-      const alreadyOnTarget =
-        top.targetModelId && analysis.model?.id === top.targetModelId;
-      if (!alreadyOnTarget && !autoSwitchDone.has(key)) {
-        autoSwitchDone.add(key);
-        autoSwitchInFlight = true;
-        Promise.resolve(runSwitch(top, null, { auto: true })).finally(() => {
-          autoSwitchInFlight = false;
-        });
-      }
-    }
   }
 
   function renderLastWhyPopover() {
@@ -2804,12 +1990,18 @@ const LumenWidget = (() => {
   }
 
   // Decide FAB flash after a scored message: specific signals win; otherwise
-  // posture on hand-off or when the session band changes.
+  // posture on hand-off / engaged or when the session band changes.
   function flashFabForEvaluation(evaluation, options = {}) {
     if (!options.isNewMessage && !options.fromJudge) return;
     if (LumenGoals.isGhost() || LumenGoals.isPaused()) return;
 
     const primary = evaluation?.primary || null;
+    if (primary === "engaged") {
+      showFabPosture("hands-on");
+      const band = sessionPostureBand();
+      if (band) lastFabPostureBand = band;
+      return;
+    }
     if (primary && FAB_SIGNALS.has(primary)) {
       showFabSignal(primary);
       const band = sessionPostureBand();
@@ -2834,66 +2026,16 @@ const LumenWidget = (() => {
     pulseFabMark();
   }
 
-  function normalizeFabPillar(value) {
-    return value === "badge" || value === "cost" || value === "mirror" ? value : "mirror";
-  }
-
-  function setFabPillar(pillar) {
-    const next = normalizeFabPillar(pillar);
-    LumenGoals.save({ fabPillar: next });
-    syncFabFocusUI();
-  }
-
-  function fabFocusStatus(pillar) {
-    const goals = LumenGoals.get();
-    if (pillar === "badge") {
-      if (!goals.badgeEnabled) return "Off";
-      const n = (LumenSession.getAttestations?.() || []).length;
-      return n === 1 ? "1 this week" : `${n} this week`;
-    }
-    if (pillar === "cost") {
-      if (!goals.costEnabled) return "Off";
-      return goals.costLevel === "full" ? "Loud" : "Quiet";
-    }
-    const mode = LumenGoals.normalizeMode?.(goals.mode) ?? goals.mode ?? "active";
-    return { ambient: "Ambient", active: "Active", ghost: "Ghost", guard: "Guard" }[mode] || "Active";
-  }
-
   function syncFabFocusUI() {
     const fab = document.getElementById("lumen-fab");
     const popover = document.getElementById("lumen-popover");
-    const pillar = normalizeFabPillar(LumenGoals.get().fabPillar);
-    if (fab) fab.dataset.focus = pillar;
-    if (popover) popover.dataset.pillar = pillar;
-
-    document.querySelectorAll(".lumen-pillar-tab[data-pillar]").forEach((btn) => {
-      const on = btn.getAttribute("data-pillar") === pillar;
-      btn.setAttribute("aria-selected", on ? "true" : "false");
-      btn.classList.toggle("lumen-pillar-tab--on", on);
-    });
-
-    const panels = {
-      mirror: document.getElementById("lumen-pillar-mirror"),
-      badge: document.getElementById("lumen-pillar-badge"),
-      cost: document.getElementById("lumen-pillar-cost"),
-    };
-    Object.entries(panels).forEach(([key, panel]) => {
-      if (!panel) return;
-      panel.setAttribute("data-pillar-panel", key);
-      const on = key === pillar;
-      panel.classList.toggle("lumen-hidden", !on);
-      panel.hidden = !on;
-    });
-
-    // Mirror-only sections use [data-pillar-scope] + CSS on #lumen-popover[data-pillar]
-    // so their own lumen-hidden state (stats empty, privacy open) is preserved.
-
-    // Collapse Privacy when leaving Mirror so it doesn't reopen expanded on return.
-    if (pillar !== "mirror") {
-      const privacyBtn = document.getElementById("lumen-privacy-toggle");
-      if (privacyBtn?.getAttribute("aria-expanded") === "true") {
-        togglePrivacyPanel(false);
-      }
+    if (fab) delete fab.dataset.focus;
+    if (popover) delete popover.dataset.pillar;
+    // Flattened popover — goals + badge always visible (no Mirror/Badge tabs).
+    const goals = document.getElementById("lumen-pillar-mirror");
+    if (goals) {
+      goals.classList.remove("lumen-hidden");
+      goals.hidden = false;
     }
   }
 
@@ -2932,8 +2074,8 @@ const LumenWidget = (() => {
     if (!fab) return;
     const paused = LumenGoals.isPaused();
     const mode = LumenGoals.normalizeMode?.(LumenGoals.get().mode) ?? LumenGoals.get().mode;
-    const pillar = normalizeFabPillar(LumenGoals.get().fabPillar);
-    const label = { mirror: "Mirror", badge: "Badge", cost: "Cost" }[pillar];
+    const modeLabel =
+      { ambient: "Ambient", active: "Active", ghost: "Ghost", guard: "Guard" }[mode] || "Active";
     if (paused) {
       fab.title = "Nomon is paused — click to open settings and resume";
       fab.setAttribute("aria-label", "Nomon paused");
@@ -2951,8 +2093,8 @@ const LumenWidget = (() => {
       fab.setAttribute("aria-label", `Nomon ${mode} mode, ${fabDisplaySignal} signal`);
       return;
     }
-    fab.title = `Nomon — ${label} · ${fabFocusStatus(pillar)}. Drag to move, click to open.`;
-    fab.setAttribute("aria-label", `Nomon ${label}`);
+    fab.title = `Nomon — ${modeLabel}. Drag to move, click to open.`;
+    fab.setAttribute("aria-label", `Nomon ${modeLabel}`);
   }
 
   // The four-dot mark has fixed brand colours (mode is shown by the pill's
@@ -2962,11 +2104,7 @@ const LumenWidget = (() => {
     pulseFabMark();
   }
 
-  function openPopoverToPillar(pillar) {
-    const next = normalizeFabPillar(pillar);
-    if (normalizeFabPillar(LumenGoals.get().fabPillar) !== next) {
-      LumenGoals.save({ fabPillar: next });
-    }
+  function openPopover() {
     if (!popoverOpen) {
       popoverOpen = true;
       renderPopover();
@@ -2997,12 +2135,9 @@ const LumenWidget = (() => {
     if (fab) {
       fab.dataset.mode = mode;
       fab.dataset.paused = paused ? "true" : "false";
-      fab.dataset.cost = LumenGoals.isCostEnabled?.() ? "on" : "off";
-      fab.dataset.focus = normalizeFabPillar(LumenGoals.get().fabPillar);
+      delete fab.dataset.focus;
       if (paused || mode === "ghost") clearFabSignal();
     }
-
-    if (paused || !LumenGoals.isCostEnabled?.()) clearCostCoach();
 
     syncFabLabelFromState();
     syncFabAccessibility();
@@ -3548,12 +2683,10 @@ const LumenWidget = (() => {
 
   async function buildCurrentDigest() {
     const history = await LumenSession.loadHistory();
-    const costSummary = globalThis.LumenCostLedger?.summarize?.();
     const digest = LumenNudges.buildDigest({
       history,
       session: LumenSession.get(),
       digestLog: LumenSession.getDigestLog(),
-      costUsdWeek: costSummary?.usdThisWeek || 0,
     });
     weeklyContext = { history, digest };
     return weeklyContext;
@@ -4515,6 +3648,13 @@ const LumenWidget = (() => {
         color: score >= 40 ? colors.handoff : colors.loop,
       };
     }
+    if (evaluation.primary === "engaged" && evaluation.engaged?.active) {
+      return {
+        signal: "engaged",
+        label: evaluation.engaged.label,
+        color: colors.engaged,
+      };
+    }
 
     return null;
   }
@@ -4525,6 +3665,7 @@ const LumenWidget = (() => {
     drift: "Drift",
     mismatch: "Mismatch",
     depth: "Depth",
+    engaged: "Hands-on",
   };
 
   function splitStripLabel(signal, label) {
@@ -4704,9 +3845,6 @@ const LumenWidget = (() => {
     // storage has loaded.
     updateBadge();
     playFabLoadAnimation();
-    globalThis.LumenCostLedger?.onChange?.(() => {
-      syncCostSavingsBlurb();
-    });
   }
 
   return {
@@ -4719,11 +3857,6 @@ const LumenWidget = (() => {
     injectAttestUI,
     maybeShowDigestReady,
     showGuardHold,
-    renderCostCoach,
-    clearCostCoach,
-    playPendingCostSaveCoin,
-    /** Dev/test: force the piggy-bank animation, e.g. LumenWidget.debugCostCoin(0.006) */
-    debugCostCoin: (usd = 0.0061) => playCostSaveCoin(usd),
   };
 })();
 

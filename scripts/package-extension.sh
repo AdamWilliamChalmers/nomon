@@ -29,7 +29,6 @@ copy "$ROOT/sparkline.js"
 copy "$ROOT/widget.js"
 copy "$ROOT/widget.css"
 copy "$ROOT/adapters"
-copy "$ROOT/cost"
 copy "$ROOT/icons"
 
 # Production manifest: drop localhost host permission (dev-only).

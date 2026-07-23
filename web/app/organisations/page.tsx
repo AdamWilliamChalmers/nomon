@@ -163,9 +163,9 @@ export default function OrganisationsPage() {
           <div>
             <h2>What you&rsquo;d actually see</h2>
             <p className="section-intro" style={{ marginBottom: 0 }}>
-              A quiet cohort card — shape mix, engagement trend, transparency practice. Cost and
-              platform mix come later, and only as secondary context. Sign in above to open the
-              interactive preview.
+              A quiet cohort card — shape mix, engagement trend, transparency practice. Platform mix
+              comes later, and only as secondary context. Sign in above to open the interactive
+              preview.
             </p>
           </div>
           <div className="org-mock-card" aria-hidden="true">

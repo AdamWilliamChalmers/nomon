@@ -75,11 +75,29 @@ const LumenJudge = (() => {
         merged.overlayType = null;
         merged.confidence = verdict.confidence === "high" ? "high" : "medium";
       } else if (verdict.signal === "engaged" || verdict.signal === "none") {
-        merged.primary = null;
         merged.handoff = { active: false };
         merged.overlayType = null;
-        merged.confidence = "low";
-        merged.reasons.push("LLM: engaged use — no flag");
+        // Affirmative Mirror: keep or promote a hands-on strip when engagement
+        // override already fired; otherwise "engaged" still means no problem flag.
+        if (evaluation.engagementOverride || evaluation.engaged?.active) {
+          merged.primary = "engaged";
+          merged.engaged = {
+            active: true,
+            label:
+              evaluation.engaged?.label ||
+              globalThis.LumenNudges.getEngagedLabel?.({
+                reasons: evaluation.reasons || [],
+              }) ||
+              "hands-on · you put real thought in",
+          };
+          merged.confidence = "low";
+          merged.reasons.push("LLM: confirmed hands-on use");
+        } else {
+          merged.primary = null;
+          merged.engaged = { active: false };
+          merged.confidence = "low";
+          merged.reasons.push("LLM: engaged use — no flag");
+        }
       } else if (verdict.signal === "loop" && evaluation.messageIndex > 2) {
         merged.primary = "loop";
         merged.loop = {

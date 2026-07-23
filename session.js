@@ -22,6 +22,7 @@ const LumenSession = (() => {
     driftCount: 0,
     mismatchCount: 0,
     depthCount: 0,
+    engagedCount: 0,
     scoredMessageIds: [],
     // Frozen strip snapshot per message — survives re-evaluation / judge downgrades.
     messageSignals: {},
@@ -508,7 +509,7 @@ const LumenSession = (() => {
   }
 
   function signalPriority(primary) {
-    return { mismatch: 5, depth: 4, handoff: 3, loop: 2, drift: 1 }[primary] || 0;
+    return { mismatch: 5, depth: 4, handoff: 3, loop: 2, drift: 1, engaged: 0 }[primary] || 0;
   }
 
   function freezeStripEvaluation(evaluation) {
@@ -521,6 +522,7 @@ const LumenSession = (() => {
       drift: evaluation.drift,
       mismatch: evaluation.mismatch,
       depth: evaluation.depth,
+      engaged: evaluation.engaged,
     };
   }
 
@@ -574,7 +576,7 @@ const LumenSession = (() => {
   function emptyPlatformStat() {
     return {
       messageCount: 0,
-      signalCounts: { handoff: 0, loop: 0, mismatch: 0, depth: 0, drift: 0 },
+      signalCounts: { handoff: 0, loop: 0, mismatch: 0, depth: 0, drift: 0, engaged: 0 },
       taskTypeCounts: {},
     };
   }
@@ -647,6 +649,7 @@ const LumenSession = (() => {
     if (signal === "drift") session.driftCount = Math.max(0, session.driftCount + delta);
     if (signal === "mismatch") session.mismatchCount = Math.max(0, session.mismatchCount + delta);
     if (signal === "depth") session.depthCount = Math.max(0, session.depthCount + delta);
+    if (signal === "engaged") session.engagedCount = Math.max(0, (session.engagedCount || 0) + delta);
   }
 
   function recordPlatformPresence(messageId) {

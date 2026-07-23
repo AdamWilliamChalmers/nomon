@@ -4,6 +4,7 @@ const ALLOWED_FETCH_HOSTS = new Set([
   "nomon-app.com",
   "app.lumen.io",
   "lumen-web-vscp.onrender.com",
+  "localhost",
 ]);
 
 function isAllowedFetchUrl(urlString) {

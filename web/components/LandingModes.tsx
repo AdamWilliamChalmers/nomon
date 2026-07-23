@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 
-type ModeKey = "mirror" | "badge" | "cost";
+type ModeKey = "mirror" | "badge";
 
 type Mode = {
   key: ModeKey;
@@ -86,42 +86,6 @@ const MODES: Mode[] = [
       </>
     ),
   },
-  {
-    key: "cost",
-    label: "Cost",
-    tag: "Off by default",
-    desc: (
-      <>
-        <b>Same answer, less spend.</b> On-device estimates beside the composer, plus fit tips —
-        lighter model when the ask is extractive, stronger when the stakes are high.
-      </>
-    ),
-    body: (
-      <>
-        <div className="bubble">Summarise this email in 3 bullets.</div>
-        <div className="cost-coach" data-level="full">
-          <div className="cost-coach-card">
-            <span className="cost-coach-dot" aria-hidden="true" />
-            <div className="cost-coach-bd">
-              <div className="cost-coach-ln">
-                ≈ <b>1.2k tokens</b> · lighter model saves ~<b>$0.04</b>
-              </div>
-              <div className="cost-coach-meter" aria-hidden="true">
-                <i style={{ width: "42%" }} />
-              </div>
-            </div>
-          </div>
-          <div className="cost-coach-tip">
-            <p>Extractive ask — Instant is enough for summarise / bullets.</p>
-            <button type="button" className="chip chip-solid">
-              Use Instant
-            </button>
-          </div>
-        </div>
-        <p className="mode-preview-note">Estimates stay on this device — never uploaded for cost analysis.</p>
-      </>
-    ),
-  },
 ];
 
 export default function LandingModes() {
@@ -148,8 +112,8 @@ export default function LandingModes() {
           {current.desc}
         </p>
         <p className="mode-fine">
-          Each mode turns on independently. Mirror runs by default; Badge and Cost are opt-in. Pause
-          stops everything until you resume.
+          Each mode turns on independently. Mirror runs by default; Badge is opt-in. Pause stops
+          everything until you resume.
         </p>
       </div>
 

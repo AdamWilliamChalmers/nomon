@@ -1,17 +1,26 @@
 {
   "manifest_version": 3,
   "name": "Nomon",
-  "version": "3.6.15",
+  "version": "3.7.0",
   "description": "Notices when you've stopped evaluating AI output — five quiet signals under your messages. A mirror, not a nanny.",
   "permissions": ["storage"],
   "host_permissions": [
     "https://nomon-app.com/*",
     "https://app.lumen.io/*",
     "https://lumen-web-vscp.onrender.com/*",
-    "http://localhost:3000/*"
+    "http://localhost:3000/*",
+    "http://localhost:3001/*"
   ],
   "background": {
     "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Nomon",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "icons": {
     "16": "icons/icon16.png",
@@ -102,10 +111,6 @@
         "nudges.js",
         "engine.js",
         "goals.js",
-        "cost/models.js",
-        "cost/costRules.js",
-        "cost/cost.js",
-        "cost/ledger.js",
         "judge.js",
         "badge.js",
         "session.js",

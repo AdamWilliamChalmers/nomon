@@ -12,7 +12,7 @@ const CHROME_STORE_URL =
 export const metadata: Metadata = {
   title: "Nomon — AI should sharpen your thinking. Not replace it.",
   description:
-    "Nomon is a free browser extension with three modes: Mirror (how you think with AI), Badge (disclose AI use), and Cost (same answer, less spend). A mirror, not a nanny.",
+    "Nomon is a free browser extension with two modes: Mirror (how you think with AI) and Badge (disclose AI use). A mirror, not a nanny.",
 };
 
 export default function HomePage() {
@@ -57,10 +57,9 @@ export default function HomePage() {
           </h1>
 
           <p className="lede">
-            Nomon is a free browser extension with three modes —{" "}
-            <strong>Mirror</strong>, <strong>Badge</strong>, and <strong>Cost</strong> — so you keep
-            judgement in the loop, disclose AI use when it matters, and spend less when the ask is
-            simple. <strong>A mirror, not a nanny.</strong> It never interrupts, never blocks a
+            Nomon is a free browser extension with two modes — <strong>Mirror</strong> and{" "}
+            <strong>Badge</strong> — so you keep judgement in the loop and disclose AI use when it
+            matters. <strong>A mirror, not a nanny.</strong> It never interrupts, never blocks a
             reply, and never reads what you write.
           </p>
 
@@ -69,7 +68,7 @@ export default function HomePage() {
               Add to Chrome — free
             </a>
             <a className="btn btn-ghost" href="#modes">
-              See the three modes
+              See Mirror and Badge
             </a>
           </div>
 
@@ -144,12 +143,12 @@ export default function HomePage() {
       {/* ═══════════ How it works ═══════════ */}
       <section id="how">
         <div className="wrap">
-          <h2>Three modes. One quiet instrument.</h2>
+          <h2>Two modes. One quiet instrument.</h2>
           <p className="section-intro">
             Turn each on independently. No score chasing, no streaks, no guilt.
           </p>
 
-          <div className="steps">
+          <div className="steps steps--two">
             <div className="step">
               <div className="step-visual" aria-hidden="true">
                 <div className="strip left" style={{ padding: 0 }}>
@@ -180,27 +179,6 @@ export default function HomePage() {
                 pushback — ready to copy when you need to be transparent.
               </p>
             </div>
-
-            <div className="step">
-              <div className="step-visual">
-                <div className="cost-coach cost-coach--step" data-level="full">
-                  <div className="cost-coach-card">
-                    <span className="cost-coach-dot" aria-hidden="true" />
-                    <div className="cost-coach-bd">
-                      <div className="cost-coach-ln">
-                        ≈ <b>1.2k</b> · Instant saves ~<b>$0.04</b>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <p className="step-kicker">Cost</p>
-              <h3>Same answer, less spend</h3>
-              <p>
-                On-device token estimates and fit tips beside the composer — lighter when the ask is
-                extractive, stronger when the stakes are high. Off until you turn it on.
-              </p>
-            </div>
           </div>
         </div>
       </section>
@@ -208,10 +186,10 @@ export default function HomePage() {
       {/* ═══════════ Modes ═══════════ */}
       <section id="modes">
         <div className="wrap">
-          <h2>Mirror · Badge · Cost</h2>
+          <h2>Mirror · Badge</h2>
           <p className="section-intro">
-            Click a mode to see what it looks like in chat. Each one is optional after Mirror —
-            switch any time from the Nomon pill.
+            Click a mode to see what it looks like in chat. Badge is optional after Mirror — switch
+            any time from the Nomon pill.
           </p>
 
           <LandingModes />
@@ -223,9 +201,9 @@ export default function HomePage() {
         <div className="wrap">
           <h2>One extension, every chat</h2>
           <p className="section-intro" style={{ marginBottom: 36 }}>
-            Your habits with AI aren&rsquo;t per-tool, so Nomon isn&rsquo;t either. Mirror, Badge,
-            and Cost work inside the chat interfaces you already use. Switching tools never resets
-            the picture.
+            Your habits with AI aren&rsquo;t per-tool, so Nomon isn&rsquo;t either. Mirror and Badge
+            work inside the chat interfaces you already use. Switching tools never resets the
+            picture.
           </p>
           <ul className="ai-list" aria-label="Supported AI tools">
             <li>ChatGPT</li>
@@ -522,15 +500,14 @@ export default function HomePage() {
               <p>
                 <b>Only if you ask it to.</b> Inside Mirror, Guard — off by default — briefly holds a
                 message that clearly conflicts with a goal you wrote, and even then one click sends
-                it anyway. Badge and Cost never touch your messages.
+                it anyway. Badge never touches your messages.
               </p>
             </div>
             <div className="qa-item">
               <h3>What if I just want Mirror gone for a while?</h3>
               <p>
                 <b>Ghost mode.</b> One click and Mirror signals disappear in-session — you only get
-                the weekly digest. Badge and Cost keep their own toggles. Or Pause everything from
-                the pill.
+                the weekly digest. Badge keeps its own toggle. Or Pause everything from the pill.
               </p>
             </div>
             <div className="qa-item">
@@ -571,7 +548,7 @@ export default function HomePage() {
         <div className="wrap">
           <AnimMark size={88} />
           <h2>Keep judgement in the loop.</h2>
-          <p>Mirror · Badge · Cost — free, private, and quiet by design.</p>
+          <p>Mirror · Badge — free, private, and quiet by design.</p>
           <a className="btn btn-primary" href={CHROME_STORE_URL} target="_blank" rel="noopener">
             Add to Chrome — free
           </a>

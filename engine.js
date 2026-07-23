@@ -171,13 +171,30 @@ const LumenEngine = (() => {
   }
 
   function computeDwellRatio(messages, userIndex) {
-    const prevAssistant = getPreviousAssistant(messages, userIndex);
     const userMsg = messages[userIndex];
+    // Prefer first-keystroke dwell (time until the user starts composing) when
+    // the content script captured it — closer to "did they read?" than send gap.
+    if (userMsg?.dynamics?.firstKeyDwellRatio != null) {
+      return userMsg.dynamics.firstKeyDwellRatio;
+    }
+    const prevAssistant = getPreviousAssistant(messages, userIndex);
     if (!prevAssistant?.text || !userMsg?.timestamp || !prevAssistant.timestamp) return null;
     const dwell = userMsg.timestamp - prevAssistant.timestamp;
     const expected = wordCount(prevAssistant.text) * 250;
     if (expected <= 0 || dwell < 0) return null;
     return dwell / expected;
+  }
+
+  // Dwell vs expected reading time (~250ms/word). Positive = more passive;
+  // negative = credit for sitting with the answer.
+  function scoreDwellTime(dwellRatio, priorAIWordCount) {
+    if (priorAIWordCount < 100) return 0;
+    if (dwellRatio == null) return 0;
+    if (dwellRatio < 0.15) return 25;
+    if (dwellRatio < 0.3) return 15;
+    if (dwellRatio < 0.5) return 5;
+    if (dwellRatio >= 0.8) return -10;
+    return 0;
   }
 
   function scoreResponseEngagement(userText, priorAiText) {
@@ -279,17 +296,31 @@ const LumenEngine = (() => {
     if (aiWords < 100) return 0;
 
     const userWords = wordCount(userMsg.text);
-    const gapMs = userMsg.timestamp - prevAssistant.timestamp;
+    const gapMs =
+      userMsg.timestamp && prevAssistant.timestamp
+        ? userMsg.timestamp - prevAssistant.timestamp
+        : null;
     let score = 0;
 
     if (isPassiveContinuation(userMsg.text)) score = userWords <= 3 ? 100 : 90;
     else if (isSimilarToPreviousUserMessage(userMsg.text, messages, userIndex) && userWords < 20) score = 80;
-    else if (gapMs <= 15000 && aiWords >= 150 && userWords < 20) score = 75;
+    else if (gapMs != null && gapMs <= 15000 && aiWords >= 150 && userWords < 20) score = 75;
     else if (aiWords > 300 && userWords < 8 && !containsQuoteFromAi(userMsg.text, prevAssistant.text)) score = 100;
     else if (aiWords > 200 && userWords < 15) score = 60;
 
-    if (dwellRatio != null && dwellRatio < 0.2 && score > 0) {
-      score = Math.min(100, score + 20);
+    // Paste of a short follow-up (no own framing) after a long reply → more passive.
+    if (
+      userMsg.dynamics?.pasted &&
+      userWords < 25 &&
+      !hasEngagementMarkers(userMsg.text) &&
+      !hasUserProvidedContext(userMsg.text)
+    ) {
+      score = Math.max(score, score > 0 ? Math.min(100, score + 15) : 55);
+    }
+
+    const dwellMod = scoreDwellTime(dwellRatio, aiWords);
+    if (dwellMod > 0 && score > 0) {
+      score = Math.min(100, score + dwellMod);
     }
     return score;
   }
@@ -344,11 +375,28 @@ const LumenEngine = (() => {
     if (hasEngagementMarkers(text)) score = Math.max(0, score - 12);
     if (hasUserProvidedContext(text)) score = Math.max(0, score - 10);
     const prevAssistant = getPreviousAssistant(messages, userIndex);
+    const priorAIWordCount = prevAssistant ? wordCount(prevAssistant.text) : 0;
     if (prevAssistant) {
       score += scoreResponseEngagement(text, prevAssistant.text);
       if (containsQuoteFromAi(text, prevAssistant.text)) score = Math.max(0, score - 10);
     }
     if (/^\s*(\d+[\.)]|[-*•])\s+/m.test(text) && wordCount(text) >= 20) score = Math.max(0, score - 8);
+
+    // Careful reading credit (first-keystroke or send-gap dwell).
+    const dwellMod = scoreDwellTime(context?.dwellRatio, priorAIWordCount);
+    if (dwellMod < 0) score = Math.max(0, score + dwellMod);
+
+    // Short pasted commands without own framing nudge the loop score up.
+    const userMsg = messages[userIndex];
+    if (
+      userMsg?.dynamics?.pasted &&
+      wordCount(text) < 25 &&
+      !hasEngagementMarkers(text) &&
+      !hasUserProvidedContext(text) &&
+      !text.includes("?")
+    ) {
+      score = Math.min(100, score + 12);
+    }
 
     const arc = computeConversationArc(context?.priorLoopScores || []);
     if (arc === "strong_opener") score = Math.max(0, Math.round(score * 0.8));
@@ -375,6 +423,7 @@ const LumenEngine = (() => {
     const raw = computeLoopScore(signals);
     let score = applyPostProcessing(raw, msg.text, messages, index, {
       priorLoopScores: context?.priorLoopScores,
+      dwellRatio,
     });
     score = applyTaskTypeModifier(score, taskType, {
       sessionSensitivity: context?.sessionSensitivity,
@@ -508,7 +557,7 @@ const LumenEngine = (() => {
       crowdCalibration: context.crowdCalibration,
     };
 
-    const { signals, score: loopScoreRaw, calibration, taskType } = computeLoopSignals(
+    const { signals, score: loopScoreRaw, calibration, taskType, dwellRatio } = computeLoopSignals(
       msg,
       messages,
       index,
@@ -555,8 +604,14 @@ const LumenEngine = (() => {
       !exempt && !engagementOverride.active && handoffSemanticOrTier2;
     const loopActive = messageIndex > 2 && loopScore >= loopThreshold;
 
+    // Affirmative Mirror strip: only when engagement override fires and no
+    // problem signal claims primary. Sparse by nature — override is uncommon.
+    const engagedActive =
+      engagementOverride.active && goals.mode !== "ghost" && !exempt;
+
     const handoffLabel = globalThis.LumenNudges.getHandOffLabel();
     const loopLabel = globalThis.LumenNudges.getLoopLabel(signals, loopScore, passiveCount);
+    const engagedLabel = globalThis.LumenNudges.getEngagedLabel?.(engagementOverride);
     const depthWarm = depth.active && globalThis.LumenNudges.isHighStakesDepth(msg.text);
     const mismatchHighFrequency =
       mismatchMatch && context.sessionMismatchCount >= 2;
@@ -567,6 +622,8 @@ const LumenEngine = (() => {
       tier,
       framing,
       engagementOverride: engagementOverride.active,
+      dwellRatio,
+      pasted: Boolean(msg.dynamics?.pasted),
       loopScore,
       loopSignals: signals,
       taskType,
@@ -591,6 +648,9 @@ const LumenEngine = (() => {
             warm: depthWarm,
           }
         : { active: false },
+      engaged: engagedActive
+        ? { active: true, label: engagedLabel || "hands-on · you put real thought in" }
+        : { active: false },
       overlayType: null,
       primary: null,
       reasons: [],
@@ -603,6 +663,7 @@ const LumenEngine = (() => {
     else if (handoffActive || handoffStripOnly) result.primary = "handoff";
     else if (loopActive) result.primary = "loop";
     else if (result.drift.active && goals.mode !== "ghost") result.primary = "drift";
+    else if (result.engaged.active) result.primary = "engaged";
 
     const confidence = LumenRules.computeConfidence({
       text: msg.text,
