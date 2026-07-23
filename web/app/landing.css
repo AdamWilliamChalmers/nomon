@@ -457,13 +457,17 @@ html:has(.lumen-landing) {
   padding-left: 0;
 }
 
-/* Signals are grayscale — one neutral dot, one neutral label. */
+/* Caution signals are grayscale — one neutral dot, one neutral label.
+   Hands-on / wins may use the allowed green accent. */
 .lumen-landing .sig-sky,
 .lumen-landing .sig-green,
 .lumen-landing .sig-amber,
 .lumen-landing .sig-rose,
 .lumen-landing .sig-blue {
   color: var(--ll-signal-ink);
+}
+.lumen-landing .sig-win {
+  color: var(--ll-win);
 }
 .lumen-landing .bg-sky,
 .lumen-landing .bg-green,
@@ -472,6 +476,9 @@ html:has(.lumen-landing) {
 .lumen-landing .bg-blue,
 .lumen-landing .bg-signal {
   background: var(--ll-signal-dot);
+}
+.lumen-landing .bg-win {
+  background: var(--ll-win);
 }
 
 /* Weekly-card bar fills — green is allowed as the positive accent */

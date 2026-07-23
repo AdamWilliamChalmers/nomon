@@ -10,7 +10,9 @@ async function loadAllFeedbackRows(): Promise<FeedbackRow[]> {
 
   const { data } = await supabase
     .from("signal_feedback")
-    .select("user_id, session_date, platform, signal_type, task_type, verdict, score, prompt_snippet");
+    .select(
+      "user_id, session_date, platform, signal_type, task_type, verdict, score, prompt_snippet, stance, dwell_ratio, pasted, confidence"
+    );
 
   if (!data?.length) return rows;
 
@@ -23,6 +25,10 @@ async function loadAllFeedbackRows(): Promise<FeedbackRow[]> {
     verdict: row.verdict,
     score: row.score ?? undefined,
     promptSnippet: row.prompt_snippet ?? undefined,
+    stance: row.stance ?? undefined,
+    dwellRatio: row.dwell_ratio ?? undefined,
+    pasted: row.pasted ?? undefined,
+    confidence: row.confidence ?? undefined,
   }));
 
   return [...rows, ...fromDb];

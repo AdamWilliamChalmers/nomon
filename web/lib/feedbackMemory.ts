@@ -7,6 +7,10 @@ export type FeedbackRow = {
   score?: number;
   userId?: string;
   promptSnippet?: string;
+  stance?: string;
+  dwellRatio?: number;
+  pasted?: boolean;
+  confidence?: string;
 };
 
 const memoryFeedback: FeedbackRow[] = [];
@@ -19,36 +23,55 @@ export function listFeedbackRows() {
   return [...memoryFeedback];
 }
 
+type Bucket = { wrong: number; right: number; total: number };
+
+function emptyBucket(): Bucket {
+  return { wrong: 0, right: 0, total: 0 };
+}
+
+function bump(bucket: Bucket, verdict?: string) {
+  bucket.total += 1;
+  if (verdict === "right") bucket.right += 1;
+  else bucket.wrong += 1;
+}
+
+function fpRate(wrong: number, labeled: number) {
+  return labeled ? wrong / labeled : 0;
+}
+
 export function aggregateFeedbackRows(rows: FeedbackRow[]) {
-  const bySignal: Record<string, { wrong: number; total: number }> = {};
-  const byTask: Record<string, { wrong: number; total: number }> = {};
-  const byPlatform: Record<string, { wrong: number; total: number }> = {};
+  const bySignal: Record<string, Bucket> = {};
+  const byTask: Record<string, Bucket> = {};
+  const byPlatform: Record<string, Bucket> = {};
+  const byStance: Record<string, Bucket> = {};
 
   for (const row of rows) {
     const sig = row.signalType || "unknown";
     const task = row.taskType || "general";
     const platform = row.platform || "unknown";
-    bySignal[sig] = bySignal[sig] || { wrong: 0, total: 0 };
-    byTask[task] = byTask[task] || { wrong: 0, total: 0 };
-    byPlatform[platform] = byPlatform[platform] || { wrong: 0, total: 0 };
-    bySignal[sig].total += 1;
-    byTask[task].total += 1;
-    byPlatform[platform].total += 1;
-    if (row.verdict === "wrong") {
-      bySignal[sig].wrong += 1;
-      byTask[task].wrong += 1;
-      byPlatform[platform].wrong += 1;
-    }
+    const stance = row.stance || "unspecified";
+    bySignal[sig] = bySignal[sig] || emptyBucket();
+    byTask[task] = byTask[task] || emptyBucket();
+    byPlatform[platform] = byPlatform[platform] || emptyBucket();
+    byStance[stance] = byStance[stance] || emptyBucket();
+    bump(bySignal[sig], row.verdict);
+    bump(byTask[task], row.verdict);
+    bump(byPlatform[platform], row.verdict);
+    bump(byStance[stance], row.verdict);
   }
 
-  const toRates = (entries: [string, { wrong: number; total: number }][]) =>
+  const toRates = (entries: [string, Bucket][]) =>
     entries
-      .map(([key, counts]) => ({
-        key,
-        falsePositiveRate: counts.total ? Math.round((counts.wrong / counts.total) * 100) : 0,
-        wrong: counts.wrong,
-        total: counts.total,
-      }))
+      .map(([key, counts]) => {
+        const labeled = counts.wrong + counts.right;
+        return {
+          key,
+          falsePositiveRate: Math.round(fpRate(counts.wrong, labeled || counts.total) * 100),
+          wrong: counts.wrong,
+          right: counts.right,
+          total: counts.total,
+        };
+      })
       .sort((a, b) => b.falsePositiveRate - a.falsePositiveRate);
 
   return {
@@ -64,7 +87,13 @@ export function aggregateFeedbackRows(rows: FeedbackRow[]) {
       platform: key,
       ...rest,
     })),
+    byStance: toRates(Object.entries(byStance)).map(({ key, ...rest }) => ({
+      stance: key,
+      ...rest,
+    })),
     totalSamples: rows.length,
+    rightSamples: rows.filter((r) => r.verdict === "right").length,
+    wrongSamples: rows.filter((r) => r.verdict !== "right").length,
   };
 }
 

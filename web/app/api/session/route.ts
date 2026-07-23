@@ -16,6 +16,17 @@ function sanitizePromptSnippet(snippet: string | undefined): string | undefined 
   return snippet.slice(0, 200).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
 }
 
+function asCount(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 function normalizeFeedbackRows(
   userId: string,
   feedback: unknown[],
@@ -25,12 +36,17 @@ function normalizeFeedbackRows(
   if (!Array.isArray(feedback)) return [];
   return feedback.map((f) => {
     const row = f as Record<string, unknown>;
+    const verdict = String(row.verdict || "wrong") === "right" ? "right" : "wrong";
     return {
       userId,
-      signalType: String(row.signalType || "unknown"),
-      taskType: String(row.taskType || "general"),
-      verdict: String(row.verdict || "wrong"),
+      signalType: String(row.signalType || "unknown").slice(0, 64),
+      taskType: String(row.taskType || "general").slice(0, 64),
+      verdict,
       score: typeof row.score === "number" ? row.score : undefined,
+      stance: typeof row.stance === "string" ? row.stance.slice(0, 64) : undefined,
+      dwellRatio: typeof row.dwellRatio === "number" ? row.dwellRatio : undefined,
+      pasted: typeof row.pasted === "boolean" ? row.pasted : undefined,
+      confidence: typeof row.confidence === "string" ? row.confidence.slice(0, 32) : undefined,
       promptSnippet:
         typeof row.promptSnippet === "string"
           ? sanitizePromptSnippet(row.promptSnippet)
@@ -39,6 +55,20 @@ function normalizeFeedbackRows(
       sessionDate,
     };
   });
+}
+
+function buildSignalsBlob(body: Record<string, unknown>) {
+  const nested = asObject(body.signals);
+  return {
+    handoff: asCount(nested.handoff ?? body.handoffCount),
+    loop: asCount(nested.loop ?? body.loopCount),
+    drift: asCount(nested.drift ?? body.driftCount),
+    mismatch: asCount(nested.mismatch ?? body.mismatchCount),
+    depth: asCount(nested.depth ?? body.depthCount ?? body.depthMoments),
+    engaged: asCount(nested.engaged ?? body.engagedCount),
+    scaffold: asCount(nested.scaffold ?? body.scaffoldCount),
+    attemptFirst: asCount(nested.attemptFirst ?? body.attemptFirstCount),
+  };
 }
 
 async function persistFeedbackToSupabase(rows: FeedbackRow[]) {
@@ -55,6 +85,10 @@ async function persistFeedbackToSupabase(rows: FeedbackRow[]) {
       verdict: row.verdict,
       score: row.score ?? null,
       prompt_snippet: row.promptSnippet ?? null,
+      stance: row.stance ?? null,
+      dwell_ratio: row.dwellRatio ?? null,
+      pasted: row.pasted ?? null,
+      confidence: row.confidence ?? null,
     }))
   );
 }
@@ -89,28 +123,51 @@ export async function POST(req: NextRequest) {
   }
 
   const sessionDate = String(body.sessionDate || new Date().toISOString().slice(0, 10));
-  const platform = String(body.platform || "unknown");
+  const platform = String(body.platform || "unknown").slice(0, 120);
+  const signals = buildSignalsBlob(body);
+  const dynamics = asObject(body.dynamics);
+  const responseCounts = asObject(body.responseCounts);
+  const taskTypeCounts = asObject(body.taskTypeCounts);
+  const platformStats = asObject(body.platformStats);
 
   const sessionRow = {
     user_id: userId,
     session_date: sessionDate,
     platform,
-    duration_minutes: Number(body.durationMinutes) || 0,
-    message_count: Number(body.messageCount) || 0,
-    composite_score: Number(body.compositeScore) || 0,
-    human_state: body.humanState || "none",
-    depth_moments: Number(body.depthMoments) || 0,
-    questions_asked: Number(body.questionsAsked) || 0,
-    conscious_delegates: Number(body.consciousDelegates) || 0,
-    loop_breaks_taken: Number(body.loopBreaksTaken) || 0,
-    interventions_fired: Number(body.interventionsFired) || 0,
-    interventions_bypassed: Number(body.interventionsBypassed) || 0,
-    reflections_submitted: Number(body.reflectionsSubmitted) || 0,
+    schema_version: asCount(body.schemaVersion) || 1,
+    duration_minutes: asCount(body.durationMinutes),
+    message_count: asCount(body.messageCount),
+    composite_score: asCount(body.compositeScore),
+    human_state: String(body.humanState || "none").slice(0, 32),
+    mode: typeof body.mode === "string" ? body.mode.slice(0, 32) : null,
+    badge_enabled: Boolean(body.badgeEnabled),
+    depth_moments: signals.depth,
+    questions_asked: asCount(body.questionsAsked),
+    conscious_delegates: asCount(body.consciousDelegates) || signals.handoff,
+    loop_breaks_taken: asCount(body.loopBreaksTaken) || asCount(responseCounts.loopBreaks),
+    interventions_fired: asCount(body.interventionsFired),
+    interventions_bypassed: asCount(body.interventionsBypassed),
+    reflections_submitted: asCount(body.reflectionsSubmitted),
+    handoff_count: signals.handoff,
+    loop_count: signals.loop,
+    drift_count: signals.drift,
+    mismatch_count: signals.mismatch,
+    engaged_count: signals.engaged,
+    scaffold_count: signals.scaffold,
+    attempt_first_count: signals.attemptFirst,
+    avg_dwell_ratio:
+      typeof dynamics.avgDwellRatio === "number" ? dynamics.avgDwellRatio : null,
+    low_dwell_count: asCount(dynamics.lowDwellCount),
+    paste_count: asCount(dynamics.pasteCount),
     lumi_mode: Boolean(body.lumiMode),
-    lumi_rituals_completed: Number(body.lumiRitualsCompleted) || 0,
-    lumi_homework_suggested: Number(body.lumiHomeworkSuggested) || 0,
-    signals: body.signals || {},
-    feedback: body.feedback || [],
+    lumi_rituals_completed: asCount(body.lumiRitualsCompleted),
+    lumi_homework_suggested: asCount(body.lumiHomeworkSuggested),
+    signals,
+    dynamics,
+    task_type_counts: taskTypeCounts,
+    platform_stats: platformStats,
+    response_counts: responseCounts,
+    feedback: Array.isArray(body.feedback) ? body.feedback : [],
   };
 
   const feedbackRows = normalizeFeedbackRows(
@@ -151,7 +208,43 @@ export async function POST(req: NextRequest) {
     .limit(1);
 
   if (dupes?.length) {
+    // Still accept labelled feedback on a duplicate POST (debounced flush).
     if (feedbackRows.length) await persistFeedbackToSupabase(feedbackRows);
+    // Refresh the latest row's aggregates so debounced flushes don't drop counts.
+    await supabase
+      .from("sessions")
+      .update({
+        message_count: sessionRow.message_count,
+        composite_score: sessionRow.composite_score,
+        human_state: sessionRow.human_state,
+        depth_moments: sessionRow.depth_moments,
+        conscious_delegates: sessionRow.conscious_delegates,
+        loop_breaks_taken: sessionRow.loop_breaks_taken,
+        interventions_fired: sessionRow.interventions_fired,
+        interventions_bypassed: sessionRow.interventions_bypassed,
+        reflections_submitted: sessionRow.reflections_submitted,
+        handoff_count: sessionRow.handoff_count,
+        loop_count: sessionRow.loop_count,
+        drift_count: sessionRow.drift_count,
+        mismatch_count: sessionRow.mismatch_count,
+        engaged_count: sessionRow.engaged_count,
+        scaffold_count: sessionRow.scaffold_count,
+        attempt_first_count: sessionRow.attempt_first_count,
+        avg_dwell_ratio: sessionRow.avg_dwell_ratio,
+        low_dwell_count: sessionRow.low_dwell_count,
+        paste_count: sessionRow.paste_count,
+        signals: sessionRow.signals,
+        dynamics: sessionRow.dynamics,
+        task_type_counts: sessionRow.task_type_counts,
+        platform_stats: sessionRow.platform_stats,
+        response_counts: sessionRow.response_counts,
+        feedback: sessionRow.feedback,
+        duration_minutes: sessionRow.duration_minutes,
+        mode: sessionRow.mode,
+        badge_enabled: sessionRow.badge_enabled,
+        schema_version: sessionRow.schema_version,
+      })
+      .eq("id", dupes[0].id);
     return extensionJsonResponse(req, { ok: true, duplicate: true, feedbackIngested: feedbackRows.length });
   }
 

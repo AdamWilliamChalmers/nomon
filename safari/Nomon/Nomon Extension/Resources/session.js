@@ -13,6 +13,15 @@ const LumenSession = (() => {
     }
   }
 
+  const SESSION_SCHEMA_VERSION = 2;
+
+  const emptyDynamics = () => ({
+    pasteCount: 0,
+    dwellSamples: 0,
+    dwellRatioSum: 0,
+    lowDwellCount: 0,
+  });
+
   const defaultSession = () => ({
     loopScores: [],
     sessionScore: 0,
@@ -22,6 +31,9 @@ const LumenSession = (() => {
     driftCount: 0,
     mismatchCount: 0,
     depthCount: 0,
+    engagedCount: 0,
+    scaffoldCount: 0,
+    attemptFirstCount: 0,
     scoredMessageIds: [],
     // Frozen strip snapshot per message — survives re-evaluation / judge downgrades.
     messageSignals: {},
@@ -31,6 +43,9 @@ const LumenSession = (() => {
     // Histogram of detected task types this session, used by the AI Profile to
     // say what you mostly use each tool for (see lumen-ai-profile.md).
     taskTypeCounts: {},
+    // Composer dynamics aggregates (counts only — no keystroke content).
+    dynamics: emptyDynamics(),
+    sessionStartedAt: Date.now(),
     sessionDate: new Date().toISOString().slice(0, 10),
     platform: window.location.hostname,
     // Per-host tallies for today's AI profile snapshot (cross-tab merged in sync()).
@@ -38,6 +53,8 @@ const LumenSession = (() => {
     // Ghost mode: track which user messages already counted toward platformStats.
     platformPresenceIds: [],
   });
+
+  let sessionFlushTimer = null;
 
   let session = defaultSession();
   let digestLog = { depthMoments: [], mismatchEvents: [] };
@@ -99,6 +116,8 @@ const LumenSession = (() => {
     const incoming = data || {};
     const { platform: _storedPlatform, ...shared } = incoming;
     session = { ...defaultSession(), ...shared, platform: tabPlatformKey() };
+    session.dynamics = { ...emptyDynamics(), ...(session.dynamics || {}) };
+    if (!session.sessionStartedAt) session.sessionStartedAt = Date.now();
     // Loading establishes a clean baseline: nothing here is a local delta.
     persisted = clone(session);
     return session;
@@ -428,10 +447,25 @@ const LumenSession = (() => {
       ? Math.round(merged.loopScores.reduce((a, b) => a + b, 0) / merged.loopScores.length)
       : 0;
 
-    ["loopCount", "handoffCount", "driftCount", "mismatchCount", "depthCount"].forEach((k) => {
+    ["loopCount", "handoffCount", "driftCount", "mismatchCount", "depthCount", "engagedCount", "scaffoldCount", "attemptFirstCount"].forEach((k) => {
       const delta = (session[k] || 0) - (persisted[k] || 0);
       merged[k] = Math.max(0, (stored[k] || 0) + delta);
     });
+
+    const dynKeys = ["pasteCount", "dwellSamples", "dwellRatioSum", "lowDwellCount"];
+    const storedDyn = stored.dynamics || emptyDynamics();
+    const baseDyn = persisted.dynamics || emptyDynamics();
+    const curDyn = session.dynamics || emptyDynamics();
+    merged.dynamics = emptyDynamics();
+    dynKeys.forEach((k) => {
+      const delta = (curDyn[k] || 0) - (baseDyn[k] || 0);
+      merged.dynamics[k] = Math.max(0, (storedDyn[k] || 0) + delta);
+    });
+
+    const startedCandidates = [stored.sessionStartedAt, session.sessionStartedAt, persisted.sessionStartedAt]
+      .map((n) => Number(n))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    merged.sessionStartedAt = startedCandidates.length ? Math.min(...startedCandidates) : Date.now();
 
     merged.taskTypeCounts = mergeCountMap(stored.taskTypeCounts, persisted.taskTypeCounts, session.taskTypeCounts);
     merged.taskTypeWrongCounts = mergeCountMap(
@@ -508,7 +542,7 @@ const LumenSession = (() => {
   }
 
   function signalPriority(primary) {
-    return { mismatch: 5, depth: 4, handoff: 3, loop: 2, drift: 1 }[primary] || 0;
+    return { mismatch: 5, depth: 4, handoff: 3, loop: 2, drift: 1, engaged: 0 }[primary] || 0;
   }
 
   function freezeStripEvaluation(evaluation) {
@@ -516,11 +550,17 @@ const LumenSession = (() => {
     return {
       primary: evaluation.primary,
       loopScore: evaluation.loopScore,
+      stance: evaluation.stance || evaluation.engaged?.stance || null,
+      taskType: evaluation.taskType || null,
+      dwellRatio: typeof evaluation.dwellRatio === "number" ? evaluation.dwellRatio : null,
+      pasted: Boolean(evaluation.pasted),
+      confidence: evaluation.confidence || null,
       handoff: evaluation.handoff,
       loop: evaluation.loop,
       drift: evaluation.drift,
       mismatch: evaluation.mismatch,
       depth: evaluation.depth,
+      engaged: evaluation.engaged,
     };
   }
 
@@ -574,7 +614,16 @@ const LumenSession = (() => {
   function emptyPlatformStat() {
     return {
       messageCount: 0,
-      signalCounts: { handoff: 0, loop: 0, mismatch: 0, depth: 0, drift: 0 },
+      signalCounts: {
+        handoff: 0,
+        loop: 0,
+        mismatch: 0,
+        depth: 0,
+        drift: 0,
+        engaged: 0,
+        scaffold: 0,
+        "attempt-first": 0,
+      },
       taskTypeCounts: {},
     };
   }
@@ -647,6 +696,28 @@ const LumenSession = (() => {
     if (signal === "drift") session.driftCount = Math.max(0, session.driftCount + delta);
     if (signal === "mismatch") session.mismatchCount = Math.max(0, session.mismatchCount + delta);
     if (signal === "depth") session.depthCount = Math.max(0, session.depthCount + delta);
+    if (signal === "engaged") session.engagedCount = Math.max(0, (session.engagedCount || 0) + delta);
+    if (signal === "scaffold") session.scaffoldCount = Math.max(0, (session.scaffoldCount || 0) + delta);
+    if (signal === "attempt-first") {
+      session.attemptFirstCount = Math.max(0, (session.attemptFirstCount || 0) + delta);
+    }
+  }
+
+  function bumpStanceTallies(evaluation, delta) {
+    const stance = evaluation?.stance || evaluation?.engaged?.stance;
+    if (stance === "scaffold") bumpSignalCount("scaffold", delta);
+    if (stance === "attempt-first") bumpSignalCount("attempt-first", delta);
+  }
+
+  function addStanceToPlatform(evaluation) {
+    const stance = evaluation?.stance || evaluation?.engaged?.stance;
+    if (stance !== "scaffold" && stance !== "attempt-first") return;
+    const key = sessionPlatformKey();
+    session.platformStats = session.platformStats || {};
+    const ps = session.platformStats[key] || emptyPlatformStat();
+    ps.signalCounts = ps.signalCounts || {};
+    ps.signalCounts[stance] = (ps.signalCounts[stance] || 0) + 1;
+    session.platformStats[key] = ps;
   }
 
   function recordPlatformPresence(messageId) {
@@ -660,9 +731,22 @@ const LumenSession = (() => {
     return true;
   }
 
+  function bumpDynamics(evaluation) {
+    if (!evaluation) return;
+    session.dynamics = session.dynamics || emptyDynamics();
+    if (evaluation.pasted) session.dynamics.pasteCount = (session.dynamics.pasteCount || 0) + 1;
+    const dwell = evaluation.dwellRatio;
+    if (typeof dwell === "number" && Number.isFinite(dwell) && dwell >= 0) {
+      session.dynamics.dwellSamples = (session.dynamics.dwellSamples || 0) + 1;
+      session.dynamics.dwellRatioSum = (session.dynamics.dwellRatioSum || 0) + dwell;
+      if (dwell < 0.3) session.dynamics.lowDwellCount = (session.dynamics.lowDwellCount || 0) + 1;
+    }
+  }
+
   function recordMessage(messageId, loopScore, signal, taskType, evaluation) {
     if (session.scoredMessageIds.includes(messageId)) return false;
 
+    if (!session.sessionStartedAt) session.sessionStartedAt = Date.now();
     session.scoredMessageIds.push(messageId);
     session.loopScores.push(loopScore);
     session.messageCount += 1;
@@ -671,6 +755,11 @@ const LumenSession = (() => {
     );
 
     bumpSignalCount(signal, 1);
+    if (signal === "engaged") {
+      bumpStanceTallies(evaluation, 1);
+      addStanceToPlatform(evaluation);
+    }
+    bumpDynamics(evaluation);
     if (session.platformPresenceIds?.includes(messageId)) {
       addPlatformSignal(signal, taskType);
     } else {
@@ -684,6 +773,7 @@ const LumenSession = (() => {
       session.taskTypeCounts[taskType] = (session.taskTypeCounts[taskType] || 0) + 1;
     }
     save();
+    scheduleSessionFlush();
     return true;
   }
 
@@ -698,6 +788,7 @@ const LumenSession = (() => {
     shiftPlatformSignal(sessionPlatformKey(), previousSignal, newSignal);
     if (evaluation) session.messageSignals[messageId] = freezeStripEvaluation(evaluation);
     save();
+    scheduleSessionFlush();
     return true;
   }
 
@@ -945,19 +1036,113 @@ const LumenSession = (() => {
     return historyWriteChain;
   }
 
-  function recordFeedback({ messageId, signalType, score, verdict, taskType, promptSnippet }) {
+  function countByAction(events) {
+    const out = {};
+    (events || []).forEach((e) => {
+      const key = e?.action || e?.choice || "unknown";
+      out[key] = (out[key] || 0) + 1;
+    });
+    return out;
+  }
+
+  function deriveHumanState(score, messageCount, engagedCount, handoffCount) {
+    if (!messageCount) return "none";
+    const engagedRate = engagedCount / messageCount;
+    const handoffRate = handoffCount / messageCount;
+    if (score >= 70 || handoffRate >= 0.35) return "passive";
+    if (engagedRate >= 0.35 || score < 25) return "hands-on";
+    if (score >= 45) return "mixed";
+    return "engaged";
+  }
+
+  function buildDynamicsPayload() {
+    const dyn = session.dynamics || emptyDynamics();
+    const samples = dyn.dwellSamples || 0;
+    return {
+      pasteCount: dyn.pasteCount || 0,
+      dwellSamples: samples,
+      avgDwellRatio: samples ? Math.round((dyn.dwellRatioSum / samples) * 1000) / 1000 : null,
+      lowDwellCount: dyn.lowDwellCount || 0,
+    };
+  }
+
+  function buildResponseCounts() {
+    const depthMoments = digestLog.depthMoments || [];
+    const mismatchEvents = digestLog.mismatchEvents || [];
+    const loopBreaks = digestLog.loopBreaks || [];
+    const overlayEvents = digestLog.overlayEvents || [];
+    const guardEvents = digestLog.guardEvents || [];
+    return {
+      depthMoments: depthMoments.length,
+      depthActions: countByAction(depthMoments),
+      mismatchEvents: mismatchEvents.length,
+      mismatchChoices: countByAction(mismatchEvents),
+      loopBreaks: loopBreaks.length,
+      loopBreakActions: countByAction(loopBreaks),
+      overlayBypasses: overlayEvents.filter((e) => e?.overlayBypassed).length,
+      guardEvents: guardEvents.length,
+      guardActions: countByAction(guardEvents),
+      reflectionsSubmitted: depthMoments.filter((e) =>
+        ["reflected", "draft-first", "drafted"].includes(e?.action)
+      ).length,
+    };
+  }
+
+  function buildSignalsPayload() {
+    return {
+      handoff: session.handoffCount || 0,
+      loop: session.loopCount || 0,
+      drift: session.driftCount || 0,
+      mismatch: session.mismatchCount || 0,
+      depth: session.depthCount || 0,
+      engaged: session.engagedCount || 0,
+      scaffold: session.scaffoldCount || 0,
+      attemptFirst: session.attemptFirstCount || 0,
+    };
+  }
+
+  function sanitizePlatformStats(stats) {
+    const out = {};
+    Object.entries(stats || {}).forEach(([host, row]) => {
+      if (!host || !row) return;
+      out[String(host).slice(0, 120)] = {
+        messageCount: Number(row.messageCount) || 0,
+        signalCounts: { ...(row.signalCounts || {}) },
+        taskTypeCounts: { ...(row.taskTypeCounts || {}) },
+      };
+    });
+    return out;
+  }
+
+  function recordFeedback({
+    messageId,
+    signalType,
+    score,
+    verdict,
+    taskType,
+    promptSnippet,
+    stance,
+    dwellRatio,
+    pasted,
+    confidence,
+  }) {
+    const normalizedVerdict = verdict === "right" ? "right" : "wrong";
     session.feedback = session.feedback || [];
     session.feedback.push({
       messageId,
       signalType,
       score,
-      verdict,
+      verdict: normalizedVerdict,
       taskType,
+      stance: stance || null,
+      dwellRatio: typeof dwellRatio === "number" ? dwellRatio : null,
+      pasted: Boolean(pasted),
+      confidence: confidence || null,
       promptSnippet: (promptSnippet || "").slice(0, 200),
       timestamp: Date.now(),
     });
 
-    if (verdict === "wrong" && taskType) {
+    if (normalizedVerdict === "wrong" && taskType) {
       session.taskTypeWrongCounts = session.taskTypeWrongCounts || {};
       session.taskTypeWrongCounts[taskType] = (session.taskTypeWrongCounts[taskType] || 0) + 1;
       session.sessionSensitivity = session.sessionSensitivity || {};
@@ -966,7 +1151,8 @@ const LumenSession = (() => {
     }
 
     save();
-    return session.taskTypeWrongCounts[taskType] || 0;
+    scheduleSessionFlush();
+    return session.taskTypeWrongCounts?.[taskType] || 0;
   }
 
   function getWrongCountForTaskType(taskType) {
@@ -978,18 +1164,62 @@ const LumenSession = (() => {
   }
 
   function buildSessionPayload() {
-    const n = Math.max(session.loopScores.length, 1);
+    const goals = globalThis.LumenGoals?.get?.() || {};
+    const signals = buildSignalsPayload();
+    const responses = buildResponseCounts();
+    const dynamics = buildDynamicsPayload();
+    const startedAt = Number(session.sessionStartedAt) || Date.now();
+    const durationMinutes = Math.max(0, Math.round((Date.now() - startedAt) / 60000));
+    const humanState = deriveHumanState(
+      session.sessionScore || 0,
+      session.messageCount || 0,
+      session.engagedCount || 0,
+      session.handoffCount || 0
+    );
+
     return {
+      schemaVersion: SESSION_SCHEMA_VERSION,
       sessionDate: session.sessionDate,
       platform: sessionPlatformKey(),
+      durationMinutes,
       messageCount: session.messageCount,
       compositeScore: session.sessionScore,
-      loopCount: session.loopCount,
-      driftCount: session.driftCount,
-      mismatchCount: session.mismatchCount,
-      depthCount: session.depthCount,
+      humanState,
+      mode: goals.mode || "active",
+      badgeEnabled: Boolean(goals.badgeEnabled),
+      // Flat counts (API columns + backward compatible)
+      handoffCount: signals.handoff,
+      loopCount: signals.loop,
+      driftCount: signals.drift,
+      mismatchCount: signals.mismatch,
+      depthCount: signals.depth,
+      engagedCount: signals.engaged,
+      scaffoldCount: signals.scaffold,
+      attemptFirstCount: signals.attemptFirst,
+      // Legacy schema field names
+      depthMoments: signals.depth,
+      questionsAsked: 0,
+      consciousDelegates: signals.handoff,
+      loopBreaksTaken: responses.loopBreaks,
+      interventionsFired: signals.mismatch + signals.depth + responses.guardEvents,
+      interventionsBypassed: responses.overlayBypasses,
+      reflectionsSubmitted: responses.reflectionsSubmitted,
+      // Nested research payload
+      signals,
+      dynamics,
+      taskTypeCounts: { ...(session.taskTypeCounts || {}) },
+      platformStats: sanitizePlatformStats(session.platformStats),
+      responseCounts: responses,
       feedback: session.feedback || [],
     };
+  }
+
+  function scheduleSessionFlush() {
+    if (sessionFlushTimer) return;
+    sessionFlushTimer = setTimeout(() => {
+      sessionFlushTimer = null;
+      postSessionSummary();
+    }, 12000);
   }
 
   function postSessionSummary() {

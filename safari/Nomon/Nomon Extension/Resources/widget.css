@@ -201,6 +201,14 @@
   white-space: nowrap;
 }
 
+#lumen-root .lumen-fb-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
 #lumen-root .lumen-fb-btn {
   opacity: 0;
   background: transparent;
@@ -214,12 +222,21 @@
   pointer-events: auto;
 }
 
-#lumen-root .lumen-strip:hover .lumen-fb-btn {
+#lumen-root .lumen-strip:hover .lumen-fb-btn,
+#lumen-root .lumen-strip:hover .lumen-fb-group {
+  opacity: 1;
+}
+
+#lumen-root .lumen-strip:hover .lumen-fb-group .lumen-fb-btn {
   opacity: 1;
 }
 
 #lumen-root .lumen-fb-btn:hover {
   color: var(--lm-dusk);
+}
+
+#lumen-root .lumen-fb-btn--right:hover {
+  color: var(--lm-win, #7fbf80);
 }
 
 #lumen-root .lumen-fb-btn:disabled {
@@ -336,12 +353,109 @@
   }
 }
 
-/* Rest = four-dot mark only. Click opens the control panel for the active
-   pillar (Mirror / Badge / Cost). No hover expand rail — that shook the pill. */
+/* Rest = four-dot mark only. Click opens Glance (horizontal metrics);
+   click again anywhere on Glance opens the full panel. No hover expand. */
 #lumen-root .lumen-fab-rail,
 #lumen-root .lumen-fab-pillar,
 #lumen-root .lumen-fab-hint,
 #lumen-root .lumen-fab-focus {
+  display: none !important;
+}
+
+#lumen-root .lumen-fab-core {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+#lumen-root .lumen-fab-glance {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+  transition:
+    max-width 180ms ease,
+    opacity 140ms ease,
+    padding 180ms ease,
+    margin 180ms ease;
+}
+
+#lumen-root #lumen-fab.lumen-fab--glance .lumen-fab-glance {
+  display: inline-flex;
+  max-width: 320px;
+  opacity: 1;
+  padding: 0 4px 0 2px;
+  pointer-events: auto;
+}
+
+/* Grow toward page centre when Glance is open: mark stays on the outer edge. */
+#lumen-root #lumen-fab[data-side="right"].lumen-fab--glance {
+  flex-direction: row-reverse;
+}
+#lumen-root #lumen-fab[data-side="left"].lumen-fab--glance {
+  flex-direction: row;
+}
+
+#lumen-root .lumen-fab-glance-metrics {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+  font-family: var(--lm-font);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--lm-haze);
+  line-height: 1.2;
+}
+
+#lumen-root .lumen-fab-glance-metric b {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--lm-dusk);
+  letter-spacing: -0.02em;
+  margin-right: 2px;
+}
+
+#lumen-root .lumen-fab-glance-open {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0 0 2px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--lm-dusk);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+#lumen-root .lumen-fab-glance-open:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+/* When Glance is open, keep signal/pause label from fighting the metrics. */
+#lumen-root #lumen-fab.lumen-fab--glance #lumen-fab-engagement {
+  max-width: 0 !important;
+  opacity: 0 !important;
+  padding: 0 !important;
+}
+#lumen-root #lumen-fab.lumen-fab--glance #lumen-fab-lead {
   display: none !important;
 }
 
@@ -1932,7 +2046,7 @@
 }
 
 #lumen-root .lumen-popover-stats {
-  margin: 12px 18px 6px;
+  margin: 10px 18px 6px;
   max-width: calc(100% - 36px);
   display: flex;
   flex-direction: column;
@@ -1984,60 +2098,36 @@
   margin-top: 2px;
 }
 
-#lumen-root .lumen-pillar-tabs {
-  display: flex;
-  gap: 4px;
-  margin: 0 18px 12px;
-  padding: 4px;
-  border-radius: 14px;
-  background: var(--lm-inset);
-  border: 1px solid var(--lm-border);
-  box-sizing: border-box;
-  max-width: calc(100% - 36px);
-  position: static;
-  top: auto;
-  z-index: auto;
-}
+#lumen-root .lumen-pillar-tabs,
 #lumen-root .lumen-pillar-tab {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  padding: 8px 6px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--lm-ghost);
-  font-family: var(--lm-font);
-  font-size: 12px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-}
-#lumen-root .lumen-pillar-tab:hover {
-  color: var(--lm-dusk);
-}
-#lumen-root .lumen-pillar-tab--on {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  box-shadow: none;
-}
-#lumen-root #lumen-popover[data-pillar="cost"] .lumen-pillar-tab--on {
-  color: var(--lm-cost);
-  background: var(--lm-cost-tint);
-  box-shadow: inset 0 0 0 1px var(--lm-cost-border);
+  display: none !important;
 }
 
-/* Strict pillar scoping: Mirror chrome (stats, mode, charts, setup, privacy)
-   stays off Badge and Cost. Uses data-pillar on the popover so nested
-   lumen-hidden state (stats empty, privacy open) is preserved. */
-#lumen-root #lumen-popover:not([data-pillar="mirror"]) [data-pillar-scope="mirror"] {
-  display: none !important;
+#lumen-root .lumen-goals-block {
+  margin: 0 18px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--lm-border);
+  max-width: calc(100% - 36px);
+  box-sizing: border-box;
+  min-width: 0;
 }
-#lumen-root #lumen-popover:not([data-pillar="badge"]) [data-pillar-scope="badge"] {
-  display: none !important;
+
+#lumen-root .lumen-badge-strip {
+  margin: 0 18px 10px;
+  max-width: calc(100% - 36px);
+  box-sizing: border-box;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
-#lumen-root #lumen-popover:not([data-pillar="cost"]) [data-pillar-scope="cost"] {
-  display: none !important;
+#lumen-root .lumen-badge-strip .lumen-badge-seg {
+  margin: 0;
+  width: auto;
+  flex: 1;
+  min-width: 0;
+}
+#lumen-root .lumen-badge-strip .lumen-popover-hint {
+  margin-top: 8px;
 }
 
 #lumen-root .lumen-pillar-block {
@@ -2136,14 +2226,14 @@
   color: #fff;
 }
 
-/* Mode: compact single-row segment + slim Guard; scores stay above as hero.
-   Hairlines frame Mode + Guard as their own section between stats and goals. */
+/* Mode: compact single-row segment + slim Guard; sits above the result boxes.
+   Hairlines frame Mode + Guard as their own section under the header. */
 #lumen-root .lumen-mode-strip {
-  margin: 8px 18px 10px;
+  margin: 4px 18px 4px;
   max-width: calc(100% - 36px);
   box-sizing: border-box;
-  padding: 12px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 10px 0 12px;
+  border-top: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 #lumen-root .lumen-mode-strip.lumen-hidden {
@@ -3602,6 +3692,7 @@
 .lumen-strip[data-lumen-signal="handoff"] .lumen-strip-dot { background: #e5a33d; }
 .lumen-strip[data-lumen-signal="mismatch"] .lumen-strip-dot { background: #8e6fd8; }
 .lumen-strip[data-lumen-signal="depth"] .lumen-strip-dot { background: #5b9bd5; }
+.lumen-strip[data-lumen-signal="engaged"] .lumen-strip-dot { background: #5ba89a; }
 
 .lumen-strip-name {
   font-weight: 600;
@@ -3676,6 +3767,15 @@
   transform: translateY(0);
 }
 
+.lumen-fb-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
 .lumen-fb-btn {
   opacity: 0;
   background: transparent;
@@ -3688,7 +3788,12 @@
   pointer-events: auto;
 }
 
-.lumen-strip:hover .lumen-fb-btn {
+.lumen-strip:hover .lumen-fb-btn,
+.lumen-strip:hover .lumen-fb-group {
+  opacity: 1;
+}
+
+.lumen-strip:hover .lumen-fb-group .lumen-fb-btn {
   opacity: 1;
 }
 

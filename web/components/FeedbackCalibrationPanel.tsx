@@ -6,21 +6,32 @@ type RateRow = {
   signalType?: string;
   taskType?: string;
   platform?: string;
+  stance?: string;
   falsePositiveRate: number;
   wrong: number;
+  right?: number;
   total: number;
 };
 
 type CalibrationPayload = {
   totalSamples: number;
+  rightSamples?: number;
+  wrongSamples?: number;
   source?: string;
   rates: RateRow[];
   byTaskType: RateRow[];
   byPlatform: RateRow[];
+  byStance?: RateRow[];
   calibration: {
     sampleCount: number;
     loopThreshold: number;
-    signalAdjustments: Array<{ signalType: string; falsePositiveRate: number; samples: number }>;
+    signalAdjustments: Array<{
+      signalType: string;
+      falsePositiveRate: number;
+      samples: number;
+      right?: number;
+      wrong?: number;
+    }>;
     taskTypeModifiers: Record<string, { scoreMultiplier: number; reason?: string }>;
     updatedAt: string;
   };
@@ -33,7 +44,7 @@ function RateTable({
 }: {
   title: string;
   rows: RateRow[];
-  keyField: "signalType" | "taskType" | "platform";
+  keyField: "signalType" | "taskType" | "platform" | "stance";
 }) {
   if (!rows.length) {
     return (
@@ -51,11 +62,12 @@ function RateTable({
         {rows.map((row) => {
           const label = String(row[keyField] || "unknown");
           const hot = row.falsePositiveRate >= 30;
+          const right = row.right ?? 0;
           return (
             <div key={label} className="flex justify-between items-center text-[12px] gap-4">
               <span className="text-[var(--lm-secondary)] truncate">{label.replace(/_/g, " ")}</span>
               <span className="shrink-0 tabular-nums" style={{ color: hot ? "#f44336" : "var(--lm-primary)" }}>
-                {row.falsePositiveRate}% wrong · {row.wrong}/{row.total}
+                {row.falsePositiveRate}% FP · {row.wrong}✕ / {right}✓ · {row.total}
               </span>
             </div>
           );
@@ -89,18 +101,20 @@ export default function FeedbackCalibrationPanel() {
       <div className="lm-surface p-4">
         <p className="lm-label mb-2">Flywheel status</p>
         <p className="text-[13px] text-[var(--lm-primary)]">
-          {data.totalSamples} labelled corrections · source: {data.source || "memory"}
+          {data.totalSamples} labelled corrections ({data.rightSamples ?? 0}✓ · {data.wrongSamples ?? 0}✕) ·
+          source: {data.source || "memory"}
         </p>
         <p className="text-[11px] text-[var(--lm-muted)] mt-2">
-          Every ✕ on a strip is training data. Crowd weights push to the extension via{" "}
+          Every ✓/✕ on a strip is training data. Crowd weights push to the extension via{" "}
           <code className="text-[var(--lm-secondary)]">/api/calibration/weights</code>.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
         <RateTable title="By signal" rows={data.rates} keyField="signalType" />
         <RateTable title="By task type" rows={data.byTaskType} keyField="taskType" />
         <RateTable title="By platform" rows={data.byPlatform} keyField="platform" />
+        <RateTable title="By stance" rows={data.byStance || []} keyField="stance" />
       </div>
 
       <div className="lm-surface p-4">
@@ -135,7 +149,7 @@ export default function FeedbackCalibrationPanel() {
           </div>
         ) : (
           <p className="text-[11px] text-[var(--lm-muted)] mt-4">
-            Need ≥3 wrong-signal samples per task type before multipliers adjust.
+            Need ≥3 labelled samples per task type before multipliers adjust.
           </p>
         )}
       </div>

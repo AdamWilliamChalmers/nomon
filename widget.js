@@ -583,7 +583,7 @@ const LumenWidget = (() => {
               <input type="checkbox" id="lumen-share-data" />
               Share anonymised session summary
             </label>
-            <p class="lumen-popover-hint">On by default · daily counts and feedback snippets only, not full chats</p>
+            <p class="lumen-popover-hint">On by default · daily signal counts, stance, dynamics, and ✓/✕ feedback snippets — never full chats</p>
             <div id="lumen-advanced" class="lumen-advanced lumen-hidden">
               <label class="lumen-popover-label">Backend URL (for judge / calibration / sharing)</label>
               <input id="lumen-backend-input" class="lumen-popover-focus" type="text" placeholder="http://localhost:3000" />
@@ -885,30 +885,18 @@ const LumenWidget = (() => {
       }
       event.stopPropagation();
 
-      // Glance › → full panel. Use composedPath so pointer-capture retargeting
-      // can't hide the real button from event.target.
-      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
-      const hitOpen =
-        event.target.closest?.("#lumen-fab-glance-open, .lumen-fab-glance-open") ||
-        path.some(
-          (node) =>
-            node?.id === "lumen-fab-glance-open" ||
-            (node?.classList && node.classList.contains("lumen-fab-glance-open"))
-        );
-      if (hitOpen) {
-        closeGlance();
-        openPopover();
-        return;
-      }
-
       if (popoverOpen) {
         closePopover();
         return;
       }
 
-      // Rest → Glance; Glance (click mark/metrics) → close Glance.
-      if (glanceOpen) closeGlance();
-      else openGlance();
+      // Rest → Glance; Glance (anywhere: metrics, mark, or ⌃) → full panel.
+      if (glanceOpen) {
+        closeGlance();
+        openPopover();
+        return;
+      }
+      openGlance();
     });
 
     bindGlanceOpenButton();
@@ -2162,8 +2150,8 @@ const LumenWidget = (() => {
       return;
     }
     if (glanceOpen) {
-      fab.title = "Nomon — today's metrics. Click ⌃ for the full panel.";
-      fab.setAttribute("aria-label", `Nomon ${modeLabel}, today's metrics`);
+      fab.title = "Nomon — today's metrics. Click anywhere to open the full panel.";
+      fab.setAttribute("aria-label", `Nomon ${modeLabel}, today's metrics — click to open panel`);
       return;
     }
     if (fabDisplaySignal) {
@@ -3262,31 +3250,64 @@ const LumenWidget = (() => {
     return evaluation[signal]?.active;
   }
 
-  function createFeedbackButton(msgId, evaluation, promptText) {
-    const btn = document.createElement("button");
-    btn.className = "lumen-fb-btn";
-    btn.setAttribute("aria-label", "This signal was wrong");
-    btn.setAttribute("title", "Wrong signal?");
-    btn.textContent = "✕";
-    btn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const signalType = evaluation.primary;
-      const taskType = evaluation.taskType || "general";
+  function createFeedbackControls(msgId, evaluation, promptText) {
+    const group = document.createElement("span");
+    group.className = "lumen-fb-group";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "Was this signal right?");
+
+    const finish = (verdict, btn) => {
       const wrongCount = LumenSession.recordFeedback({
         messageId: msgId,
-        signalType,
+        signalType: evaluation.primary,
         score: evaluation.loopScore,
-        verdict: "wrong",
-        taskType,
+        verdict,
+        taskType: evaluation.taskType || "general",
         promptSnippet: promptText,
+        stance: evaluation.stance || evaluation.engaged?.stance || null,
+        dwellRatio: evaluation.dwellRatio,
+        pasted: Boolean(evaluation.pasted),
+        confidence: evaluation.confidence || null,
       });
-      btn.textContent = "noted";
-      btn.disabled = true;
-      if (wrongCount >= 3) {
-        showExemptionProposal(taskType, msgId);
+      group.querySelectorAll(".lumen-fb-btn").forEach((el) => {
+        el.disabled = true;
+      });
+      btn.textContent = verdict === "right" ? "✓" : "noted";
+      btn.classList.add(verdict === "right" ? "lumen-fb-btn--right" : "lumen-fb-btn--wrong");
+      if (verdict === "wrong" && wrongCount >= 3) {
+        showExemptionProposal(evaluation.taskType || "general", msgId);
       }
+    };
+
+    const rightBtn = document.createElement("button");
+    rightBtn.type = "button";
+    rightBtn.className = "lumen-fb-btn lumen-fb-btn--right";
+    rightBtn.setAttribute("aria-label", "This signal was right");
+    rightBtn.setAttribute("title", "Right signal");
+    rightBtn.textContent = "✓";
+    rightBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      finish("right", rightBtn);
     });
-    return btn;
+
+    const wrongBtn = document.createElement("button");
+    wrongBtn.type = "button";
+    wrongBtn.className = "lumen-fb-btn lumen-fb-btn--wrong";
+    wrongBtn.setAttribute("aria-label", "This signal was wrong");
+    wrongBtn.setAttribute("title", "Wrong signal?");
+    wrongBtn.textContent = "✕";
+    wrongBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      finish("wrong", wrongBtn);
+    });
+
+    group.appendChild(rightBtn);
+    group.appendChild(wrongBtn);
+    return group;
+  }
+
+  function createFeedbackButton(msgId, evaluation, promptText) {
+    return createFeedbackControls(msgId, evaluation, promptText);
   }
 
   function showExemptionProposal(taskType, msgId) {

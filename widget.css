@@ -201,6 +201,14 @@
   white-space: nowrap;
 }
 
+#lumen-root .lumen-fb-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
 #lumen-root .lumen-fb-btn {
   opacity: 0;
   background: transparent;
@@ -214,12 +222,21 @@
   pointer-events: auto;
 }
 
-#lumen-root .lumen-strip:hover .lumen-fb-btn {
+#lumen-root .lumen-strip:hover .lumen-fb-btn,
+#lumen-root .lumen-strip:hover .lumen-fb-group {
+  opacity: 1;
+}
+
+#lumen-root .lumen-strip:hover .lumen-fb-group .lumen-fb-btn {
   opacity: 1;
 }
 
 #lumen-root .lumen-fb-btn:hover {
   color: var(--lm-dusk);
+}
+
+#lumen-root .lumen-fb-btn--right:hover {
+  color: var(--lm-win, #7fbf80);
 }
 
 #lumen-root .lumen-fb-btn:disabled {
@@ -337,7 +354,7 @@
 }
 
 /* Rest = four-dot mark only. Click opens Glance (horizontal metrics);
-   › opens the full panel. No hover expand — that shook the pill. */
+   click again anywhere on Glance opens the full panel. No hover expand. */
 #lumen-root .lumen-fab-rail,
 #lumen-root .lumen-fab-pillar,
 #lumen-root .lumen-fab-hint,
@@ -3750,6 +3767,15 @@
   transform: translateY(0);
 }
 
+.lumen-fb-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
 .lumen-fb-btn {
   opacity: 0;
   background: transparent;
@@ -3762,7 +3788,12 @@
   pointer-events: auto;
 }
 
-.lumen-strip:hover .lumen-fb-btn {
+.lumen-strip:hover .lumen-fb-btn,
+.lumen-strip:hover .lumen-fb-group {
+  opacity: 1;
+}
+
+.lumen-strip:hover .lumen-fb-group .lumen-fb-btn {
   opacity: 1;
 }
 

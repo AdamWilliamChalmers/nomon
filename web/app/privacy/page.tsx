@@ -48,9 +48,12 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-2">
             <li>
               <strong className="text-[var(--lm-primary)]">Share anonymised session summary</strong>{" "}
-              — on tab close: date, platform, message count, signal counts, composite score. No full
-              chats. If you click ✕ on a signal (&quot;wrong&quot;), up to 200 characters of that
-              prompt may be included as a feedback snippet.
+              — on tab close (and periodically while you work): date, platform, mode, message
+              count, all Mirror signal counts (including Hands-on / scaffold / attempt-first),
+              composer dynamics (paste &amp; dwell ratios — counts only), task-type histogram,
+              per-tool tallies, and nudge response counts. No full chats. If you tap ✓ or ✕ on a
+              signal, up to 200 characters of that prompt may be included as a labelled feedback
+              snippet (stance, dwell, and confidence when available).
             </li>
             <li>
               <strong className="text-[var(--lm-primary)]">LLM second opinion</strong> — borderline

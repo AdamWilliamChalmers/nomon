@@ -160,8 +160,9 @@ export default function HomePage() {
               <p className="step-kicker">Mirror</p>
               <h3>Your thinking, reflected</h3>
               <p>
-                Notices when you&rsquo;ve stopped evaluating what the AI gives you — and says so in
-                one line under your prompt. Signals stay monochrome; the name carries the meaning.
+                Notices when you&rsquo;ve stopped evaluating what the AI gives you — and when you
+                stay hands-on. One line under your prompt. Caution stays monochrome; Hands-on is the
+                quiet win.
               </p>
             </div>
 
@@ -227,11 +228,11 @@ export default function HomePage() {
       {/* ═══════════ Signals ═══════════ */}
       <section id="signals">
         <div className="wrap">
-          <h2>Inside Mirror: five signals</h2>
+          <h2>Inside Mirror: six signals</h2>
           <p className="section-intro">
-            One warning light can&rsquo;t mean five different things — so Mirror doesn&rsquo;t use
-            one. Each signal has its own name and voice, and reads as quiet monochrome data under
-            your message. No colour-coded alarms, no red anywhere.
+            One warning light can&rsquo;t mean six different things — so Mirror doesn&rsquo;t use
+            one. Each signal has its own name and voice under your message. Caution stays
+            monochrome; Hands-on is the quiet green when you keep the work. No red anywhere.
           </p>
 
           <div className="signal-row">
@@ -244,6 +245,20 @@ export default function HomePage() {
               You&rsquo;ve delegated a whole task in your first message. A gentle prompt to put down
               your own starting point first.
               <span className="lives">An invitation, never a gate.</span>
+            </p>
+          </div>
+
+          <div className="signal-row">
+            <div className="strip left">
+              <span className="who">Nomon</span>
+              <span className="dot-i bg-win" />
+              <span className="sig sig-win">hands-on · you tried first</span>
+            </div>
+            <p className="meaning">
+              You scaffolded the ask, or wrote your own attempt before handing anything over —
+              the opposite of a dump. Confidence grows from use like this, not from outsourcing the
+              thinking.
+              <span className="lives">The win Mirror is built to notice.</span>
             </p>
           </div>
 
@@ -372,8 +387,9 @@ export default function HomePage() {
           <h2>How you use AI matters</h2>
           <p className="section-intro">
             Cognitive science is clear that offloading thinking to AI can blunt skill and knowledge
-            — and that staying in the loop changes the outcome. Nomon is built around that
-            distinction. A few findings that shaped the product:
+            — and that staying in the loop changes the outcome. Anxiety and eroded confidence can
+            push the same pattern: when people doubt they can manage AI well, they hand more work
+            over. Nomon is built around that distinction. A few findings that shaped the product:
           </p>
 
           <div className="evidence-list">
@@ -394,7 +410,7 @@ export default function HomePage() {
                   learn.
                 </p>
                 <p className="evidence-nomon">
-                  In Nomon: Hand-off and Loop notice when the work is leaving your hands.
+                  In Nomon: Hand-off notices a full dump; Hands-on credits when you try first.
                 </p>
               </div>
             </article>
@@ -437,7 +453,31 @@ export default function HomePage() {
                   inevitable.
                 </p>
                 <p className="evidence-nomon">
-                  In Nomon: Mirror is that loop — a quiet reflection, not a block.
+                  In Nomon: Mirror reflects that loop — scaffolds and Hands-on when you keep the
+                  work, not a block.
+                </p>
+              </div>
+            </article>
+
+            <article className="evidence-row">
+              <p className="evidence-cite">
+                <a
+                  href="https://doi.org/10.3389/fpsyg.2026.1884382"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Wu et al. · Frontiers in Psychology · 2026
+                </a>
+              </p>
+              <div>
+                <p className="evidence-finding">
+                  Among undergraduates, AI anxiety predicted AI dependence partly by eroding AI
+                  self-efficacy — confidence that you can use the tools without surrendering the
+                  thinking. Literacy alone did not stop that path.
+                </p>
+                <p className="evidence-nomon">
+                  In Nomon: Hands-on notices scaffolds and attempt-first prompts — use that rebuilds
+                  confidence, not just speed.
                 </p>
               </div>
             </article>
